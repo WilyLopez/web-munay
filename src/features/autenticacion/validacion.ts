@@ -5,6 +5,7 @@ export type EstadoFormulario = {
       | "nombreCompleto"
       | "correoElectronico"
       | "contrasena"
+      | "confirmarContrasena"
       | "aceptaCondiciones",
       string
     >
@@ -20,6 +21,7 @@ export function validarCredenciales(datos: FormData, registro: boolean) {
   const correoElectronico = leerCampo(datos, "correoElectronico").trim();
   const contrasena = leerCampo(datos, "contrasena");
   const nombreCompleto = leerCampo(datos, "nombreCompleto").trim();
+  const confirmarContrasena = leerCampo(datos, "confirmarContrasena");
   const errores: NonNullable<EstadoFormulario["errores"]> = {};
 
   if (
@@ -39,6 +41,12 @@ export function validarCredenciales(datos: FormData, registro: boolean) {
     if (!nombreCompleto || nombreCompleto.length > 120) {
       errores.nombreCompleto =
         "Ingresa tu nombre completo, hasta 120 caracteres.";
+    }
+
+    if (!confirmarContrasena) {
+      errores.confirmarContrasena = "Confirma tu contraseña.";
+    } else if (contrasena !== confirmarContrasena) {
+      errores.confirmarContrasena = "Las contraseñas no coinciden.";
     }
 
     if (datos.get("aceptaCondiciones") !== "on") {
