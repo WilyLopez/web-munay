@@ -8,10 +8,7 @@ export function AvisoExpiracion({ venceEn }: { venceEn: string }) {
 
   useEffect(() => {
     const espera = Math.max(0, Date.parse(venceEn) - Date.now());
-    const temporizador = window.setTimeout(
-      () => router.replace("/ingresar?aviso=inactividad"),
-      espera,
-    );
+    const temporizador = window.setTimeout(() => router.refresh(), espera);
     return () => window.clearTimeout(temporizador);
   }, [router, venceEn]);
 

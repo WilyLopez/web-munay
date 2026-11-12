@@ -1,8 +1,3 @@
-type SesionMunay = {
-  perfil: { nombreCompleto: string };
-  venceEn: string;
-};
-
 export async function solicitarSesion(
   token: string,
   metodo: "GET" | "POST" | "DELETE",
@@ -19,20 +14,4 @@ export async function solicitarSesion(
     cache: "no-store",
     signal: AbortSignal.timeout(10000),
   });
-}
-
-export async function consultarSesion(
-  token: string,
-): Promise<SesionMunay | null> {
-  const respuesta = await solicitarSesion(token, "GET");
-
-  if (respuesta.status === 401) {
-    return null;
-  }
-
-  if (!respuesta.ok) {
-    throw new Error("La sesión no está disponible en este momento.");
-  }
-
-  return (await respuesta.json()) as SesionMunay;
 }

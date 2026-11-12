@@ -31,4 +31,11 @@ export async function proxy(peticion: NextRequest) {
   return respuesta;
 }
 
-export const config = { matcher: ["/destinos/:path*"] };
+export const config = {
+  matcher: [
+    "/",
+    "/destinos/:path*",
+    "/verificar-visita",
+    "/administracion/:path*",
+  ],
+};
