@@ -5,11 +5,12 @@ import type { Resultado } from "./tipos";
 export async function solicitarVisitas<T>(
   ruta: string,
   datos?: Record<string, unknown>,
+  opciones?: { publica?: boolean; metodo?: "PUT" | "DELETE" },
 ): Promise<Resultado<T>> {
   try {
     const supabase = await crearSupabaseServidor();
     const { data } = await supabase.auth.getSession();
-    if (!data.session) {
+    if (!data.session && !opciones?.publica) {
       return {
         ok: false,
         estado: 401,
@@ -20,9 +21,11 @@ export async function solicitarVisitas<T>(
     const respuesta = await fetch(
       new URL(ruta, process.env.NEXT_PUBLIC_API_URL),
       {
-        method: datos ? "POST" : "GET",
+        method: opciones?.metodo ?? (datos ? "POST" : "GET"),
         headers: {
-          Authorization: `Bearer ${data.session.access_token}`,
+          ...(data.session && {
+            Authorization: `Bearer ${data.session.access_token}`,
+          }),
           ...(datos && { "Content-Type": "application/json" }),
         },
         body: datos ? JSON.stringify(datos) : undefined,
@@ -30,7 +33,23 @@ export async function solicitarVisitas<T>(
         signal: AbortSignal.timeout(10000),
       },
     );
-    if (respuesta.ok) return { ok: true, datos: (await respuesta.json()) as T };
+    if (respuesta.status === 401 && opciones?.publica && data.session) {
+      const publica = await fetch(
+        new URL(ruta, process.env.NEXT_PUBLIC_API_URL),
+        {
+          cache: "no-store",
+          signal: AbortSignal.timeout(10000),
+        },
+      );
+      if (publica.ok) return { ok: true, datos: (await publica.json()) as T };
+    }
+    if (respuesta.ok)
+      return {
+        ok: true,
+        datos: (respuesta.status === 204
+          ? undefined
+          : await respuesta.json()) as T,
+      };
     const error = (await respuesta.json().catch(() => null)) as {
       mensaje?: unknown;
       message?: unknown;
