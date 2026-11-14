@@ -103,6 +103,9 @@ export function PiePagina({ className = "" }: { className?: string }) {
             <Link href="/politica-de-privacidad" className={estiloEnlace}>
               Política de privacidad
             </Link>
+            <Link href="/politica-de-cookies" className={estiloEnlace}>
+              Política de cookies
+            </Link>
           </nav>
         </div>
       </div>
