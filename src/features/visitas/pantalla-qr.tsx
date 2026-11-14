@@ -140,6 +140,7 @@ type EstadoPantalla = { datos: PantallaVisitas; venceLocal: number };
 
 export function PantallaQr({ slug }: { slug: string }) {
   const solicitud = useRef(false);
+  const versionConexion = useRef(0);
   const bloqueo = useRef(false);
   const [pantalla, cambiarPantalla] = useState<EstadoPantalla>();
   const [ahora, cambiarAhora] = useState(0);
@@ -149,15 +150,16 @@ export function PantallaQr({ slug }: { slug: string }) {
   const [sincronizando, cambiarSincronizando] = useState(false);
 
   const sincronizar = useCallback(
-    async (renovar = false) => {
+    async function consultar(renovar = false) {
       if (solicitud.current || bloqueo.current || !navigator.onLine) return;
       solicitud.current = true;
+      const version = versionConexion.current;
       cambiarSincronizando(true);
       const inicio = Date.now();
       if (renovar) cambiarRenovando(true);
       try {
         const respuesta = await sincronizarPantalla(slug, renovar);
-        if (!navigator.onLine) return;
+        if (!navigator.onLine || version !== versionConexion.current) return;
         if (!respuesta.ok) {
           cambiarPantalla(undefined);
           cambiarError(respuesta.mensaje);
@@ -177,12 +179,16 @@ export function PantallaQr({ slug }: { slug: string }) {
         });
         cambiarError("");
       } catch {
+        if (version !== versionConexion.current) return;
         cambiarPantalla(undefined);
         cambiarError("Se perdió la conexión. Esperando sincronización.");
       } finally {
         solicitud.current = false;
         cambiarSincronizando(false);
         if (renovar) cambiarRenovando(false);
+        if (version !== versionConexion.current && !document.hidden) {
+          void consultar();
+        }
       }
     },
     [slug],
@@ -194,6 +200,7 @@ export function PantallaQr({ slug }: { slug: string }) {
       if (!document.hidden) void sincronizar();
     }
     function desconectar() {
+      versionConexion.current++;
       cambiarPantalla(undefined);
       cambiarError("Se perdió la conexión. Esperando sincronización.");
     }

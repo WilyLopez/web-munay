@@ -92,6 +92,20 @@ export function EscanerVisita({ destino }: { destino?: string }) {
         return;
       }
       flujo.current = camara;
+      for (const pista of camara.getVideoTracks()) {
+        pista.addEventListener(
+          "ended",
+          () => {
+            if (intento !== generacion.current) return;
+            detener();
+            cambiarEstado("listo");
+            cambiarMensaje(
+              "Se interrumpió la cámara. Vuelve a activarla para escanear el QR.",
+            );
+          },
+          { once: true },
+        );
+      }
       const { BrowserQRCodeReader } = await import("@zxing/browser");
       if (intento !== generacion.current || !visor.current) return;
       const lector = new BrowserQRCodeReader();
@@ -143,10 +157,10 @@ export function EscanerVisita({ destino }: { destino?: string }) {
           Identificador de visita: {resultado.visita.id}
         </p>
         <Link
-          href={enlaceFicha(resultado.destino.slug)}
+          href={`${enlaceFicha(resultado.destino.slug)}#opiniones`}
           className="font-semibold text-teal-900 underline"
         >
-          Volver a la ficha del destino
+          Escribir o consultar mi reseña
         </Link>
       </section>
     );
