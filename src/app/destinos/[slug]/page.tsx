@@ -2,6 +2,7 @@ import { PiePagina } from "@/features/navegacion/pie-pagina";
 import { Navbar } from "@/features/navegacion/navbar";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { crearSupabaseServidor } from "@/features/autenticacion/supabase/servidor";
 import { solicitarDestinos } from "@/features/destinos/api";
@@ -15,6 +16,8 @@ import { Opiniones, paginaResenas } from "@/features/resenas/opiniones";
 import { TarjetaSentimiento } from "@/features/sentimiento/tarjeta-sentimiento";
 import { FotoFicha } from "@/features/destinos/foto-ficha";
 import { DisponibilidadVisita } from "@/features/destinos/disponibilidad-visita";
+import { ErrorDestinos } from "@/features/destinos/error-destinos";
+import { EsqueletoFicha } from "@/features/destinos/esqueletos";
 
 const moneda = new Intl.NumberFormat("es-PE", {
   style: "currency",
@@ -31,6 +34,7 @@ type Props = {
 };
 
 async function ContenidoFicha({ params, searchParams }: Props) {
+  await connection();
   const [{ slug }, { volver, orden, pagina }] = await Promise.all([
     params,
     searchParams,
@@ -57,15 +61,7 @@ async function ContenidoFicha({ params, searchParams }: Props) {
   if (respuesta?.status === 404) notFound();
   if (!respuesta?.ok) {
     return (
-      <main className="mx-auto max-w-5xl space-y-4 py-10">
-        <h1 className="text-2xl font-bold">No pudimos cargar el destino</h1>
-        <Link href={enlaceFicha(slug, regreso)} className="mr-5 underline">
-          Reintentar
-        </Link>
-        <Link href={regreso} className="underline">
-          Volver a explorar
-        </Link>
-      </main>
+      <ErrorDestinos titulo="No pudimos cargar el destino" regreso={regreso} />
     );
   }
 
@@ -233,7 +229,7 @@ export default function PaginaFicha(props: Props) {
       <div className="sticky top-0 z-40 -mx-8 -mt-8">
         <Navbar />
       </div>
-      <Suspense fallback={<p role="status">Cargando destino…</p>}>
+      <Suspense fallback={<EsqueletoFicha />}>
         <ContenidoFicha {...props} />
       </Suspense>
       <PiePagina className="-mx-8 -mb-8" />

@@ -1,53 +1,45 @@
 import { PiePagina } from "@/features/navegacion/pie-pagina";
-import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { crearSupabaseServidor } from "@/features/autenticacion/supabase/servidor";
 import { solicitarDestinos } from "@/features/destinos/api";
 import type { Catalogo } from "@/features/destinos/catalogo";
 import { CatalogoDestinos } from "@/features/destinos/catalogo-destinos";
+import { ErrorDestinos } from "@/features/destinos/error-destinos";
+import { EsqueletoCatalogo } from "@/features/destinos/esqueletos";
 
 import { Navbar, NavbarCatalogo } from "@/features/navegacion/navbar";
 
 async function DestinosPublicos({ searchParams }: PageProps<"/destinos">) {
   await connection();
-  const supabase = await crearSupabaseServidor();
-  const { data } = await supabase.auth.getSession();
-
-  let respuesta;
+  let catalogo: Catalogo | undefined;
 
   try {
+    const supabase = await crearSupabaseServidor();
+    const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
-    respuesta = await solicitarDestinos(token);
+    let respuesta = await solicitarDestinos(token);
 
     if (token && respuesta.status === 401) {
       respuesta = await solicitarDestinos();
     }
+    if (respuesta.ok) catalogo = (await respuesta.json()) as Catalogo;
   } catch {
-    respuesta = null;
+    catalogo = undefined;
   }
 
-  if (!respuesta?.ok) {
+  if (!catalogo) {
     return (
       <>
         <div className="-mx-8 -mt-8">
           <Navbar />
         </div>
-        <main className="mx-auto max-w-3xl py-10">
-          <h1 className="text-2xl font-bold">No pudimos cargar el catálogo</h1>
-          <Link
-            className="mt-4 inline-block font-semibold text-teal-800 underline"
-            href="/destinos"
-          >
-            Reintentar
-          </Link>
-        </main>
+        <ErrorDestinos titulo="No pudimos cargar el catálogo" />
         <PiePagina className="-mx-8 -mb-8" />
       </>
     );
   }
 
-  const catalogo = (await respuesta.json()) as Catalogo;
   const { buscar } = await searchParams;
 
   return (
@@ -75,7 +67,7 @@ async function DestinosPublicos({ searchParams }: PageProps<"/destinos">) {
 
 export default function PaginaDestinos(props: PageProps<"/destinos">) {
   return (
-    <Suspense fallback={<p role="status">Cargando destinos…</p>}>
+    <Suspense fallback={<EsqueletoCatalogo />}>
       <DestinosPublicos {...props} />
     </Suspense>
   );
