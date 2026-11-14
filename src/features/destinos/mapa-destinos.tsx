@@ -7,6 +7,7 @@ import { enlaceFicha } from "./catalogo";
 import { useEffect, useRef, useState } from "react";
 import { categorias, type Destino } from "./catalogo";
 import { CreditoFoto } from "./credito-foto";
+import { MapaGoogle } from "./mapa-google";
 import "leaflet/dist/leaflet.css";
 
 const centroLambayeque: Leaflet.LatLngTuple = [-6.53, -79.83];
@@ -53,6 +54,7 @@ export function MapaDestinos({
   const [ubicacion, cambiarUbicacion] = useState<Leaflet.LatLngTuple>();
   const [avisoUbicacion, cambiarAviso] = useState("");
   const [imagenFallida, cambiarImagenFallida] = useState<string>();
+  const [vista, cambiarVista] = useState<"pines" | "google">("pines");
 
   useEffect(() => {
     let desmontado = false;
@@ -218,9 +220,22 @@ export function MapaDestinos({
     >
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">
+          <div role="group" aria-label="Vista del mapa" className="flex gap-2">
+            {(["pines", "google"] as const).map((opcion) => (
+              <button
+                key={opcion}
+                type="button"
+                aria-pressed={vista === opcion}
+                onClick={() => cambiarVista(opcion)}
+                className="rounded-lg border border-teal-900 px-3 py-2 text-sm font-semibold aria-pressed:bg-teal-950 aria-pressed:text-white"
+              >
+                {opcion === "pines" ? "Pines" : "Google Maps"}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
-            disabled={!motor}
+            disabled={!motor || vista !== "pines"}
             onClick={mostrarPosicion}
             className="rounded-lg border border-teal-900 bg-white px-3 py-2 text-sm font-semibold disabled:opacity-50"
           >
@@ -249,7 +264,7 @@ export function MapaDestinos({
             {avisoUbicacion}
           </p>
         )}
-        {mapaNoDisponible && (
+        {vista === "pines" && mapaNoDisponible && (
           <p
             role="alert"
             className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950"
@@ -261,17 +276,25 @@ export function MapaDestinos({
             .
           </p>
         )}
-        {!motor && !mapaNoDisponible && (
+        {vista === "pines" && !motor && !mapaNoDisponible && (
           <p role="status" className="text-sm">
             Cargando mapa…
           </p>
         )}
         <div
           ref={contenedor}
+          hidden={vista !== "pines"}
           role="region"
           aria-label="Mapa interactivo de Lambayeque"
           className="relative z-0 h-[24rem] overflow-hidden rounded-2xl border border-stone-200 bg-stone-100 sm:h-[32rem]"
         />
+        {vista === "google" && (
+          <MapaGoogle
+            destinos={destinos}
+            seleccionado={seleccionado}
+            seleccionar={seleccionar}
+          />
+        )}
       </div>
       <div className="space-y-4">
         {seleccionado && (
