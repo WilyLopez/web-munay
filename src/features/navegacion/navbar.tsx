@@ -1,11 +1,11 @@
 import { connection } from "next/server";
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
 import { crearSupabaseServidor } from "@/features/autenticacion/supabase/servidor";
 import { solicitarDestinos } from "@/features/destinos/api";
 import type { Catalogo } from "@/features/destinos/catalogo";
 import { BarraNavegacion, type DestinoBusqueda } from "./barra-navegacion";
 
-async function cargarCatalogo(): Promise<Catalogo | null> {
+export const cargarCatalogo = cache(async (): Promise<Catalogo | null> => {
   await connection();
 
   try {
@@ -19,7 +19,7 @@ async function cargarCatalogo(): Promise<Catalogo | null> {
   } catch {
     return null;
   }
-}
+});
 
 async function ContenidoNavbar() {
   const catalogo = await cargarCatalogo();

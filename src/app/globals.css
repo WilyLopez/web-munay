@@ -8,6 +8,9 @@ body {
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .entrada-portada {
+    animation: abrir-panel-navbar 260ms ease-out both;
+  }
   .panel-navbar {
     animation: abrir-panel-navbar 150ms ease-out both;
   }

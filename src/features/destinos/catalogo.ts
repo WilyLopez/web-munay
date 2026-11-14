@@ -16,6 +16,7 @@ export const provincias = {
 export type Destino = {
   id: string;
   slug: string;
+  ordenPortada?: number | null;
   nombre: string;
   descripcion: string;
   ubicacion: string;

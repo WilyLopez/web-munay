@@ -2,42 +2,107 @@ import { PiePagina } from "@/features/navegacion/pie-pagina";
 import Image from "next/image";
 import Link from "next/link";
 import { CreditoFoto } from "@/features/destinos/credito-foto";
-import { Navbar } from "@/features/navegacion/navbar";
-
-const destacados = [
-  {
-    nombre: "Museo Tumbas Reales de Sipán",
-    categoria: "Cultura",
-    lugar: "Lambayeque",
-    descripcion:
-      "Conoce los hallazgos de la tumba del Señor de Sipán y la historia de la cultura moche.",
-    foto: "/destinos/tumbas-reales.webp",
-    enlace: "/destinos/museo-tumbas-reales-de-sipan",
-  },
-  {
-    nombre: "Complejo Arqueológico de Túcume",
-    categoria: "Historia",
-    lugar: "Túcume",
-    descripcion:
-      "Explora las pirámides de adobe y el museo de sitio del valle de Lambayeque.",
-    foto: "/destinos/tucume.webp",
-    enlace: "/destinos/complejo-arqueologico-de-tucume",
-  },
-  {
-    nombre: "Santuario Histórico Bosque de Pómac",
-    categoria: "Naturaleza",
-    lugar: "Pítipo, Ferreñafe",
-    descripcion:
-      "Descubre un bosque seco de algarrobos junto a los vestigios de la cultura Sicán.",
-    foto: "/destinos/bosque-de-pomac.webp",
-    enlace: "/destinos/santuario-historico-bosque-de-pomac",
-  },
-];
+import { Suspense } from "react";
+import { categorias, enlaceFicha } from "@/features/destinos/catalogo";
+import { CarruselDestinos } from "@/features/portada/carrusel-destinos";
+import { Navbar, cargarCatalogo } from "@/features/navegacion/navbar";
 
 const contenedor = "mx-auto w-full max-w-[82rem] px-5 sm:px-8 lg:px-12";
 const botonPrincipal =
   "inline-flex items-center justify-center gap-3 rounded-full bg-[#174238] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#23574a]";
 const enlaceMapa = "/destinos?vista=mapa";
+
+async function obtenerDestacados() {
+  const catalogo = await cargarCatalogo();
+  const fotografiados = (catalogo?.destinos ?? []).flatMap((destino) => {
+    const imagenUrl = destino.imagenUrl?.trim();
+    return imagenUrl &&
+      (/^\/(?!\/)/.test(imagenUrl) || /^https?:\/\//.test(imagenUrl))
+      ? [{ ...destino, imagenUrl }]
+      : [];
+  });
+  const seleccionados = fotografiados.filter(
+    ({ ordenPortada }) => ordenPortada != null,
+  );
+  return (
+    seleccionados.length
+      ? seleccionados.sort(
+          (a, b) => (a.ordenPortada ?? 0) - (b.ordenPortada ?? 0),
+        )
+      : fotografiados
+  ).slice(0, 4);
+}
+
+async function HeroDestinos() {
+  const destinos = await obtenerDestacados();
+  return destinos.length ? <CarruselDestinos destinos={destinos} /> : null;
+}
+
+async function DestinosDestacados() {
+  const destacados = await obtenerDestacados();
+  if (!destacados.length) return null;
+  return (
+    <section
+      aria-labelledby="titulo-destinos"
+      className="border-t border-[#dedacf] py-10 md:py-14"
+    >
+      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+        <h2
+          id="titulo-destinos"
+          className="font-serif text-4xl tracking-tight sm:text-5xl"
+        >
+          Destinos destacados
+        </h2>
+        <Link
+          href="/destinos"
+          className="text-sm font-semibold underline underline-offset-4"
+        >
+          Ver todo el catálogo <span aria-hidden="true">↗</span>
+        </Link>
+      </div>
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {destacados.map((destino) => (
+          <article
+            key={destino.slug}
+            className="flex flex-col overflow-hidden rounded-2xl border border-[#dedacf] bg-[#fffdf6]"
+          >
+            <Link
+              href={enlaceFicha(destino.slug)}
+              aria-label={`Ver ${destino.nombre}`}
+              className="group relative block aspect-[16/10] overflow-hidden bg-[#dedacf]"
+            >
+              <Image
+                src={destino.imagenUrl}
+                alt={destino.nombre}
+                fill
+                unoptimized={!destino.imagenUrl.startsWith("/")}
+                sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                className="object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
+              />
+            </Link>
+            <div className="flex flex-1 flex-col gap-2 p-5">
+              <p className="text-xs font-bold uppercase tracking-wide text-[#8d402d]">
+                {categorias[destino.categoria]} · {destino.ubicacion}
+              </p>
+              <h3 className="font-serif text-2xl leading-tight">
+                <Link
+                  href={enlaceFicha(destino.slug)}
+                  className="underline-offset-4 hover:underline"
+                >
+                  {destino.nombre}
+                </Link>
+              </h3>
+              <p className="flex-1 text-sm leading-relaxed text-[#465a50]">
+                {destino.descripcion}
+              </p>
+              <CreditoFoto imagenUrl={destino.imagenUrl} />
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export default function Portada() {
   return (
@@ -48,7 +113,7 @@ export default function Portada() {
           aria-labelledby="titulo-portada"
           className="grid items-center gap-7 pb-12 pt-10 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:gap-10 md:pb-16 md:pt-14 lg:gap-16"
         >
-          <div>
+          <div className="entrada-portada">
             <p className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#8d402d]">
               Costa norte del Perú
             </p>
@@ -75,87 +140,23 @@ export default function Portada() {
             </div>
           </div>
 
-          <figure className="min-w-0">
-            <div className="relative aspect-[5/4] overflow-hidden rounded-t-[3.5rem] rounded-b-2xl bg-[#d8c7aa] sm:aspect-[4/3]">
-              <Image
-                src="/destinos/tumbas-reales.webp"
-                alt="Fachada roja del Museo Tumbas Reales de Sipán"
-                fill
-                preload
-                sizes="(min-width: 768px) 52vw, 100vw"
-                className="object-cover"
-              />
-              <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/75 to-transparent px-5 pb-5 pt-16 text-white sm:px-7">
-                <p className="text-sm font-semibold">
-                  Museo Tumbas Reales de Sipán
-                </p>
-                <p className="mt-0.5 text-xs text-white/90">Lambayeque</p>
+          <Suspense
+            fallback={
+              <div
+                className="aspect-[4/3] rounded-3xl bg-[#e8dfcd] motion-safe:animate-pulse"
+                role="status"
+              >
+                <span className="sr-only">Cargando destinos destacados</span>
               </div>
-            </div>
-            <figcaption className="mt-2">
-              <CreditoFoto imagenUrl="/destinos/tumbas-reales.webp" />
-            </figcaption>
-          </figure>
+            }
+          >
+            <HeroDestinos />
+          </Suspense>
         </section>
 
-        <section
-          aria-labelledby="titulo-destinos"
-          className="border-t border-[#dedacf] py-10 md:py-14"
-        >
-          <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
-            <h2
-              id="titulo-destinos"
-              className="font-serif text-4xl tracking-tight sm:text-5xl"
-            >
-              Destinos destacados
-            </h2>
-            <Link
-              href="/destinos"
-              className="text-sm font-semibold underline underline-offset-4"
-            >
-              Ver todo el catálogo <span aria-hidden="true">↗</span>
-            </Link>
-          </div>
-          <div className="grid gap-5 md:grid-cols-3">
-            {destacados.map((destino) => (
-              <article
-                key={destino.nombre}
-                className="flex flex-col overflow-hidden rounded-2xl border border-[#dedacf] bg-[#fffdf6]"
-              >
-                <Link
-                  href={destino.enlace}
-                  aria-label={`Ver ${destino.nombre} en el catálogo`}
-                  className="group relative block aspect-[16/10] overflow-hidden bg-[#dedacf]"
-                >
-                  <Image
-                    src={destino.foto}
-                    alt={destino.nombre}
-                    fill
-                    sizes="(min-width: 768px) 33vw, 100vw"
-                    className="object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
-                  />
-                </Link>
-                <div className="flex flex-1 flex-col gap-2 p-5">
-                  <p className="text-xs font-bold uppercase tracking-wide text-[#8d402d]">
-                    {destino.categoria} · {destino.lugar}
-                  </p>
-                  <h3 className="font-serif text-2xl leading-tight">
-                    <Link
-                      href={destino.enlace}
-                      className="underline-offset-4 hover:underline"
-                    >
-                      {destino.nombre}
-                    </Link>
-                  </h3>
-                  <p className="flex-1 text-sm leading-relaxed text-[#465a50]">
-                    {destino.descripcion}
-                  </p>
-                  <CreditoFoto imagenUrl={destino.foto} />
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+        <Suspense>
+          <DestinosDestacados />
+        </Suspense>
 
         <section
           aria-labelledby="titulo-mapa"
