@@ -41,6 +41,7 @@ export function enlaceFicha(slug: string, volver?: string) {
 
 export type FichaDestino = {
   destino: Destino & {
+    totalResenas: number;
     fotosAdicionales: string[];
     diasAtencion: number[];
     rutaDesdeChiclayo: string | null;
@@ -59,3 +60,10 @@ export type Catalogo = {
   } | null;
   destinos: Destino[];
 };
+
+export function normalizarBusqueda(texto: string) {
+  return texto
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+}

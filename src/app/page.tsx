@@ -1,11 +1,8 @@
+import { PiePagina } from "@/features/navegacion/pie-pagina";
 import Image from "next/image";
 import Link from "next/link";
-import { Suspense } from "react";
 import { CreditoFoto } from "@/features/destinos/credito-foto";
-import {
-  AccesoPortada,
-  AccesoVisitante,
-} from "@/features/portada/acceso-portada";
+import { Navbar } from "@/features/navegacion/navbar";
 
 const destacados = [
   {
@@ -45,43 +42,7 @@ const enlaceMapa = "/destinos?vista=mapa";
 export default function Portada() {
   return (
     <div className="-m-8 min-h-screen bg-[#f8f4ea] text-[#193b33]">
-      <header className="border-b border-[#dedacf]">
-        <div
-          className={`${contenedor} grid min-h-20 grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 py-3 md:grid-cols-[1fr_auto_1fr]`}
-        >
-          <Link
-            href="/"
-            aria-label="Munay, inicio"
-            className="w-fit text-[1.65rem] font-black tracking-tight"
-          >
-            munay
-            <span aria-hidden="true" className="text-[#a54b36]">
-              .
-            </span>
-          </Link>
-          <nav
-            aria-label="Navegación principal"
-            className="order-last col-span-2 flex flex-wrap items-center gap-6 border-t border-[#dedacf] pt-3 text-sm font-semibold md:order-none md:col-span-1 md:border-0 md:pt-0"
-          >
-            <Link
-              href="/destinos"
-              className="underline-offset-4 hover:underline"
-            >
-              Destinos
-            </Link>
-            <Link
-              href={enlaceMapa}
-              className="underline-offset-4 hover:underline"
-            >
-              Mapa
-            </Link>
-          </nav>
-          <Suspense fallback={<AccesoVisitante />}>
-            <AccesoPortada />
-          </Suspense>
-        </div>
-      </header>
-
+      <Navbar />
       <main className={contenedor}>
         <section
           aria-labelledby="titulo-portada"
@@ -221,40 +182,7 @@ export default function Portada() {
         </section>
       </main>
 
-      <footer className="border-t border-[#dedacf] bg-[#eee9dc]">
-        <div
-          className={`${contenedor} flex flex-wrap items-start justify-between gap-7 py-9`}
-        >
-          <div>
-            <Link href="/" className="text-2xl font-black tracking-tight">
-              munay
-              <span aria-hidden="true" className="text-[#a54b36]">
-                .
-              </span>
-            </Link>
-            <p className="mt-1 text-sm text-[#465a50]">
-              Guía de destinos de Lambayeque.
-            </p>
-          </div>
-          <nav
-            aria-label="Enlaces del pie de página"
-            className="flex max-w-full flex-wrap gap-x-5 gap-y-3 pt-1 text-sm font-semibold"
-          >
-            <Link href="/destinos" className="hover:underline">
-              Destinos
-            </Link>
-            <Link href={enlaceMapa} className="hover:underline">
-              Mapa
-            </Link>
-            <Link href="/terminos-de-uso" className="hover:underline">
-              Términos de uso
-            </Link>
-            <Link href="/politica-de-privacidad" className="hover:underline">
-              Privacidad
-            </Link>
-          </nav>
-        </div>
-      </footer>
+      <PiePagina />
     </div>
   );
 }

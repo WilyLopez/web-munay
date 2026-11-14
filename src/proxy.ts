@@ -35,6 +35,7 @@ export const config = {
   matcher: [
     "/",
     "/destinos/:path*",
+    "/resenas",
     "/verificar-visita",
     "/administracion/:path*",
   ],

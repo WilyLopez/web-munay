@@ -1,3 +1,5 @@
+import { PiePagina } from "@/features/navegacion/pie-pagina";
+import { Navbar } from "@/features/navegacion/navbar";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -9,6 +11,8 @@ import {
   type FichaDestino,
 } from "@/features/destinos/catalogo";
 import { FavoritoDestino } from "@/features/destinos/favorito-destino";
+import { Opiniones, paginaResenas } from "@/features/resenas/opiniones";
+import { TarjetaSentimiento } from "@/features/sentimiento/tarjeta-sentimiento";
 import { FotoFicha } from "@/features/destinos/foto-ficha";
 import { DisponibilidadVisita } from "@/features/destinos/disponibilidad-visita";
 
@@ -19,11 +23,18 @@ const moneda = new Intl.NumberFormat("es-PE", {
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ volver?: string | string[] }>;
+  searchParams: Promise<{
+    volver?: string | string[];
+    orden?: string;
+    pagina?: string;
+  }>;
 };
 
 async function ContenidoFicha({ params, searchParams }: Props) {
-  const [{ slug }, { volver }] = await Promise.all([params, searchParams]);
+  const [{ slug }, { volver, orden, pagina }] = await Promise.all([
+    params,
+    searchParams,
+  ]);
   if (!/^[a-z0-9]+(?:-+[a-z0-9]+)*$/.test(slug)) notFound();
   const regreso =
     typeof volver === "string" && volver.startsWith("/destinos?")
@@ -73,9 +84,6 @@ async function ContenidoFicha({ params, searchParams }: Props) {
         aria-label="Navegación de la ficha"
         className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-300 pb-4"
       >
-        <Link href="/" className="text-xl font-black text-teal-950">
-          munay.
-        </Link>
         <Link href={regreso} className="font-semibold text-teal-900 underline">
           Volver a explorar
         </Link>
@@ -92,6 +100,8 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           {destino.calificacionPromedio === null
             ? "Sin calificaciones"
             : `${destino.calificacionPromedio} de 5`}
+          {" · "}
+          {destino.totalResenas} reseñas
         </p>
       </header>
       <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -185,12 +195,12 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           </p>
           <DisponibilidadVisita dias={destino.diasAtencion ?? []} />
           <div className="flex flex-wrap items-center gap-4 border-t border-stone-200 pt-4">
-            <Link
+            <a
               className="rounded-full bg-teal-950 px-5 py-3 font-semibold text-white"
-              href="#como-llegar"
+              href={`https://www.google.com/maps/dir/?${indicaciones}`}
             >
               Cómo llegar
-            </Link>
+            </a>
             <FavoritoDestino destino={destino} tieneSesion={tieneSesion} />
             <Link
               href={`/verificar-visita?destino=${encodeURIComponent(destino.slug)}`}
@@ -201,14 +211,32 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           </div>
         </section>
       </div>
+      <TarjetaSentimiento slug={slug} />
+      <Suspense fallback={<p role="status">Cargando reseñas…</p>}>
+        <Opiniones
+          regreso={regreso}
+          slug={slug}
+          orden={typeof orden === "string" ? orden : undefined}
+          pagina={paginaResenas(pagina)}
+        />
+      </Suspense>
+      <Link href="/resenas" className="font-semibold underline">
+        Ver reseñas de todos los atractivos
+      </Link>
     </main>
   );
 }
 
 export default function PaginaFicha(props: Props) {
   return (
-    <Suspense fallback={<p role="status">Cargando destino…</p>}>
-      <ContenidoFicha {...props} />
-    </Suspense>
+    <>
+      <div className="sticky top-0 z-40 -mx-8 -mt-8">
+        <Navbar />
+      </div>
+      <Suspense fallback={<p role="status">Cargando destino…</p>}>
+        <ContenidoFicha {...props} />
+      </Suspense>
+      <PiePagina className="-mx-8 -mb-8" />
+    </>
   );
 }

@@ -6,3 +6,16 @@ body {
   background: #f8f4ea;
   font-family: system-ui, sans-serif;
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  .panel-navbar {
+    animation: abrir-panel-navbar 150ms ease-out both;
+  }
+}
+
+@keyframes abrir-panel-navbar {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25rem);
+  }
+}

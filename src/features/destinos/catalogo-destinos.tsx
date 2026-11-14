@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import {
   categorias,
+  normalizarBusqueda,
   provincias,
   type Categoria,
   type Destino,
@@ -13,13 +14,6 @@ import { MapaDestinos } from "./mapa-destinos";
 import { TarjetaDestino } from "./tarjeta-destino";
 
 const comparador = new Intl.Collator("es-PE", { sensitivity: "base" });
-
-function normalizar(texto: string) {
-  return texto
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase();
-}
 
 export function CatalogoDestinos({
   destinos,
@@ -47,7 +41,7 @@ export function CatalogoDestinos({
   const [orden, cambiarOrden] = useState(
     parametros.get("orden") === "nombre" ? "nombre" : "recomendados",
   );
-  const consulta = normalizar(busqueda.trim());
+  const consulta = normalizarBusqueda(busqueda.trim());
   const resultados = useMemo(
     () =>
       destinos
@@ -57,7 +51,7 @@ export function CatalogoDestinos({
             (!provincia || destino.provincia === provincia) &&
             (!consulta ||
               [destino.nombre, destino.ubicacion].some((texto) =>
-                normalizar(texto).includes(consulta),
+                normalizarBusqueda(texto).includes(consulta),
               )),
         )
         .sort((primero, segundo) => {
