@@ -7,6 +7,7 @@ import {
   crearSupabaseServidor,
 } from "./supabase/servidor";
 import {
+  esCorreoValido,
   leerCampo,
   validarCredenciales,
   type EstadoFormulario,
@@ -15,6 +16,33 @@ import {
 const ERROR_SERVICIO =
   "El servicio no está disponible en este momento. Intenta nuevamente.";
 const REGISTRO_RECIBIDO = "/ingresar?aviso=registro";
+
+export async function reenviarConfirmacion(
+  _estado: EstadoFormulario,
+  datos: FormData,
+): Promise<EstadoFormulario> {
+  const email = leerCampo(datos, "correoElectronico").trim();
+  if (!esCorreoValido(email)) {
+    return {
+      errores: { correoElectronico: "Ingresa un correo electrónico válido." },
+    };
+  }
+
+  try {
+    const supabase = await crearSupabaseServidor();
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    if (error?.status === 429) {
+      return { mensaje: "Espera un momento antes de solicitar otro correo." };
+    }
+    if (error && error.status && error.status >= 500) {
+      return { mensaje: ERROR_SERVICIO };
+    }
+  } catch {
+    return { mensaje: ERROR_SERVICIO };
+  }
+
+  redirect("/ingresar?aviso=confirmacion-solicitada");
+}
 
 export async function registrarCuenta(
   _estado: EstadoFormulario,
@@ -36,9 +64,15 @@ export async function registrarCuenta(
     });
 
     if (
-      error &&
-      !["user_already_exists", "email_exists"].includes(error.code ?? "")
+      ["user_already_exists", "email_exists"].includes(error?.code ?? "") ||
+      (!error && data.user?.identities?.length === 0)
     ) {
+      return {
+        errores: { correoElectronico: "Este correo ya está registrado." },
+      };
+    }
+
+    if (error) {
       if (error.code === "weak_password") {
         return { errores: { contrasena: "Elige una contraseña más segura." } };
       }

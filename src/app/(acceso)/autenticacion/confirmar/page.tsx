@@ -35,7 +35,8 @@ async function ContenidoConfirmacion({
         tokenHash.length <= 256 ? (
           <form action={confirmarCorreo} className="mt-4 space-y-4">
             <p className="text-sm text-stone-600">
-              Confirma este correo para habilitar el acceso a tu cuenta en Munay.
+              Confirma este correo para habilitar el acceso a tu cuenta en
+              Munay.
             </p>
             <input type="hidden" name="tokenHash" value={tokenHash} />
             <button
@@ -51,6 +52,12 @@ async function ContenidoConfirmacion({
           </p>
         )}
         <div className="mt-6 border-t border-stone-200 pt-4">
+          <Link
+            href="/autenticacion/reenviar"
+            className="mr-4 text-xs font-semibold text-[#174238] underline"
+          >
+            Solicitar otro enlace
+          </Link>
           <Link
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#174238] underline hover:text-[#23574a]"
             href="/ingresar"

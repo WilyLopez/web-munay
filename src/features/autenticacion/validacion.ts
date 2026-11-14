@@ -17,6 +17,10 @@ export function leerCampo(datos: FormData, campo: string): string {
   return typeof valor === "string" ? valor : "";
 }
 
+export function esCorreoValido(correo: string): boolean {
+  return correo.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
+}
+
 export function validarCredenciales(datos: FormData, registro: boolean) {
   const correoElectronico = leerCampo(datos, "correoElectronico").trim();
   const contrasena = leerCampo(datos, "contrasena");
@@ -24,10 +28,7 @@ export function validarCredenciales(datos: FormData, registro: boolean) {
   const confirmarContrasena = leerCampo(datos, "confirmarContrasena");
   const errores: NonNullable<EstadoFormulario["errores"]> = {};
 
-  if (
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoElectronico) ||
-    correoElectronico.length > 254
-  ) {
+  if (!esCorreoValido(correoElectronico)) {
     errores.correoElectronico = "Ingresa un correo electrónico válido.";
   }
 
