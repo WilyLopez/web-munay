@@ -28,3 +28,17 @@ En **Authentication → URL Configuration**, configura **Site URL** como `http:/
 ```
 
 Mantén habilitada la confirmación de correo. Para probar con el servicio de correo incluido usa una dirección autorizada del equipo de Supabase. Para usuarios externos, configura SMTP propio.
+
+### Resend como SMTP de Supabase Auth
+
+1. Agrega un dominio en Resend, publica los registros DNS que indique y espera a que aparezca como verificado. Crea una clave con permiso de envío para ese dominio.
+2. En Supabase, abre **Authentication → Email → SMTP Settings** y habilita el SMTP personalizado. Usa el host `smtp.resend.com`, el puerto `465`, el usuario `resend` y la clave de Resend como contraseña. Guarda la clave únicamente en la configuración de Supabase. Usa **Munay** como nombre del remitente y una dirección de tu dominio verificado como correo del remitente.
+3. En **Authentication → URL Configuration**, configura **Site URL** con el origen del frontend, sin barra final. Usa `http://localhost:3000` para pruebas en esta computadora o la URL HTTPS de Munay para los demás usuarios.
+4. Mantén **Confirm email** habilitado. En **Authentication → Email → Templates → Confirm signup**, usa el asunto **Confirma tu correo en Munay** y pega el contenido de [confirmar-registro.html](supabase/plantillas/confirmar-registro.html). Mantén desactivado el seguimiento de clics en Resend para conservar el enlace original.
+5. Registra un correo de prueba nuevo en `/registro`. Revisa la entrega en Resend, abre el enlace y presiona **Confirmar correo** dentro de Munay. En **Authentication → Users**, verifica la confirmación e inicia sesión. También puedes probar `/autenticacion/reenviar` con una cuenta pendiente, respetando los límites de envío.
+
+[Integración SMTP de Resend](https://resend.com/docs/send-with-supabase-smtp) · [Configuración SMTP de Supabase](https://supabase.com/docs/guides/auth/auth-smtp)
+
+## Vista de Google Maps
+
+Configura `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en `.env` con una clave de navegador autorizada para Maps JavaScript API y para el origen de Munay. Google Cloud requiere habilitar la API y configurar facturación. Opcionalmente, configura `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` con el identificador del mapa. Reinicia el servidor de desarrollo o vuelve a compilar si usas el servidor de producción.
