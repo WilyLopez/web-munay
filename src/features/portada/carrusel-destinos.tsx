@@ -36,7 +36,7 @@ export function CarruselDestinos({ destinos }: { destinos: DestinoVisual[] }) {
             src={destino.imagenUrl}
             alt=""
             fill
-            loading={indice === 0 ? "eager" : "lazy"}
+            priority={indice === 0}
             sizes="(min-width: 768px) 52vw, 100vw"
             unoptimized={!destino.imagenUrl.startsWith("/")}
             className="object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-[1.04] motion-safe:group-focus-visible:scale-[1.04]"

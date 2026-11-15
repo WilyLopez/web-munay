@@ -34,7 +34,10 @@ export function TarjetaDestino({
             src={destino.imagenUrl}
             alt={destino.nombre}
             fill
-            unoptimized
+            unoptimized={
+              !destino.imagenUrl.startsWith("/") &&
+              !destino.imagenUrl.includes("wikimedia.org")
+            }
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             className="object-cover"
             onError={() => marcarImagenFallida(destino.imagenUrl)}

@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo } from "react";
@@ -10,8 +11,21 @@ import {
   type Categoria,
   type Destino,
 } from "./catalogo";
-import { MapaDestinos } from "./mapa-destinos";
 import { TarjetaDestino } from "./tarjeta-destino";
+
+const MapaDestinos = dynamic(
+  () => import("./mapa-destinos").then((m) => m.MapaDestinos),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex min-h-[30rem] items-center justify-center rounded-2xl border border-stone-200 bg-white">
+        <p className="text-sm font-semibold text-stone-500">
+          Cargando mapa interactivo…
+        </p>
+      </div>
+    ),
+  },
+);
 
 const comparador = new Intl.Collator("es-PE", { sensitivity: "base" });
 const calificaciones = ["1", "2", "3", "3.5", "4", "4.5", "5"];

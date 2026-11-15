@@ -5,6 +5,17 @@ import { solicitarDestinos } from "@/features/destinos/api";
 import type { Catalogo } from "@/features/destinos/catalogo";
 import { BarraNavegacion, type DestinoBusqueda } from "./barra-navegacion";
 
+export const cargarCatalogoPublico = cache(
+  async (): Promise<Catalogo | null> => {
+    try {
+      const respuesta = await solicitarDestinos();
+      return respuesta.ok ? ((await respuesta.json()) as Catalogo) : null;
+    } catch {
+      return null;
+    }
+  },
+);
+
 export const cargarCatalogo = cache(async (): Promise<Catalogo | null> => {
   await connection();
 

@@ -31,7 +31,10 @@ export function FotoFicha({
             src={principal}
             alt={nombre}
             fill
-            unoptimized
+            priority
+            unoptimized={
+              !principal.startsWith("/") && !principal.includes("wikimedia.org")
+            }
             sizes="(min-width: 1024px) 720px, 100vw"
             className="object-cover"
             onError={() =>
