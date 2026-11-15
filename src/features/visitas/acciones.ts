@@ -28,10 +28,10 @@ export async function verificarVisita(
   });
 }
 
-export async function sincronizarPantalla(slug: string, renovar: boolean) {
+export async function sincronizarPantalla(slug: string, codigoId?: string) {
   return solicitarVisitas<PantallaVisitas>(
     `/visitas/administracion/${encodeURIComponent(slug)}/codigo`,
-    { renovar },
+    { renovar: codigoId !== undefined, codigoId },
   );
 }
 

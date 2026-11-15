@@ -58,7 +58,7 @@ export const config = {
   matcher: [
     "/",
     "/destinos/:path*",
-    "/resenas",
+    "/resenas/:path*",
     "/verificar-visita",
     "/administracion/:path*",
   ],

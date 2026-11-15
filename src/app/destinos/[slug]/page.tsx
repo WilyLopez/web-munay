@@ -22,6 +22,7 @@ import { FotoFicha } from "@/features/destinos/foto-ficha";
 import { DisponibilidadVisita } from "@/features/destinos/disponibilidad-visita";
 import { ErrorDestinos } from "@/features/destinos/error-destinos";
 import { EsqueletoFicha } from "@/features/destinos/esqueletos";
+import { MapaFicha } from "@/features/destinos/mapa-ficha";
 import {
   AvisoDestino,
   ContactoDestino,
@@ -78,12 +79,20 @@ async function ContenidoFicha({ params, searchParams }: Props) {
   const { destino, tieneSesion } = (await respuesta.json()) as FichaDestino;
   const informacion = destino.informacion ?? {};
   const mapa = new URLSearchParams({ vista: "mapa", destino: destino.id });
-  const indicaciones = new URLSearchParams({
+  const puntoLlegada: [number, number] =
+    informacion.latitudIngreso && informacion.longitudIngreso
+      ? [
+          Number(informacion.latitudIngreso),
+          Number(informacion.longitudIngreso),
+        ]
+      : [destino.latitud, destino.longitud];
+  const rutaDesdeUbicacion = new URLSearchParams({
     api: "1",
-    origin: "Chiclayo, Perú",
-    destination: `${informacion.latitudIngreso ?? destino.latitud},${informacion.longitudIngreso ?? destino.longitud}`,
+    destination: puntoLlegada.join(","),
     travelmode: "driving",
   });
+  const rutaDesdeChiclayo = new URLSearchParams(rutaDesdeUbicacion);
+  rutaDesdeChiclayo.set("origin", "Chiclayo, Perú");
 
   return (
     <main className="mx-auto max-w-6xl space-y-8 py-6 sm:py-10">
@@ -116,6 +125,9 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           <h1 className="font-serif text-4xl leading-tight tracking-tight sm:text-6xl">
             {destino.nombre}
           </h1>
+          <p className="text-sm font-medium text-teal-50">
+            {destino.ubicacion}
+          </p>
           <p className="max-w-prose whitespace-pre-line text-sm leading-relaxed text-white/95 sm:text-base">
             {destino.descripcion}
           </p>
@@ -123,8 +135,9 @@ async function ContenidoFicha({ params, searchParams }: Props) {
             href="#resenas-del-destino"
             className="inline-flex rounded-full border border-white/50 bg-black/25 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white hover:text-teal-950"
           >
-            {destino.calificacionPromedio !== null &&
-              `★ ${destino.calificacionPromedio} de 5 · `}
+            {destino.calificacionPromedio === null
+              ? "Sin calificaciones · "
+              : `★ ${destino.calificacionPromedio} de 5 · `}
             {destino.totalResenas}{" "}
             {destino.totalResenas === 1 ? "reseña" : "reseñas"}
           </a>
@@ -159,10 +172,29 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           <HistoriaDestino informacion={informacion} />
           <section
             id="como-llegar"
+            tabIndex={-1}
             className="scroll-mt-28 space-y-3 rounded-3xl border border-stone-200 bg-white p-6"
           >
-            <h2 className="text-2xl font-bold">Cómo llegar desde Chiclayo</h2>
+            <h2 className="text-2xl font-bold">Cómo llegar</h2>
             <p className="font-semibold">{destino.ubicacion}</p>
+            <MapaFicha punto={puntoLlegada} />
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <a
+                className="inline-flex min-h-11 items-center rounded-xl bg-teal-950 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-950"
+                href={`https://www.google.com/maps/dir/?${rutaDesdeUbicacion}`}
+              >
+                Cómo llegar desde mi ubicación
+              </a>
+              <a
+                className="inline-flex min-h-11 items-center text-sm font-semibold text-teal-900 underline underline-offset-4"
+                href={`https://www.google.com/maps/dir/?${rutaDesdeChiclayo}`}
+              >
+                Ver ruta desde Chiclayo
+              </a>
+            </div>
+            <h3 className="font-semibold text-teal-950">
+              Trayecto referencial desde Chiclayo
+            </h3>
             <p className="text-stone-700">
               {destino.rutaDesdeChiclayo ??
                 "Los detalles del trayecto están por confirmar."}
@@ -190,17 +222,11 @@ async function ContenidoFicha({ params, searchParams }: Props) {
               </p>
             )}
             <div className="flex flex-wrap items-center gap-4">
-              <a
-                className="font-semibold text-teal-900 underline"
-                href={`https://www.google.com/maps/dir/?${indicaciones}`}
-              >
-                Abrir ruta en Google Maps
-              </a>
               <Link
                 href={`/destinos?${mapa}`}
                 className="font-semibold text-teal-900 underline"
               >
-                Ver ubicación en el mapa
+                Abrir mapa del catálogo
               </Link>
               {destino.fuenteRutaUrl && (
                 <a
@@ -258,9 +284,10 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           <p className="text-sm text-stone-600">
             Los horarios y las tarifas son referenciales y pueden cambiar.
           </p>
-          {informacion.condicion !== "cerrado" && informacion.condicion !== "restringido" && (
-            <DisponibilidadVisita dias={destino.diasAtencion ?? []} />
-          )}
+          {informacion.condicion !== "cerrado" &&
+            informacion.condicion !== "restringido" && (
+              <DisponibilidadVisita dias={destino.diasAtencion ?? []} />
+            )}
           {destino.revisadoEn && (
             <p className="text-sm text-stone-600">
               Información revisada el{" "}
@@ -276,7 +303,7 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           <div className="flex flex-wrap items-center gap-4 border-t border-stone-200 pt-4">
             <a
               className="rounded-full bg-teal-950 px-5 py-3 font-semibold text-white"
-              href={`https://www.google.com/maps/dir/?${indicaciones}`}
+              href="#como-llegar"
             >
               Cómo llegar
             </a>

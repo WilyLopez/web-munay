@@ -286,6 +286,7 @@ export function CatalogoDestinos({
           seleccionado={seleccionado}
           seleccionar={seleccionar}
           volver={enlace(false)}
+          volverFicha={enlace(true, seleccionado?.id)}
           limpiarFiltros={limpiarFiltros}
         />
       ) : resultados.length ? (

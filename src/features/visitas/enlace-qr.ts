@@ -1,9 +1,19 @@
 const codigoVisita =
   /^munay:visita:([a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12})$/;
 const identificador = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/;
+const slugDestino = /^[a-z0-9]+(?:-+[a-z0-9]+)*$/;
+const rutaVisita = "/verificar-visita";
+
+export function rutaEscanerVisita(destino?: string, id?: string) {
+  const parametros = new URLSearchParams();
+  if (id && identificador.test(id)) parametros.set("codigo", id);
+  if (destino && destino.length <= 160 && slugDestino.test(destino))
+    parametros.set("destino", destino);
+  return parametros.size ? `${rutaVisita}?${parametros}` : rutaVisita;
+}
 
 export function rutaQrVisita(id: string) {
-  return identificador.test(id) ? `/verificar-visita?codigo=${id}` : null;
+  return identificador.test(id) ? rutaEscanerVisita(undefined, id) : null;
 }
 
 export function codigoQrVisita(id: string | undefined) {
@@ -25,8 +35,17 @@ export function leerCodigoQr(valor: string, origen: string) {
 }
 
 export function regresoQrVisita(valor: string) {
-  const coincidencia = /^\/verificar-visita\?codigo=([a-f0-9-]{36})$/.exec(
-    valor,
+  if (valor === rutaVisita) return rutaVisita;
+  if (!valor.startsWith(`${rutaVisita}?`) || valor.length > 260) return null;
+  const parametros = new URLSearchParams(valor.slice(rutaVisita.length + 1));
+  const ruta = rutaEscanerVisita(
+    parametros.get("destino") ?? undefined,
+    parametros.get("codigo") ?? undefined,
   );
-  return coincidencia ? rutaQrVisita(coincidencia[1]) : null;
+  return ruta === valor ? ruta : null;
+}
+
+export function ingresoParaVisita(destino?: string, codigo?: string) {
+  const id = codigo && codigoVisita.exec(codigo)?.[1];
+  return `/ingresar?${new URLSearchParams({ aviso: "sesion", volver: rutaEscanerVisita(destino, id || undefined) })}`;
 }

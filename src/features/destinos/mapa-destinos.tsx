@@ -39,12 +39,14 @@ export function MapaDestinos({
   seleccionado,
   seleccionar,
   volver,
+  volverFicha,
   limpiarFiltros,
 }: {
   destinos: Destino[];
   seleccionado?: Destino;
   seleccionar: (id: string) => void;
   volver: string;
+  volverFicha: string;
   limpiarFiltros: () => void;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
@@ -355,7 +357,7 @@ export function MapaDestinos({
                 </dd>
               </dl>
               <Link
-                href={enlaceFicha(seleccionado.slug, volver)}
+                href={enlaceFicha(seleccionado.slug, volverFicha)}
                 className="block font-semibold text-teal-900 underline"
               >
                 Ficha completa

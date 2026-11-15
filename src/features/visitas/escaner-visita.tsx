@@ -6,7 +6,12 @@ import { useEffect, useRef, useState } from "react";
 import type { IScannerControls } from "@zxing/browser";
 import { enlaceFicha } from "@/features/destinos/catalogo";
 import { prepararVisita, verificarVisita } from "./acciones";
-import { leerCodigoQr } from "./enlace-qr";
+import { mensajeErrorCamara, solicitarCamaraVisita } from "./camara-visita";
+import {
+  ingresoParaVisita,
+  leerCodigoQr,
+  rutaEscanerVisita,
+} from "./enlace-qr";
 import {
   fechaVisita,
   type Coordenadas,
@@ -34,10 +39,12 @@ type ResultadoEscaneo =
 export function EscanerVisita({
   destino,
   codigoInicial,
+  avisoInicial,
   demoHabilitada = false,
 }: {
   destino?: string;
   codigoInicial?: string;
+  avisoInicial?: string;
   demoHabilitada?: boolean;
 }) {
   const visor = useRef<HTMLVideoElement>(null);
@@ -46,16 +53,17 @@ export function EscanerVisita({
   const generacion = useRef(0);
   const [estado, cambiarEstado] = useState<
     | "listo"
+    | "solicitando-camara"
     | "iniciando"
     | "activo"
     | "comprobando"
     | "ubicando"
     | "registrando"
   >("listo");
-  const [mensaje, cambiarMensaje] = useState("");
+  const [mensaje, cambiarMensaje] = useState(avisoInicial ?? "");
   const [codigoPendiente, cambiarCodigoPendiente] = useState("");
   const [resultado, cambiarResultado] = useState<ResultadoEscaneo>();
-  const [requiereSesion, cambiarRequiereSesion] = useState(false);
+  const [enlaceIngreso, cambiarEnlaceIngreso] = useState<string>();
   const [preparacion, cambiarPreparacion] =
     useState<Extract<PreparacionVisita, { estado: "ubicacion" }>>();
 
@@ -93,7 +101,9 @@ export function EscanerVisita({
     const codigo = leerCodigoQr(valor, window.location.origin);
     if (!codigo) {
       cambiarEstado("listo");
-      cambiarMensaje("El código no corresponde a un QR de visita de Munay.");
+      cambiarMensaje(
+        "Este código no es un QR de visita de Munay. Escanea el que muestra el encargado.",
+      );
       return;
     }
     const intento = ++generacion.current;
@@ -112,7 +122,8 @@ export function EscanerVisita({
         }
       } else {
         cambiarMensaje(respuesta.mensaje);
-        cambiarRequiereSesion(respuesta.estado === 401);
+        if (respuesta.estado === 401)
+          cambiarEnlaceIngreso(ingresoParaVisita(destino, codigo));
         if (respuesta.estado === 0 || respuesta.estado >= 500)
           cambiarCodigoPendiente(codigo);
       }
@@ -145,7 +156,8 @@ export function EscanerVisita({
       } else {
         cambiarMensaje(respuesta.mensaje);
         if ([401, 403, 409, 410].includes(respuesta.estado)) {
-          cambiarRequiereSesion(respuesta.estado === 401);
+          if (respuesta.estado === 401)
+            cambiarEnlaceIngreso(ingresoParaVisita(destino, codigoPendiente));
           cambiarCodigoPendiente("");
           cambiarPreparacion(undefined);
         }
@@ -172,24 +184,17 @@ export function EscanerVisita({
 
   async function activar() {
     const intento = ++generacion.current;
-    cambiarEstado("iniciando");
+    cambiarEstado("solicitando-camara");
     cambiarMensaje("");
     cambiarCodigoPendiente("");
     try {
-      if (!navigator.mediaDevices?.getUserMedia || !visor.current) {
-        throw new Error(
-          "La cámara requiere un navegador compatible y una conexión HTTPS o localhost.",
-        );
-      }
-      const camara = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: { facingMode: { ideal: "environment" } },
-      });
+      const camara = await solicitarCamaraVisita(navigator.mediaDevices);
       if (intento !== generacion.current) {
         camara.getTracks().forEach((pista) => pista.stop());
         return;
       }
       flujo.current = camara;
+      cambiarEstado("iniciando");
       for (const pista of camara.getVideoTracks()) {
         pista.addEventListener(
           "ended",
@@ -226,13 +231,7 @@ export function EscanerVisita({
       if (intento !== generacion.current) return;
       detener();
       cambiarEstado("listo");
-      cambiarMensaje(
-        error instanceof DOMException && error.name === "NotAllowedError"
-          ? "Permite el acceso a la cámara en los permisos del sitio y vuelve a intentarlo."
-          : error instanceof Error && !navigator.mediaDevices?.getUserMedia
-            ? error.message
-            : "No pudimos abrir la cámara. Comprueba que esté disponible y vuelve a intentarlo.",
-      );
+      cambiarMensaje(mensajeErrorCamara(error));
     }
   }
 
@@ -250,16 +249,25 @@ export function EscanerVisita({
           </p>
         )}
         <div className="flex flex-wrap gap-4">
-          <button
-            type="button"
-            disabled={estado === "comprobando"}
-            className="rounded-lg bg-teal-950 px-4 py-2 text-white disabled:opacity-60"
-            onClick={() => void comprobarQr(codigoInicial)}
-          >
-            {estado === "comprobando" ? "Comprobando…" : "Comprobar código"}
-          </button>
+          {enlaceIngreso ? (
+            <Link
+              href={enlaceIngreso}
+              className="rounded-lg bg-teal-950 px-4 py-2 font-semibold text-white"
+            >
+              Iniciar sesión para continuar
+            </Link>
+          ) : (
+            <button
+              type="button"
+              disabled={estado === "comprobando"}
+              className="rounded-lg bg-teal-950 px-4 py-2 text-white disabled:opacity-60"
+              onClick={() => void comprobarQr(codigoInicial)}
+            >
+              {estado === "comprobando" ? "Comprobando…" : "Comprobar código"}
+            </button>
+          )}
           <Link
-            href="/verificar-visita"
+            href={rutaEscanerVisita(destino)}
             className="self-center font-semibold underline"
           >
             Escanear otro QR
@@ -417,11 +425,18 @@ export function EscanerVisita({
           aria-label="Visor de cámara"
           className="h-full w-full object-contain"
         />
-        {(estado === "listo" || estado === "comprobando") && (
-          <p className="absolute inset-0 grid place-items-center text-white">
-            {estado === "comprobando"
-              ? "Comprobando QR…"
-              : "Cámara desactivada"}
+        {estado !== "activo" && (
+          <p
+            role="status"
+            className="absolute inset-0 grid place-items-center px-6 text-center text-white"
+          >
+            {estado === "solicitando-camara"
+              ? "Si tu navegador solicita acceso a la cámara, pulsa «Permitir»."
+              : estado === "iniciando"
+                ? "Preparando el escáner…"
+                : estado === "comprobando"
+                  ? "Comprobando QR…"
+                  : "Cámara desactivada"}
           </p>
         )}
       </div>
@@ -433,7 +448,9 @@ export function EscanerVisita({
         >
           Cancelar
         </button>
-      ) : estado === "activo" || estado === "iniciando" ? (
+      ) : estado === "activo" ||
+        estado === "iniciando" ||
+        estado === "solicitando-camara" ? (
         <button
           type="button"
           className="font-semibold underline"
@@ -442,12 +459,14 @@ export function EscanerVisita({
             cambiarEstado("listo");
           }}
         >
-          Desactivar cámara
+          {estado === "activo"
+            ? "Desactivar cámara"
+            : "Cancelar apertura de cámara"}
         </button>
       ) : (
         <button
           type="button"
-          disabled={requiereSesion}
+          disabled={Boolean(enlaceIngreso)}
           onClick={() => void activar()}
           className="rounded-full bg-teal-950 px-5 py-3 font-semibold text-white disabled:opacity-50"
         >
@@ -459,9 +478,9 @@ export function EscanerVisita({
           {mensaje}
         </p>
       )}
-      {requiereSesion && (
-        <Link href="/ingresar?aviso=sesion" className="font-semibold underline">
-          Iniciar sesión
+      {enlaceIngreso && (
+        <Link href={enlaceIngreso} className="font-semibold underline">
+          Iniciar sesión para continuar
         </Link>
       )}
       {codigoPendiente && (
@@ -473,7 +492,7 @@ export function EscanerVisita({
           Reintentar validación
         </button>
       )}
-      {demoHabilitada && !requiereSesion && (
+      {demoHabilitada && !enlaceIngreso && (
         <div className="space-y-2 rounded-2xl border border-amber-200 bg-amber-50 p-4">
           <p className="text-sm text-amber-950">
             Practica el escaneo con datos de prueba, sin usar la cámara.
