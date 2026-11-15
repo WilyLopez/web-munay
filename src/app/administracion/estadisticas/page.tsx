@@ -8,6 +8,7 @@ import { PantallaQr } from "@/features/visitas/pantalla-qr";
 import { fechaVisita, type DestinoVisita } from "@/features/visitas/tipos";
 import type { Resena } from "@/features/resenas/tipos";
 import { ReportarResena } from "@/features/administracion/controles-reporte";
+import { accesoPanel } from "@/features/administracion/acceso";
 
 type Consulta = {
   destino?: string;
@@ -34,9 +35,10 @@ const formatoMes = new Intl.DateTimeFormat("es-PE", {
 
 async function Panel({ consulta }: { consulta: Promise<Consulta> }) {
   await connection();
-  const [parametros, acceso] = await Promise.all([
+  const [parametros, acceso, perfil] = await Promise.all([
     consulta,
     solicitarVisitas<DestinoVisita[]>("/visitas/administracion"),
+    accesoPanel(),
   ]);
   if (!acceso.ok) {
     if (acceso.estado === 401) redirect("/ingresar?aviso=sesion");
@@ -55,7 +57,23 @@ async function Panel({ consulta }: { consulta: Promise<Consulta> }) {
     ? acceso.datos.find(({ slug }) => slug === parametros.destino)
     : acceso.datos[0];
   if (!destino)
-    return <p>No hay un destino administrado para esta selección.</p>;
+    return (
+      <div className="space-y-2 rounded-xl border border-stone-200 bg-white p-5">
+        <p role="status">
+          {acceso.datos.length
+            ? "El destino seleccionado no está disponible para tu cuenta."
+            : "Tu cuenta todavía no tiene un destino asignado."}
+        </p>
+        {acceso.datos.length > 0 && (
+          <Link
+            href="/administracion/estadisticas"
+            className="font-semibold underline"
+          >
+            Ver estadísticas de un destino asignado
+          </Link>
+        )}
+      </div>
+    );
   const meses = ["3", "12"].includes(parametros.meses ?? "")
     ? (parametros.meses as string)
     : "6";
@@ -77,8 +95,12 @@ async function Panel({ consulta }: { consulta: Promise<Consulta> }) {
       </Link>
       <Link
         className="py-2"
-        href={`${ruta}?${filtro}#atractivos`}
-        aria-label="Mis atractivos"
+        href={
+          perfil?.rol === "SUPER_ADMIN"
+            ? "/superadmin/destinos"
+            : "/administracion"
+        }
+        aria-label="Ver atractivos"
       >
         Atractivos
       </Link>
@@ -90,7 +112,7 @@ async function Panel({ consulta }: { consulta: Promise<Consulta> }) {
       >
         Mi QR
       </Link>
-      <Link className="py-2" href={`${ruta}?${filtro}#resenas-recientes`}>
+      <Link className="py-2" href={`/administracion/resenas?destino=${slug}`}>
         Reseñas
       </Link>
     </nav>
@@ -103,48 +125,38 @@ async function Panel({ consulta }: { consulta: Promise<Consulta> }) {
         <PantallaQr key={destino.slug} slug={destino.slug} />
       </>
     );
-  const respuesta = await solicitarVisitas<Estadisticas>(
-    `/visitas/administracion/${slug}/estadisticas?meses=${meses}`,
-  );
-  if (!respuesta.ok) {
-    return (
-      <div className="space-y-3">
-        {navegacion}
-        <p role="alert">{respuesta.mensaje}</p>
-        <BotonActualizarPanel reintentar />
-      </div>
-    );
-  }
-  const datos = respuesta.datos;
-  const pico = datos.tendencia.reduce(
-    (mayor, periodo) => (periodo.total > mayor.total ? periodo : mayor),
-    { mes: "", total: 0 },
-  );
-
   return (
     <>
       {navegacion}
       <form
         id="atractivos"
-        key={filtro.toString()}
+        key={`filtros-${filtro}`}
         action={ruta}
         className="flex flex-wrap items-end gap-3"
       >
-        <label className="grid gap-1">
-          Atractivo
-          <select
-            name="destino"
-            aria-label="Atractivo"
-            defaultValue={destino.slug}
-            className="w-full max-w-72 rounded border p-2"
-          >
-            {acceso.datos.map((item) => (
-              <option key={item.id} value={item.slug}>
-                {item.nombre}
-              </option>
-            ))}
-          </select>
-        </label>
+        {perfil?.rol === "SUPER_ADMIN" && acceso.datos.length > 1 ? (
+          <label className="grid gap-1">
+            Atractivo
+            <select
+              name="destino"
+              aria-label="Atractivo"
+              defaultValue={destino.slug}
+              className="w-full max-w-72 rounded border p-2"
+            >
+              {acceso.datos.map((item) => (
+                <option key={item.id} value={item.slug}>
+                  {item.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <div className="grid gap-1">
+            <span className="text-sm text-stone-600">Atractivo</span>
+            <p className="py-2 font-semibold">{destino.nombre}</p>
+            <input type="hidden" name="destino" value={destino.slug} />
+          </div>
+        )}
         <label className="grid gap-1">
           Período
           <select
@@ -161,14 +173,54 @@ async function Panel({ consulta }: { consulta: Promise<Consulta> }) {
         <button className="rounded border px-4 py-2 font-semibold">
           Aplicar
         </button>
-        <BotonActualizarPanel />
       </form>
-      <p role="status" className="text-sm">
-        Última actualización:{" "}
-        <time dateTime={datos.actualizadoEn}>
-          {fechaVisita.format(new Date(datos.actualizadoEn))}
-        </time>
-      </p>
+      <Suspense key={`resultados-${filtro}`} fallback={<EsqueletoEstadisticas />}>
+        <ResultadosEstadisticas slug={slug} meses={meses} />
+      </Suspense>
+    </>
+  );
+}
+
+async function ResultadosEstadisticas({
+  slug,
+  meses,
+}: {
+  slug: string;
+  meses: string;
+}) {
+  const respuesta = await solicitarVisitas<Estadisticas>(
+    `/visitas/administracion/${slug}/estadisticas?meses=${meses}`,
+  );
+  if (!respuesta.ok) {
+    if (respuesta.estado === 401) redirect("/ingresar?aviso=sesion");
+    return (
+      <div className="space-y-2 rounded-xl border border-rose-200 bg-rose-50 p-5">
+        <p role="alert">{respuesta.mensaje}</p>
+        {![403, 404].includes(respuesta.estado) && (
+          <BotonActualizarPanel reintentar />
+        )}
+      </div>
+    );
+  }
+  const datos = respuesta.datos;
+  const pico = datos.tendencia.reduce(
+    (mayor, periodo) => (periodo.total > mayor.total ? periodo : mayor),
+    { mes: "", total: 0 },
+  );
+  const primerMes = datos.tendencia[0]?.mes;
+  const ultimoMes = datos.tendencia.at(-1)?.mes;
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p role="status" className="text-sm">
+          Última actualización:{" "}
+          <time dateTime={datos.actualizadoEn}>
+            {fechaVisita.format(new Date(datos.actualizadoEn))}
+          </time>
+        </p>
+        <BotonActualizarPanel />
+      </div>
       <dl className="grid gap-3 sm:grid-cols-3">
         {[
           ["Visitas verificadas por QR", datos.totalVisitas],
@@ -189,6 +241,12 @@ async function Panel({ consulta }: { consulta: Promise<Consulta> }) {
       )}
       <section className="space-y-3 rounded-xl border bg-white p-5">
         <h2 className="text-xl font-bold">Visitas por mes</h2>
+        {primerMes && ultimoMes && (
+          <p className="text-sm text-stone-600">
+            {formatoMes.format(new Date(`${primerMes}-01T00:00:00Z`))} a{" "}
+            {formatoMes.format(new Date(`${ultimoMes}-01T00:00:00Z`))}
+          </p>
+        )}
         <ul className="space-y-2">
           {datos.tendencia.map(({ mes, total }) => (
             <li
@@ -267,6 +325,20 @@ async function Panel({ consulta }: { consulta: Promise<Consulta> }) {
   );
 }
 
+function EsqueletoEstadisticas() {
+  return (
+    <div role="status" className="space-y-4 motion-safe:animate-pulse">
+      <span className="sr-only">Cargando estadísticas</span>
+      <div aria-hidden="true" className="grid gap-3 sm:grid-cols-3">
+        {[1, 2, 3].map((tarjeta) => (
+          <div key={tarjeta} className="h-24 rounded-xl bg-teal-100" />
+        ))}
+      </div>
+      <div aria-hidden="true" className="h-40 rounded-xl bg-stone-200" />
+    </div>
+  );
+}
+
 export default function PaginaEstadisticas({
   searchParams,
 }: {
@@ -277,7 +349,7 @@ export default function PaginaEstadisticas({
       <h1 className="text-3xl font-bold text-teal-950">
         Estadísticas del atractivo
       </h1>
-      <Suspense fallback={<p role="status">Cargando estadísticas…</p>}>
+      <Suspense fallback={<EsqueletoEstadisticas />}>
         <Panel consulta={searchParams} />
       </Suspense>
     </main>
