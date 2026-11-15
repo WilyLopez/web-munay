@@ -6,12 +6,12 @@ import "leaflet/dist/leaflet.css";
 
 const lambayeque: LatLngTuple = [-6.53, -79.83];
 
-function MapaUbicacion({
+export function MapaUbicacion({
   inicial,
   elegir,
 }: {
   inicial: LatLngTuple;
-  elegir: (latitud: string, longitud: string) => void;
+  elegir?: (latitud: string, longitud: string) => void;
 }) {
   const lienzo = useRef<HTMLDivElement>(null);
   const [fallo, cambiarFallo] = useState(false);
@@ -19,23 +19,45 @@ function MapaUbicacion({
   useEffect(() => {
     let vigente = true;
     let mapa: Map | undefined;
-    let punto: CircleMarker | undefined;
     void import("leaflet")
       .then((modulo) => {
         if (!vigente || !lienzo.current) return;
         const biblioteca = modulo.default ?? modulo;
         mapa = biblioteca
           .map(lienzo.current, { scrollWheelZoom: false })
-          .setView(inicial, 12);
-        biblioteca
-          .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          .setView(inicial, elegir ? 12 : 16);
+        const teselas = biblioteca.tileLayer(
+          "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          {
             attribution:
               '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
             maxZoom: 19,
-          })
-          .addTo(mapa);
+          },
+        );
+        let cargadas = 0;
+        teselas.on("loading", () => {
+          cargadas = 0;
+        });
+        teselas.on("tileload", () => {
+          cargadas++;
+        });
+        teselas.on("load", () => {
+          if (vigente && cargadas === 0) cambiarFallo(true);
+        });
+        teselas.addTo(mapa);
+        let punto: CircleMarker | undefined = elegir
+          ? undefined
+          : biblioteca
+              .circleMarker(inicial, {
+                radius: 9,
+                color: "#fff",
+                weight: 3,
+                fillColor: "#134e4a",
+                fillOpacity: 1,
+              })
+              .addTo(mapa);
         mapa.on("click", ({ latlng }) => {
-          if (!mapa) return;
+          if (!mapa || !elegir) return;
           punto ??= biblioteca
             .circleMarker(latlng, { radius: 8, color: "#134e4a" })
             .addTo(mapa);
@@ -54,11 +76,19 @@ function MapaUbicacion({
 
   return fallo ? (
     <p role="alert">
-      No pudimos abrir el mapa. Puedes escribir las coordenadas.
+      No pudimos cargar el mapa.{" "}
+      {elegir
+        ? "Puedes escribir las coordenadas."
+        : "Puedes abrir la ruta o el mapa del catálogo."}
     </p>
   ) : (
     <div
       ref={lienzo}
+      aria-label={
+        elegir
+          ? "Mapa para elegir la ubicación"
+          : "Mapa con el punto de llegada"
+      }
       className="relative isolate h-64 rounded-xl border border-teal-900/15"
     />
   );
