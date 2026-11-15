@@ -1,3 +1,5 @@
+import type { InformacionDestino } from "./informacion";
+
 export const categorias = {
   HISTORIA: "Historia",
   CULTURA: "Cultura",
@@ -50,6 +52,8 @@ export type FichaDestino = {
     duracionMinutos: number | null;
     recomendacion: string | null;
     fuenteRutaUrl: string | null;
+    informacion?: InformacionDestino;
+    revisadoEn?: string | null;
   };
   tieneSesion: boolean;
 };

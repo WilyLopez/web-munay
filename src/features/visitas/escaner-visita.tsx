@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import type { IScannerControls } from "@zxing/browser";
 import { enlaceFicha } from "@/features/destinos/catalogo";
 import { prepararVisita, verificarVisita } from "./acciones";
+import { leerCodigoQr } from "./enlace-qr";
 import {
   fechaVisita,
   type Coordenadas,
@@ -32,9 +33,11 @@ type ResultadoEscaneo =
 
 export function EscanerVisita({
   destino,
+  codigoInicial,
   demoHabilitada = false,
 }: {
   destino?: string;
+  codigoInicial?: string;
   demoHabilitada?: boolean;
 }) {
   const visor = useRef<HTMLVideoElement>(null);
@@ -86,7 +89,13 @@ export function EscanerVisita({
     if (visor.current) visor.current.srcObject = null;
   }
 
-  async function comprobarQr(codigo: string) {
+  async function comprobarQr(valor: string) {
+    const codigo = leerCodigoQr(valor, window.location.origin);
+    if (!codigo) {
+      cambiarEstado("listo");
+      cambiarMensaje("El código no corresponde a un QR de visita de Munay.");
+      return;
+    }
     const intento = ++generacion.current;
     cambiarEstado("comprobando");
     cambiarMensaje("");
@@ -225,6 +234,39 @@ export function EscanerVisita({
             : "No pudimos abrir la cámara. Comprueba que esté disponible y vuelve a intentarlo.",
       );
     }
+  }
+
+  if (codigoInicial && !resultado && !preparacion) {
+    return (
+      <section className="space-y-4 rounded-3xl border border-teal-200 bg-teal-50 p-6">
+        <h2 className="font-serif text-2xl">Código de visita detectado</h2>
+        <p>
+          Comprueba el código para continuar con la verificación de tu
+          ubicación.
+        </p>
+        {mensaje && (
+          <p role="alert" className="text-sm text-rose-900">
+            {mensaje}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-4">
+          <button
+            type="button"
+            disabled={estado === "comprobando"}
+            className="rounded-lg bg-teal-950 px-4 py-2 text-white disabled:opacity-60"
+            onClick={() => void comprobarQr(codigoInicial)}
+          >
+            {estado === "comprobando" ? "Comprobando…" : "Comprobar código"}
+          </button>
+          <Link
+            href="/verificar-visita"
+            className="self-center font-semibold underline"
+          >
+            Escanear otro QR
+          </Link>
+        </div>
+      </section>
+    );
   }
 
   if (resultado?.modo === "demo") {

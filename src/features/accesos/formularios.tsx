@@ -5,9 +5,11 @@ import {
   startTransition,
   useActionState,
   useState,
+  useSyncExternalStore,
   type FormEvent,
   type ReactNode,
 } from "react";
+import { SelectorUbicacion } from "@/features/destinos/selector-ubicacion";
 import { categorias, provincias } from "@/features/destinos/catalogo";
 import {
   aceptarInvitacion,
@@ -26,6 +28,20 @@ import {
 const inicial = { mensaje: "", ok: false };
 const loginInvitacion = "/ingresar?volver=/invitacion-encargado";
 const claveInvitacion = "munay-invitacion-encargado";
+
+function leerInvitacion() {
+  const fragmento = window.location.hash.slice(1);
+  try {
+    return fragmento || sessionStorage.getItem(claveInvitacion) || "";
+  } catch {
+    return fragmento;
+  }
+}
+
+function observarInvitacion(actualizar: () => void) {
+  window.addEventListener("hashchange", actualizar);
+  return () => window.removeEventListener("hashchange", actualizar);
+}
 
 function enviarFormulario(
   evento: FormEvent<HTMLFormElement>,
@@ -79,6 +95,87 @@ function SelectorDestino({ destinos }: { destinos: OpcionDestino[] }) {
   );
 }
 
+function DatosNuevoDestino({
+  incluirDistrito = false,
+}: {
+  incluirDistrito?: boolean;
+}) {
+  return (
+    <div className="grid gap-3 rounded-xl bg-[#f4f5ef] p-4 sm:grid-cols-2">
+      <Campo etiqueta="Nombre del atractivo">
+        <input
+          name="nombre"
+          className={campo}
+          minLength={3}
+          maxLength={120}
+          required
+        />
+      </Campo>
+      <Campo etiqueta="Ubicación o dirección">
+        <input
+          name="ubicacion"
+          className={campo}
+          minLength={4}
+          maxLength={180}
+          required
+        />
+      </Campo>
+      {incluirDistrito && (
+        <Campo etiqueta="Distrito">
+          <input
+            name="distrito"
+            className={campo}
+            minLength={2}
+            maxLength={100}
+            required
+          />
+        </Campo>
+      )}
+      <Campo etiqueta="Provincia">
+        <select name="provincia" className={campo} required defaultValue="">
+          <option value="" disabled>
+            Selecciona una provincia
+          </option>
+          {Object.entries(provincias).map(([id, nombre]) => (
+            <option key={id} value={id}>
+              {nombre}
+            </option>
+          ))}
+        </select>
+      </Campo>
+      <Campo etiqueta="Tipo de experiencia">
+        <select name="categoria" className={campo} required defaultValue="">
+          <option value="" disabled>
+            Selecciona una categoría
+          </option>
+          {Object.entries(categorias).map(([id, nombre]) => (
+            <option key={id} value={id}>
+              {nombre}
+            </option>
+          ))}
+        </select>
+      </Campo>
+      <SelectorUbicacion />
+      <p className="text-xs text-[#4d665b] sm:col-span-2">
+        Usa las coordenadas del punto donde se recibirá a los visitantes. Munay
+        las utilizará en el mapa y en la verificación de visitas.
+      </p>
+      <div className="sm:col-span-2">
+        <Campo etiqueta="Descripción pública">
+          <textarea
+            name="descripcion"
+            rows={3}
+            minLength={20}
+            maxLength={1000}
+            className={campo}
+            required
+          />
+        </Campo>
+      </div>
+    </div>
+  );
+}
+
 export function FormularioSolicitud({
   destinos,
 }: {
@@ -116,96 +213,7 @@ export function FormularioSolicitud({
           ))}
         </div>
       </fieldset>
-      {nuevo ? (
-        <div className="grid gap-3 rounded-xl bg-[#f4f5ef] p-4 sm:grid-cols-2">
-          <Campo etiqueta="Nombre del atractivo">
-            <input
-              name="nombre"
-              className={campo}
-              minLength={3}
-              maxLength={120}
-              required
-            />
-          </Campo>
-          <Campo etiqueta="Ubicación o dirección">
-            <input
-              name="ubicacion"
-              className={campo}
-              minLength={4}
-              maxLength={180}
-              required
-            />
-          </Campo>
-          <Campo etiqueta="Provincia">
-            <select name="provincia" className={campo} required defaultValue="">
-              <option value="" disabled>
-                Selecciona una provincia
-              </option>
-              {Object.entries(provincias).map(([id, nombre]) => (
-                <option key={id} value={id}>
-                  {nombre}
-                </option>
-              ))}
-            </select>
-          </Campo>
-          <Campo etiqueta="Tipo de experiencia">
-            <select name="categoria" className={campo} required defaultValue="">
-              <option value="" disabled>
-                Selecciona una categoría
-              </option>
-              {Object.entries(categorias).map(([id, nombre]) => (
-                <option key={id} value={id}>
-                  {nombre}
-                </option>
-              ))}
-            </select>
-          </Campo>
-          <Campo etiqueta="Latitud">
-            <input
-              name="latitud"
-              type="number"
-              inputMode="decimal"
-              step="any"
-              min={-90}
-              max={90}
-              placeholder="-6.77"
-              className={campo}
-              required
-            />
-          </Campo>
-          <Campo etiqueta="Longitud">
-            <input
-              name="longitud"
-              type="number"
-              inputMode="decimal"
-              step="any"
-              min={-180}
-              max={180}
-              placeholder="-79.84"
-              className={campo}
-              required
-            />
-          </Campo>
-          <p className="text-xs text-[#4d665b] sm:col-span-2">
-            Usa las coordenadas del punto donde se recibirá a los visitantes.
-            Munay las utilizará en el mapa y en la verificación de visitas.
-          </p>
-          <div className="sm:col-span-2">
-            <Campo etiqueta="Descripción pública">
-              <textarea
-                name="descripcion"
-                rows={3}
-                minLength={20}
-                maxLength={1000}
-                className={campo}
-                required
-              />
-            </Campo>
-          </div>
-        </div>
-      ) : (
-        <SelectorDestino destinos={destinos} />
-      )}
+      {nuevo ? <DatosNuevoDestino /> : <SelectorDestino destinos={destinos} />}
       <Campo etiqueta="¿Cuál es tu vínculo con el atractivo?">
         <textarea
           name="motivo"
@@ -248,6 +256,7 @@ export function FormularioInvitacion({
     FormData
   >(enviarInvitacion, inicial);
   const [copiado, cambiarCopia] = useState(false);
+  const [nuevo, cambiarNuevo] = useState(destinos.length === 0);
   return (
     <form
       action={accion}
@@ -266,7 +275,27 @@ export function FormularioInvitacion({
           className={campo}
         />
       </Campo>
-      <SelectorDestino destinos={destinos} />
+      <Campo etiqueta="Tipo de invitación">
+        <select
+          className={campo}
+          name="tipo"
+          value={nuevo ? "nuevo" : "existente"}
+          onChange={(evento) => cambiarNuevo(evento.target.value === "nuevo")}
+        >
+          <option value="existente" disabled={!destinos.length}>
+            Gestionar un destino existente
+          </option>
+          <option value="nuevo">Registrar un destino nuevo</option>
+        </select>
+      </Campo>
+      {nuevo ? (
+        <p className="text-sm">
+          El encargado completará los datos iniciales y recibirá el destino como
+          borrador.
+        </p>
+      ) : (
+        <SelectorDestino destinos={destinos} />
+      )}
       <button className={principal} disabled={pendiente}>
         {pendiente ? "Creando invitación…" : "Invitar encargado"}
       </button>
@@ -327,7 +356,7 @@ export function DecisionAcceso({ fila }: { fila: AccesoEncargado }) {
               className={principal}
               onClick={() => elegir("aprobar")}
             >
-              {fila.propuesta ? "Aprobar y publicar" : "Aprobar acceso"}
+              {fila.propuesta ? "Aprobar y crear borrador" : "Aprobar acceso"}
             </button>
             <button
               type="button"
@@ -352,7 +381,7 @@ export function DecisionAcceso({ fila }: { fila: AccesoEncargado }) {
           ? "El enlace dejará de funcionar inmediatamente."
           : decision === "aprobar"
             ? fila.propuesta
-              ? "Se publicará el nuevo atractivo y la cuenta recibirá acceso como Admin."
+              ? "Se creará un borrador y la cuenta recibirá acceso como Admin."
               : "La cuenta recibirá acceso como Admin al atractivo seleccionado."
             : "La persona podrá leer tu observación en su solicitud."}
       </p>
@@ -391,6 +420,12 @@ export function AceptarInvitacion({ autenticado }: { autenticado: boolean }) {
     aceptarInvitacion,
     inicial,
   );
+  const invitacion = useSyncExternalStore(
+    observarInvitacion,
+    leerInvitacion,
+    () => "",
+  );
+  const nuevo = invitacion.endsWith(".nuevo");
   const token = () => {
     const fragmento = window.location.hash.slice(1);
     try {
@@ -410,7 +445,7 @@ export function AceptarInvitacion({ autenticado }: { autenticado: boolean }) {
         >
           Iniciar sesión
         </Link>
-        <Link href="/registro" className={secundario}>
+        <Link href="/registro" className={secundario} onClick={() => token()}>
           Crear cuenta
         </Link>
       </div>
@@ -418,13 +453,18 @@ export function AceptarInvitacion({ autenticado }: { autenticado: boolean }) {
   return (
     <form
       action={(datos) => {
-        datos.set("token", token());
+        datos.set("token", token().split(".")[0]);
         accion(datos);
       }}
       className="space-y-4"
     >
-      <button className={principal} disabled={pendiente}>
-        {pendiente ? "Activando acceso…" : "Aceptar invitación"}
+      {nuevo && <DatosNuevoDestino incluirDistrito />}
+      <button className={principal} disabled={pendiente || !invitacion}>
+        {pendiente
+          ? "Activando acceso…"
+          : nuevo
+            ? "Aceptar y crear borrador"
+            : "Aceptar invitación"}
       </button>
       <Mensaje estado={estado} />
     </form>

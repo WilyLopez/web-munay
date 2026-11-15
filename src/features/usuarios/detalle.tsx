@@ -375,12 +375,12 @@ function Asignaciones({
           Este administrador aún no tiene destinos asignados.
         </p>
       )}
-      {usuario.activo && opciones.isError && (
+      {usuario.activo && usuario.destinos.length === 0 && opciones.isError && (
         <button className={boton} onClick={() => opciones.refetch()}>
           Reintentar carga de destinos
         </button>
       )}
-      {usuario.activo && Boolean(disponibles?.length) && (
+      {usuario.activo && usuario.destinos.length === 0 && Boolean(disponibles?.length) && (
         <form
           key={usuario.destinos.map(({ id }) => id).join(",")}
           className="flex flex-wrap items-end gap-2"

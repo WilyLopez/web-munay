@@ -48,11 +48,7 @@ async function Gestion({
           72 horas.
         </p>
         {destinos.ok ? (
-          destinos.datos.length ? (
-            <FormularioInvitacion destinos={destinos.datos} />
-          ) : (
-            <p>No hay atractivos disponibles para invitar a un encargado.</p>
-          )
+          <FormularioInvitacion destinos={destinos.datos} />
         ) : (
           <div className="space-y-2">
             <p role="alert">{destinos.mensaje}</p>

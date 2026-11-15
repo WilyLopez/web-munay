@@ -5,13 +5,23 @@ import { Suspense } from "react";
 import { MenuMovilVisitante } from "@/features/navegacion/menu-movil-visitante";
 import { solicitarVisitas } from "@/features/visitas/api";
 import { EscanerVisita } from "@/features/visitas/escaner-visita";
+import { codigoQrVisita, rutaQrVisita } from "@/features/visitas/enlace-qr";
 
-async function Contenido({ destino }: { destino?: string }) {
+type Consulta = { destino?: string; codigo?: string };
+
+async function Escaneo({ consulta }: { consulta: Promise<Consulta> }) {
   await connection();
+  const { destino, codigo } = await consulta;
+  const id = typeof codigo === "string" ? codigo : undefined;
+  const ruta = id ? rutaQrVisita(id) : null;
+  const codigoInicial = codigoQrVisita(id);
   const sesion = await solicitarVisitas<{ perfil: { rol: string } }>(
     "/autenticacion/sesion",
   );
-  if (!sesion.ok && sesion.estado === 401) redirect("/ingresar?aviso=sesion");
+  if (!sesion.ok && sesion.estado === 401)
+    redirect(
+      `/ingresar?${new URLSearchParams({ aviso: "sesion", ...(ruta && { volver: ruta }) })}`,
+    );
   if (!sesion.ok) return <p role="alert">{sesion.mensaje}</p>;
   if (sesion.datos.perfil.rol !== "TURISTA") {
     return (
@@ -23,7 +33,8 @@ async function Contenido({ destino }: { destino?: string }) {
   return (
     <>
       <EscanerVisita
-        destino={destino}
+        destino={typeof destino === "string" ? destino : undefined}
+        codigoInicial={codigoInicial ?? undefined}
         demoHabilitada={process.env.MUNAY_DEMO_ESCANEO === "true"}
       />
       <MenuMovilVisitante />
@@ -31,21 +42,10 @@ async function Contenido({ destino }: { destino?: string }) {
   );
 }
 
-async function Escaneo({
-  consulta,
-}: {
-  consulta: Promise<{ destino?: string }>;
-}) {
-  const { destino } = await consulta;
-  return (
-    <Contenido destino={typeof destino === "string" ? destino : undefined} />
-  );
-}
-
 export default function PaginaVerificarVisita({
   searchParams,
 }: {
-  searchParams: Promise<{ destino?: string }>;
+  searchParams: Promise<Consulta>;
 }) {
   return (
     <main className="mx-auto max-w-2xl space-y-5 py-8">
@@ -54,7 +54,8 @@ export default function PaginaVerificarVisita({
       </Link>
       <h1 className="text-3xl font-bold text-teal-950">Verificar visita</h1>
       <p>
-        Activa la cámara y apunta al QR que muestra el encargado del destino.
+        Usa el código QR que muestra el encargado del destino para verificar tu
+        visita.
       </p>
       <Suspense fallback={<p role="status">Comprobando sesión…</p>}>
         <Escaneo consulta={searchParams} />

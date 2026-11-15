@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import {
+  nombreCookieSesion,
   obtenerConfiguracionSupabase,
   opcionesCookies,
 } from "@/features/autenticacion/supabase/configuracion";
@@ -9,7 +10,11 @@ export async function proxy(peticion: NextRequest) {
   let respuesta = NextResponse.next({ request: peticion });
   const todasLasCookies = peticion.cookies.getAll();
   const tieneCookiesAuth = todasLasCookies.some(
-    (c) => c.name.startsWith("sb-") || c.name.includes("auth-token"),
+    (c) =>
+      c.name === nombreCookieSesion ||
+      c.name.startsWith(`${nombreCookieSesion}.`) ||
+      c.name.startsWith("sb-") ||
+      c.name.includes("auth-token"),
   );
 
   if (tieneCookiesAuth) {

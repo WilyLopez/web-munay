@@ -30,7 +30,7 @@ export function CarruselDestinos({ destinos }: { destinos: DestinoVisual[] }) {
           key={destino.slug}
           href={enlaceFicha(destino.slug)}
           className="entrada-portada group relative block aspect-[5/4] overflow-hidden rounded-t-[3rem] rounded-b-3xl bg-[#193b33] focus-visible:outline-2 focus-visible:outline-offset-4 sm:aspect-[4/3]"
-          aria-label={`Ver ficha de ${destino.nombre}`}
+          aria-label={`Ver detalles de ${destino.nombre}`}
         >
           <Image
             src={destino.imagenUrl}
@@ -49,7 +49,7 @@ export function CarruselDestinos({ destinos }: { destinos: DestinoVisual[] }) {
               {destino.nombre}
             </p>
             <span className="mt-2 inline-block text-sm font-semibold underline underline-offset-4">
-              Ver ficha <span aria-hidden="true">↗</span>
+              Ver detalles <span aria-hidden="true">↗</span>
             </span>
           </div>
         </Link>

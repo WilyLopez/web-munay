@@ -8,30 +8,33 @@ type Estado = { mensaje: string; ok: boolean; enlace?: string };
 const leer = (datos: FormData, campo: string) =>
   String(datos.get(campo) ?? "").trim();
 
+function leerPropuesta(datos: FormData) {
+  const coordenada = (campo: string) => {
+    const valor = leer(datos, campo);
+    return valor ? Number(valor.replace(",", ".")) : null;
+  };
+  return {
+    nombre: leer(datos, "nombre"),
+    descripcion: leer(datos, "descripcion"),
+    ubicacion: leer(datos, "ubicacion"),
+    distrito: leer(datos, "distrito"),
+    categoria: leer(datos, "categoria"),
+    provincia: leer(datos, "provincia"),
+    latitud: coordenada("latitud"),
+    longitud: coordenada("longitud"),
+  };
+}
+
 export async function enviarSolicitud(
   _estado: Estado,
   datos: FormData,
 ): Promise<Estado> {
   const nuevo = leer(datos, "tipo") === "nuevo";
-  const valorCoordenada = (campo: string) => {
-    const valor = leer(datos, campo);
-    return valor ? Number(valor.replace(",", ".")) : null;
-  };
   const resultado = await solicitarVisitas("/gestion-accesos/solicitudes", {
     destinoId: nuevo ? null : leer(datos, "destinoId"),
     motivo: leer(datos, "motivo"),
     contacto: leer(datos, "contacto"),
-    ...(nuevo && {
-      propuesta: {
-        nombre: leer(datos, "nombre"),
-        descripcion: leer(datos, "descripcion"),
-        ubicacion: leer(datos, "ubicacion"),
-        categoria: leer(datos, "categoria"),
-        provincia: leer(datos, "provincia"),
-        latitud: valorCoordenada("latitud"),
-        longitud: valorCoordenada("longitud"),
-      },
-    }),
+    ...(nuevo && { propuesta: leerPropuesta(datos) }),
   });
   if (!resultado.ok) return { mensaje: resultado.mensaje, ok: false };
   revalidatePath("/solicitar-acceso");
@@ -52,6 +55,7 @@ export async function enviarInvitacion(
   }>("/gestion-accesos/invitaciones", {
     correo: leer(datos, "correo"),
     destinoId: leer(datos, "destinoId"),
+    nuevo: leer(datos, "tipo") === "nuevo",
   });
   if (!resultado.ok) return { mensaje: resultado.mensaje, ok: false };
   revalidatePath("/superadmin/accesos");
@@ -91,6 +95,7 @@ export async function aceptarInvitacion(
 ): Promise<Estado> {
   const resultado = await solicitarVisitas("/gestion-accesos/aceptar", {
     token: leer(datos, "token"),
+    ...(datos.has("nombre") && { propuesta: leerPropuesta(datos) }),
   });
   if (!resultado.ok) return { mensaje: resultado.mensaje, ok: false };
   revalidatePath("/", "layout");

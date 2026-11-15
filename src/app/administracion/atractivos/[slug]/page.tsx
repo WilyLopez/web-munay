@@ -27,12 +27,14 @@ async function Editar({
         <h1 className="font-serif text-4xl tracking-tight">
           {respuesta.datos.nombre}
         </h1>
-        <Link
-          href={enlaceFicha(slug)}
-          className="text-sm font-semibold underline underline-offset-4"
-        >
-          Ver ficha pública
-        </Link>
+        {respuesta.datos.estadoEditorial === "publicada" && (
+          <Link
+            href={enlaceFicha(slug)}
+            className="text-sm font-semibold underline underline-offset-4"
+          >
+            Ver detalles públicos
+          </Link>
+        )}
       </div>
       <FormularioFicha key={slug} ficha={respuesta.datos} slug={slug} />
     </>
