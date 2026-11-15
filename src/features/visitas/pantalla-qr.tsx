@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { consultarHistorial, sincronizarPantalla } from "./acciones";
+import { generarEnlaceQr } from "./enlace-qr";
 import {
   fechaVisita,
   type HistorialVisitas,
@@ -17,11 +18,15 @@ function CodigoQr({ valor }: { valor: string }) {
 
   useEffect(() => {
     if (lienzo.current) {
-      void QRCode.toCanvas(lienzo.current, valor, {
-        width: 320,
-        margin: 4,
-        errorCorrectionLevel: "M",
-      }).catch(() => cambiarFallo(true));
+      void QRCode.toCanvas(
+        lienzo.current,
+        generarEnlaceQr(valor, window.location.origin),
+        {
+          width: 320,
+          margin: 4,
+          errorCorrectionLevel: "M",
+        },
+      ).catch(() => cambiarFallo(true));
     }
   }, [valor]);
 

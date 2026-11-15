@@ -11,11 +11,16 @@ import {
 import { BotonActualizarPanel } from "@/features/visitas/boton-actualizar-panel";
 import { solicitarVisitas } from "@/features/visitas/api";
 import type { DestinoVisita } from "@/features/visitas/tipos";
+import {
+  estadosFicha,
+  type EstadoFicha,
+} from "@/features/destinos/informacion";
 
 type Atractivo = DestinoVisita & {
   ubicacion: string;
   provincia: keyof typeof provincias;
   categoria: keyof typeof categorias;
+  estadoEditorial: EstadoFicha;
   _count: { visitas: number; resenas: number };
 };
 
@@ -115,7 +120,16 @@ async function Atractivos({
       {atractivos.length ? (
         <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {atractivos.map(
-            ({ id, nombre, slug, ubicacion, provincia, categoria, _count }) => {
+            ({
+              id,
+              nombre,
+              slug,
+              ubicacion,
+              provincia,
+              categoria,
+              estadoEditorial,
+              _count,
+            }) => {
               const consulta = new URLSearchParams({ destino: slug });
               return (
                 <li
@@ -127,6 +141,9 @@ async function Atractivos({
                       {categorias[categoria]} · {provincias[provincia]}
                     </p>
                     <h2 className="font-serif text-2xl">{nombre}</h2>
+                    <p className="w-fit rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold">
+                      {estadosFicha[estadoEditorial]}
+                    </p>
                     <p className="text-sm text-[#4d665b]">{ubicacion}</p>
                     <p className="text-sm">
                       {_count.visitas} visitas verificadas · {_count.resenas}{" "}
@@ -158,12 +175,14 @@ async function Atractivos({
                     >
                       Ver reseñas
                     </Link>
-                    <Link
-                      href={enlaceFicha(slug)}
-                      className="self-center underline underline-offset-4"
-                    >
-                      Ficha pública
-                    </Link>
+                    {estadoEditorial === "publicada" && (
+                      <Link
+                        href={enlaceFicha(slug)}
+                        className="self-center underline underline-offset-4"
+                      >
+                        Ver detalles públicos
+                      </Link>
+                    )}
                   </div>
                 </li>
               );

@@ -9,6 +9,7 @@ import { solicitarDestinos } from "@/features/destinos/api";
 import {
   categorias,
   enlaceFicha,
+  provincias,
   type FichaDestino,
 } from "@/features/destinos/catalogo";
 import { FavoritoDestino } from "@/features/destinos/favorito-destino";
@@ -21,6 +22,12 @@ import { FotoFicha } from "@/features/destinos/foto-ficha";
 import { DisponibilidadVisita } from "@/features/destinos/disponibilidad-visita";
 import { ErrorDestinos } from "@/features/destinos/error-destinos";
 import { EsqueletoFicha } from "@/features/destinos/esqueletos";
+import {
+  AvisoDestino,
+  ContactoDestino,
+  DatosVisitaDestino,
+  HistoriaDestino,
+} from "@/features/destinos/contenido-destino";
 
 const moneda = new Intl.NumberFormat("es-PE", {
   style: "currency",
@@ -69,11 +76,12 @@ async function ContenidoFicha({ params, searchParams }: Props) {
   }
 
   const { destino, tieneSesion } = (await respuesta.json()) as FichaDestino;
+  const informacion = destino.informacion ?? {};
   const mapa = new URLSearchParams({ vista: "mapa", destino: destino.id });
   const indicaciones = new URLSearchParams({
     api: "1",
     origin: "Chiclayo, Perú",
-    destination: `${destino.latitud},${destino.longitud}`,
+    destination: `${informacion.latitudIngreso ?? destino.latitud},${informacion.longitudIngreso ?? destino.longitud}`,
     travelmode: "driving",
   });
 
@@ -87,50 +95,98 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           Volver a explorar
         </Link>
       </nav>
-      <header className="space-y-3">
-        <p className="font-semibold text-teal-800">
-          {categorias[destino.categoria]}
-        </p>
-        <h1 className="text-4xl font-bold tracking-tight text-teal-950 sm:text-5xl">
-          {destino.nombre}
-        </h1>
-        <p className="text-stone-700">
-          {destino.ubicacion} ·{" "}
-          {destino.calificacionPromedio === null
-            ? "Sin calificaciones"
-            : `${destino.calificacionPromedio} de 5`}
-          {" · "}
-          {destino.totalResenas} reseñas
-        </p>
-      </header>
+      <FotoFicha
+        key={destino.slug}
+        url={destino.imagenUrl}
+        adicionales={destino.fotosAdicionales}
+        nombre={destino.nombre}
+        verificado={destino.verificado}
+        informacion={informacion}
+      >
+        <header className="entrada-portada max-w-3xl space-y-3">
+          <p className="text-sm font-semibold text-teal-100">
+            {[
+              categorias[destino.categoria],
+              informacion.distrito,
+              provincias[destino.provincia],
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          <h1 className="font-serif text-4xl leading-tight tracking-tight sm:text-6xl">
+            {destino.nombre}
+          </h1>
+          <p className="max-w-prose whitespace-pre-line text-sm leading-relaxed text-white/95 sm:text-base">
+            {destino.descripcion}
+          </p>
+          <a
+            href="#resenas-del-destino"
+            className="inline-flex rounded-full border border-white/50 bg-black/25 px-4 py-2 text-sm font-semibold transition-colors hover:bg-white hover:text-teal-950"
+          >
+            {destino.calificacionPromedio !== null &&
+              `★ ${destino.calificacionPromedio} de 5 · `}
+            {destino.totalResenas}{" "}
+            {destino.totalResenas === 1 ? "reseña" : "reseñas"}
+          </a>
+        </header>
+      </FotoFicha>
+      <nav
+        aria-label="Secciones del destino"
+        className="flex flex-wrap gap-2 border-b border-stone-200 pb-4 text-sm font-semibold"
+      >
+        <a
+          href="#planifica"
+          className="rounded-full bg-teal-50 px-4 py-2 hover:bg-teal-100"
+        >
+          Planea tu visita
+        </a>
+        <a
+          href="#como-llegar"
+          className="rounded-full bg-teal-50 px-4 py-2 hover:bg-teal-100"
+        >
+          Cómo llegar
+        </a>
+        <a
+          href="#resenas-del-destino"
+          className="rounded-full bg-teal-50 px-4 py-2 hover:bg-teal-100"
+        >
+          Reseñas
+        </a>
+      </nav>
+      <AvisoDestino informacion={informacion} />
       <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="space-y-6">
-          <FotoFicha
-            key={destino.slug}
-            url={destino.imagenUrl}
-            adicionales={destino.fotosAdicionales}
-            nombre={destino.nombre}
-            verificado={destino.verificado}
-          />
-          <section className="space-y-2">
-            <h2 className="text-2xl font-bold">Sobre el destino</h2>
-            <p className="leading-relaxed text-stone-700">
-              {destino.descripcion}
-            </p>
-          </section>
+          <HistoriaDestino informacion={informacion} />
           <section
             id="como-llegar"
-            className="space-y-3 rounded-3xl border border-stone-200 bg-white p-6"
+            className="scroll-mt-28 space-y-3 rounded-3xl border border-stone-200 bg-white p-6"
           >
             <h2 className="text-2xl font-bold">Cómo llegar desde Chiclayo</h2>
+            <p className="font-semibold">{destino.ubicacion}</p>
             <p className="text-stone-700">
               {destino.rutaDesdeChiclayo ??
                 "Los detalles del trayecto están por confirmar."}
             </p>
-            {destino.distanciaKm != null && destino.duracionMinutos != null && (
+            {(destino.distanciaKm != null ||
+              destino.duracionMinutos != null) && (
               <p className="font-semibold text-teal-900">
-                {destino.distanciaKm} km · {destino.duracionMinutos} min aprox.
-                en auto
+                {[
+                  destino.distanciaKm != null && `${destino.distanciaKm} km`,
+                  destino.duracionMinutos != null &&
+                    `${destino.duracionMinutos} min aprox.`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
+            )}
+            {informacion.transporte && (
+              <p className="whitespace-pre-line text-stone-700">
+                <strong>Transporte</strong> {informacion.transporte}
+              </p>
+            )}
+            {informacion.estacionamiento && (
+              <p className="whitespace-pre-line text-stone-700">
+                <strong>Estacionamiento</strong> {informacion.estacionamiento}
               </p>
             )}
             <div className="flex flex-wrap items-center gap-4">
@@ -154,6 +210,11 @@ async function ContenidoFicha({ params, searchParams }: Props) {
                   Fuente del trayecto
                 </a>
               )}
+              {informacion.mapaUrl && (
+                <a href={informacion.mapaUrl} className="text-sm underline">
+                  Ubicación oficial
+                </a>
+              )}
             </div>
           </section>
           {destino.recomendacion && (
@@ -164,8 +225,12 @@ async function ContenidoFicha({ params, searchParams }: Props) {
               <p className="text-stone-700">{destino.recomendacion}</p>
             </aside>
           )}
+          <ContactoDestino informacion={informacion} />
         </div>
-        <section className="space-y-5 self-start rounded-3xl border border-stone-200 bg-white p-6">
+        <section
+          id="planifica"
+          className="scroll-mt-28 space-y-5 self-start rounded-3xl border border-stone-200 bg-white p-6"
+        >
           <h2 className="text-2xl font-bold">Planea tu visita</h2>
           <dl className="space-y-3 text-sm">
             <div>
@@ -188,11 +253,26 @@ async function ContenidoFicha({ params, searchParams }: Props) {
                   : moneda.format(destino.tarifaEstudiantes)}
               </dd>
             </div>
+            <DatosVisitaDestino informacion={informacion} />
           </dl>
           <p className="text-sm text-stone-600">
             Los horarios y las tarifas son referenciales y pueden cambiar.
           </p>
-          <DisponibilidadVisita dias={destino.diasAtencion ?? []} />
+          {informacion.condicion !== "cerrado" && informacion.condicion !== "restringido" && (
+            <DisponibilidadVisita dias={destino.diasAtencion ?? []} />
+          )}
+          {destino.revisadoEn && (
+            <p className="text-sm text-stone-600">
+              Información revisada el{" "}
+              <time dateTime={destino.revisadoEn}>
+                {new Intl.DateTimeFormat("es-PE", {
+                  dateStyle: "medium",
+                  timeZone: "America/Lima",
+                }).format(new Date(destino.revisadoEn))}
+              </time>
+              .
+            </p>
+          )}
           <div className="flex flex-wrap items-center gap-4 border-t border-stone-200 pt-4">
             <a
               className="rounded-full bg-teal-950 px-5 py-3 font-semibold text-white"
@@ -213,14 +293,16 @@ async function ContenidoFicha({ params, searchParams }: Props) {
       <Suspense fallback={<EsqueletoSentimiento />}>
         <TarjetaSentimiento slug={slug} />
       </Suspense>
-      <Suspense fallback={<p role="status">Cargando reseñas…</p>}>
-        <Opiniones
-          regreso={regreso}
-          slug={slug}
-          orden={typeof orden === "string" ? orden : undefined}
-          pagina={paginaResenas(pagina)}
-        />
-      </Suspense>
+      <div id="resenas-del-destino" className="scroll-mt-28">
+        <Suspense fallback={<p role="status">Cargando reseñas…</p>}>
+          <Opiniones
+            regreso={regreso}
+            slug={slug}
+            orden={typeof orden === "string" ? orden : undefined}
+            pagina={paginaResenas(pagina)}
+          />
+        </Suspense>
+      </div>
       <Link href="/resenas" className="font-semibold underline">
         Ver reseñas de todos los atractivos
       </Link>

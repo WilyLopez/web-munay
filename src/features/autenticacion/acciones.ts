@@ -1,5 +1,7 @@
 "use server";
 
+import { regresoQrVisita } from "@/features/visitas/enlace-qr";
+
 import { destinoSesion } from "./destino-sesion";
 
 import { redirect } from "next/navigation";
@@ -163,7 +165,14 @@ export async function ingresar(
   }
 
   const volver = leerCampo(datos, "volver");
-  redirect(destino !== "/superadmin" && ["/solicitar-acceso", "/invitacion-encargado"].includes(volver) ? volver : destino);
+  const verificacion = destino === "/destinos" ? regresoQrVisita(volver) : null;
+  if (verificacion) redirect(verificacion);
+  redirect(
+    destino !== "/superadmin" &&
+      ["/solicitar-acceso", "/invitacion-encargado"].includes(volver)
+      ? volver
+      : destino,
+  );
 }
 
 export async function confirmarCorreo(datos: FormData): Promise<void> {

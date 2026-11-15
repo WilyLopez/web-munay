@@ -17,6 +17,7 @@ export function Sidebar({ global }: { global: boolean }) {
         ["/superadmin", "Gestión de portada"],
         ["/superadmin/usuarios", "Usuarios"],
         ["/superadmin/accesos", "Accesos de encargados"],
+        ["/superadmin/destinos", "Revisión de destinos"],
         ["/superadmin/reportes", "Reportes"],
         ["/superadmin/blockchain", "Registros blockchain"],
         ...enlacesOperacion,
@@ -47,7 +48,10 @@ export function Sidebar({ global }: { global: boolean }) {
               ruta === href ||
               (href === "/administracion" &&
                 ruta.startsWith("/administracion/atractivos/")) ||
-              (href === "/superadmin/usuarios" && ruta.startsWith(href + "/"))
+              (["/superadmin/usuarios", "/superadmin/destinos"].includes(
+                href,
+              ) &&
+                ruta.startsWith(href + "/"))
                 ? "page"
                 : undefined
             }
