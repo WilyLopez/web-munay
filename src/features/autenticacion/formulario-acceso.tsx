@@ -504,6 +504,14 @@ export function FormularioAcceso({
                 <span>{modoRegistro ? "Crear cuenta" : "Iniciar sesión"}</span>
               )}
             </button>
+            {!modoRegistro && (
+              <Link
+                href="/autenticacion/recuperar"
+                className={`${estiloEnlace} inline-block text-sm`}
+              >
+                Olvidé mi contraseña
+              </Link>
+            )}
           </form>
         </div>
 

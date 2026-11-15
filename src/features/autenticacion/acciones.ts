@@ -1,5 +1,7 @@
 "use server";
 
+import { destinoSesion } from "./destino-sesion";
+
 import { redirect } from "next/navigation";
 import { solicitarSesion } from "./sesion";
 import {
@@ -108,6 +110,7 @@ export async function ingresar(
     return { errores };
   }
 
+  let destino: string | null = null;
   try {
     const supabase = await crearSupabaseServidor();
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -145,6 +148,12 @@ export async function ingresar(
               : ERROR_SERVICIO,
         };
       }
+      const sesion = (await respuesta.json()) as { perfil?: { rol?: unknown } };
+      destino = destinoSesion(sesion.perfil?.rol);
+      if (!destino) {
+        await borrarCookiesSesion();
+        return { mensaje: ERROR_SERVICIO };
+      }
     } catch {
       await borrarCookiesSesion();
       return { mensaje: ERROR_SERVICIO };
@@ -153,7 +162,7 @@ export async function ingresar(
     return { mensaje: ERROR_SERVICIO };
   }
 
-  redirect("/destinos");
+  redirect(destino);
 }
 
 export async function confirmarCorreo(datos: FormData): Promise<void> {

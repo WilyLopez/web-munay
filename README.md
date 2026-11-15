@@ -39,6 +39,10 @@ Mantén habilitada la confirmación de correo. Para probar con el servicio de co
 
 [Integración SMTP de Resend](https://resend.com/docs/send-with-supabase-smtp) · [Configuración SMTP de Supabase](https://supabase.com/docs/guides/auth/auth-smtp)
 
+### Recuperación de contraseña
+
+En **Authentication → Emails → Reset password**, guarda el asunto **Restablece tu contraseña en Munay** y pega el contenido de [restablecer-contrasena.html](supabase/plantillas/restablecer-contrasena.html). La URL de la plantilla usa la **Site URL** del frontend sin barra final. El botón abre el formulario de Munay, que valida el enlace temporal al guardar la nueva contraseña.
+
 ## Vista de Google Maps
 
 Configura `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` en `.env` con una clave de navegador autorizada para Maps JavaScript API y para el origen de Munay. Google Cloud requiere habilitar la API y configurar facturación. Opcionalmente, configura `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` con el identificador del mapa. Reinicia el servidor de desarrollo o vuelve a compilar si usas el servidor de producción.
