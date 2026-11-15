@@ -58,7 +58,13 @@ export function ReportarResena({ id }: { id: string }) {
   );
 }
 
-export function RevisarReporte({ id }: { id: string }) {
+export function RevisarReporte({
+  id,
+  alertaAutomatica,
+}: {
+  id: string;
+  alertaAutomatica?: boolean;
+}) {
   const [decision, cambiar] = useState<"mantener" | "retirar" | null>(null);
   const [motivo, cambiarMotivo] = useState("");
   const [estado, revisar, pendiente] = useActionState(
@@ -75,7 +81,9 @@ export function RevisarReporte({ id }: { id: string }) {
       <p className="text-sm">
         {retirar
           ? "¿Retirar esta reseña? Dejará de aparecer en el sitio público y en las calificaciones. Los reportes pendientes de esta reseña se cerrarán."
-          : "¿Mantener la reseña publicada? Este reporte pasará al historial."}
+          : alertaAutomatica
+            ? "¿Aprobar esta reseña? Seguirá publicada y se habilitará la acreditación de puntos."
+            : "¿Mantener la reseña publicada? Este reporte pasará al historial."}
       </p>
       {retirar && (
         <label className="grid gap-1 text-sm font-semibold">
@@ -123,7 +131,7 @@ export function RevisarReporte({ id }: { id: string }) {
   ) : (
     <div className="flex flex-wrap gap-2">
       <button className={boton} onClick={() => cambiar("mantener")}>
-        Mantener publicada
+        {alertaAutomatica ? "Aprobar reseña" : "Mantener publicada"}
       </button>
       <button
         className={`${boton} text-rose-900`}
