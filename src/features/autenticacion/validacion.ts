@@ -1,5 +1,6 @@
 export type EstadoFormulario = {
   mensaje?: string;
+  requiereConfirmacion?: boolean;
   errores?: Partial<
     Record<
       | "nombreCompleto"

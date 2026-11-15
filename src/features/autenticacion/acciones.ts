@@ -121,7 +121,10 @@ export async function ingresar(
     });
 
     if (error?.code === "email_not_confirmed") {
-      return { mensaje: "Confirma tu correo antes de iniciar sesión." };
+      return {
+        mensaje: "Confirma tu correo antes de iniciar sesión.",
+        requiereConfirmacion: true,
+      };
     }
 
     if (
@@ -132,7 +135,10 @@ export async function ingresar(
     }
 
     if (error || !data.session) {
-      return { mensaje: "El correo o la contraseña son incorrectos." };
+      return {
+        mensaje:
+          "El correo o la contraseña no coinciden. Revisa tus datos e inténtalo de nuevo.",
+      };
     }
 
     try {

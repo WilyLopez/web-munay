@@ -1,0 +1,12 @@
+@media (prefers-reduced-motion: no-preference) {
+  .entrada-acceso {
+    animation: aparecer-acceso 240ms ease-out both;
+  }
+}
+
+@keyframes aparecer-acceso {
+  from {
+    opacity: 0;
+    transform: translateY(0.35rem);
+  }
+}

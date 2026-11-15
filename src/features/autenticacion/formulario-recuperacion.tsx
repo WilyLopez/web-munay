@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
+import { AvisoAcceso } from "./aviso-acceso";
+import {
+  botonAcceso as boton,
+  campoAcceso as campo,
+  enlaceAcceso,
+  tituloAcceso,
+} from "./estilos-acceso";
 import { restablecerContrasena, solicitarRecuperacion } from "./recuperacion";
 
-const campo =
-  "w-full rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-stone-900 focus:border-[#174238] focus:outline-2 focus:outline-[#174238]";
-const boton =
-  "inline-flex w-fit rounded-xl bg-[#174238] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#23574a] disabled:opacity-50";
-const enlace =
-  "text-sm font-semibold text-[#174238] underline underline-offset-4";
+const enlace = `${enlaceAcceso} text-sm`;
 const buzones: Readonly<Record<string, string>> = {
   "gmail.com": "https://mail.google.com/",
   "outlook.com": "https://outlook.live.com/mail/",
@@ -43,10 +45,10 @@ export function SolicitudRecuperacion() {
 
   return (
     <>
-      <h1 className="font-serif text-3xl text-[#174238]">
+      <h1 className={tituloAcceso}>
         {enviado ? "Revisa tu correo" : "¿Olvidaste tu contraseña?"}
       </h1>
-      {enviado ? (
+      {enviado && !estado.mensaje ? (
         <p role="status" className="text-sm leading-relaxed text-stone-700">
           Si hay una cuenta asociada a{" "}
           <strong>{ocultarCorreo(correo.trim())}</strong>, recibirás un enlace
@@ -54,11 +56,11 @@ export function SolicitudRecuperacion() {
           {estado.enviado &&
             " Si acabas de pedir otro enlace, usa el más reciente."}
         </p>
-      ) : (
+      ) : !enviado ? (
         <p className="text-sm text-stone-700">
           Ingresa el correo de tu cuenta para recibir un enlace de recuperación.
         </p>
-      )}
+      ) : null}
       <form action={enviar} className="space-y-4">
         {enviado ? (
           <input type="hidden" name="correoElectronico" value={correo} />
@@ -79,9 +81,7 @@ export function SolicitudRecuperacion() {
           </label>
         )}
         {estado.mensaje && (
-          <p role="alert" className="text-sm text-rose-800">
-            {estado.mensaje}
-          </p>
+          <AvisoAcceso tipo="error" mensaje={estado.mensaje} />
         )}
         <div className="flex flex-wrap items-center gap-3">
           <button className={boton} disabled={pendiente}>
@@ -119,9 +119,7 @@ export function FormularioRestablecer({ token }: { token?: string }) {
   if (estado.actualizado)
     return (
       <div className="space-y-4" role="status">
-        <h1 className="font-serif text-3xl text-[#174238]">
-          ¡Contraseña actualizada!
-        </h1>
+        <h1 className={tituloAcceso}>¡Contraseña actualizada!</h1>
         <p className="text-sm text-stone-700">
           Ya puedes volver a ingresar con tu nueva contraseña.
         </p>
@@ -134,12 +132,13 @@ export function FormularioRestablecer({ token }: { token?: string }) {
   if (!token || estado.nuevoEnlace)
     return (
       <>
-        <h1 className="font-serif text-3xl text-[#174238]">
-          Solicita otro enlace
-        </h1>
-        <p role="alert" className="text-sm text-stone-700">
-          {estado.mensaje ?? "Este enlace no es válido o ya venció."}
-        </p>
+        <h1 className={tituloAcceso}>Solicita otro enlace</h1>
+        <AvisoAcceso
+          tipo="error"
+          mensaje={
+            estado.mensaje ?? "Este enlace ya no es válido. Solicita uno nuevo."
+          }
+        />
         <Link className={boton} href="/autenticacion/recuperar">
           Solicitar nuevo enlace
         </Link>
@@ -148,9 +147,7 @@ export function FormularioRestablecer({ token }: { token?: string }) {
 
   return (
     <>
-      <h1 className="font-serif text-3xl text-[#174238]">
-        Crea una nueva contraseña
-      </h1>
+      <h1 className={tituloAcceso}>Crea una nueva contraseña</h1>
       <form action={actualizar} className="space-y-4">
         <label className="grid gap-2 text-sm font-semibold text-stone-900">
           Nueva contraseña
@@ -204,9 +201,12 @@ export function FormularioRestablecer({ token }: { token?: string }) {
           </li>
         </ul>
         {(estado.mensaje || estado.errores) && (
-          <p role="alert" className="text-sm text-rose-800">
-            {estado.mensaje ?? Object.values(estado.errores ?? {}).join(" ")}
-          </p>
+          <AvisoAcceso
+            tipo="error"
+            mensaje={
+              estado.mensaje ?? Object.values(estado.errores ?? {}).join(" ")
+            }
+          />
         )}
         <button className={boton} disabled={pendiente || !minimo || !coinciden}>
           {pendiente ? "Guardando…" : "Guardar contraseña"}
