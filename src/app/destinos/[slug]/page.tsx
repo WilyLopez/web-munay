@@ -13,7 +13,10 @@ import {
 } from "@/features/destinos/catalogo";
 import { FavoritoDestino } from "@/features/destinos/favorito-destino";
 import { Opiniones, paginaResenas } from "@/features/resenas/opiniones";
-import { TarjetaSentimiento } from "@/features/sentimiento/tarjeta-sentimiento";
+import {
+  EsqueletoSentimiento,
+  TarjetaSentimiento,
+} from "@/features/sentimiento/tarjeta-sentimiento";
 import { FotoFicha } from "@/features/destinos/foto-ficha";
 import { DisponibilidadVisita } from "@/features/destinos/disponibilidad-visita";
 import { ErrorDestinos } from "@/features/destinos/error-destinos";
@@ -207,7 +210,9 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           </div>
         </section>
       </div>
-      <TarjetaSentimiento slug={slug} />
+      <Suspense fallback={<EsqueletoSentimiento />}>
+        <TarjetaSentimiento slug={slug} />
+      </Suspense>
       <Suspense fallback={<p role="status">Cargando reseñas…</p>}>
         <Opiniones
           regreso={regreso}

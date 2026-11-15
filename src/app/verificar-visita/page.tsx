@@ -19,7 +19,12 @@ async function Contenido({ destino }: { destino?: string }) {
       </p>
     );
   }
-  return <EscanerVisita destino={destino} />;
+  return (
+    <EscanerVisita
+      destino={destino}
+      demoHabilitada={process.env.MUNAY_DEMO_ESCANEO === "true"}
+    />
+  );
 }
 
 async function Escaneo({

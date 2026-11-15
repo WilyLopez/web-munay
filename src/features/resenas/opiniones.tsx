@@ -5,6 +5,7 @@ import { AccionesResena } from "./acciones-resena";
 import { FormularioResena } from "./formulario-resena";
 import { ReintentarOpiniones } from "./reintentar-opiniones";
 import type { ListadoResenas } from "./tipos";
+import { VerificarIntegridad } from "./verificar-integridad";
 
 export async function Opiniones({
   slug,
@@ -113,8 +114,31 @@ export async function Opiniones({
       {slug && (
         <div className="space-y-2 rounded-xl bg-teal-50 p-4">
           {datos.estado === "habilitada" && <FormularioResena slug={slug} />}
-          {datos.estado === "publicada" && (
-            <p>Ya publicaste una reseña para esta visita.</p>
+          {datos.estado === "publicada" &&
+            (datos.recompensa ? (
+              <div className="space-y-2 text-teal-950">
+                <p className="font-semibold">
+                  +{datos.recompensa.puntos} puntos MUNAY
+                </p>
+                <p className="text-sm">
+                  Reseña verificada de {datos.recompensa.destino} ·{" "}
+                  {fechaVisita.format(new Date(datos.recompensa.creadoEn))}
+                </p>
+                <Link
+                  href="/mi-perfil#ranking"
+                  className="text-sm font-semibold underline underline-offset-4"
+                >
+                  Ver mi perfil y ranking
+                </Link>
+              </div>
+            ) : (
+              <p>
+                Tu reseña está publicada. La acreditación de puntos está
+                pendiente.
+              </p>
+            ))}
+          {datos.estado === "retirada" && (
+            <p>Esta reseña fue retirada de la publicación.</p>
           )}
           {datos.estado === "bloqueada" && (
             <p>Visita el destino y escanea su QR para escribir una reseña.</p>
@@ -160,6 +184,12 @@ export async function Opiniones({
             <p className="wrap-anywhere whitespace-pre-wrap">
               {resena.comentario}
             </p>
+            {resena.verificada && (
+              <VerificarIntegridad
+                id={resena.id}
+                registro={resena.integridad}
+              />
+            )}
             <AccionesResena
               id={resena.id}
               utiles={resena.utiles}

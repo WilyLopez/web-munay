@@ -1,12 +1,30 @@
 "use server";
 
 import { solicitarVisitas } from "./api";
-import type { HistorialVisitas, PantallaVisitas, Verificacion } from "./tipos";
+import type {
+  HistorialVisitas,
+  PantallaVisitas,
+  PreparacionVisita,
+  UbicacionVisita,
+  Verificacion,
+} from "./tipos";
 
-export async function verificarVisita(codigo: string, destino?: string) {
+export async function prepararVisita(codigo: string, destino?: string) {
+  return solicitarVisitas<PreparacionVisita>("/visitas/verificar/preparar", {
+    codigo,
+    destino,
+  });
+}
+
+export async function verificarVisita(
+  codigo: string,
+  ubicacion: UbicacionVisita,
+  destino?: string,
+) {
   return solicitarVisitas<Verificacion>("/visitas/verificar", {
     codigo,
     destino,
+    ubicacion,
   });
 }
 

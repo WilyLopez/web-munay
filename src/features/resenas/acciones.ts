@@ -13,6 +13,8 @@ export async function publicarResena(
     { calificacion, comentario },
   );
   if (resultado.ok) {
+    revalidatePath("/");
+    revalidatePath("/mi-perfil");
     revalidatePath("/destinos");
     revalidatePath("/destinos/[slug]", "page");
     revalidatePath("/resenas");

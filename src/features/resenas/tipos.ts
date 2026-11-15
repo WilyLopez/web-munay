@@ -8,6 +8,7 @@ export type Resena = {
   verificada: boolean;
   utiles: number;
   votoPropio: boolean;
+  integridad?: { huella: string; transaccion: string | null } | null;
 };
 
 export type ListadoResenas = {
@@ -18,5 +19,6 @@ export type ListadoResenas = {
   promedio: number | null;
   distribucion: { calificacion: number; total: number }[];
   hayMas: boolean;
-  estado: "visitante" | "habilitada" | "bloqueada" | "publicada";
+  estado: "visitante" | "habilitada" | "bloqueada" | "publicada" | "retirada";
+  recompensa?: { puntos: number; creadoEn: string; destino: string } | null;
 };
