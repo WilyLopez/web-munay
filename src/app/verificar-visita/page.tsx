@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { MenuMovilVisitante } from "@/features/navegacion/menu-movil-visitante";
 import { solicitarVisitas } from "@/features/visitas/api";
 import { EscanerVisita } from "@/features/visitas/escaner-visita";
 
@@ -20,10 +21,13 @@ async function Contenido({ destino }: { destino?: string }) {
     );
   }
   return (
-    <EscanerVisita
-      destino={destino}
-      demoHabilitada={process.env.MUNAY_DEMO_ESCANEO === "true"}
-    />
+    <>
+      <EscanerVisita
+        destino={destino}
+        demoHabilitada={process.env.MUNAY_DEMO_ESCANEO === "true"}
+      />
+      <MenuMovilVisitante />
+    </>
   );
 }
 

@@ -4,6 +4,18 @@ import { crearSupabaseServidor } from "@/features/autenticacion/supabase/servido
 import { solicitarDestinos } from "@/features/destinos/api";
 import type { Catalogo } from "@/features/destinos/catalogo";
 import { BarraNavegacion, type DestinoBusqueda } from "./barra-navegacion";
+import { MenuMovilVisitante } from "./menu-movil-visitante";
+
+export const cargarCatalogoPublico = cache(
+  async (): Promise<Catalogo | null> => {
+    try {
+      const respuesta = await solicitarDestinos();
+      return respuesta.ok ? ((await respuesta.json()) as Catalogo) : null;
+    } catch {
+      return null;
+    }
+  },
+);
 
 export const cargarCatalogo = cache(async (): Promise<Catalogo | null> => {
   await connection();
@@ -30,7 +42,12 @@ export function NavbarCatalogo({ catalogo }: { catalogo: Catalogo }) {
   const destinos: DestinoBusqueda[] = catalogo.destinos.map(
     ({ slug, nombre, ubicacion }) => ({ slug, nombre, ubicacion }),
   );
-  return <BarraNavegacion destinos={destinos} sesion={catalogo.sesion} />;
+  return (
+    <>
+      <BarraNavegacion destinos={destinos} sesion={catalogo.sesion} />
+      {catalogo.sesion?.perfil.rol === "TURISTA" && <MenuMovilVisitante />}
+    </>
+  );
 }
 
 export function Navbar() {

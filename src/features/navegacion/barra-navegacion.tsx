@@ -225,6 +225,7 @@ export function BarraNavegacion({
             alt=""
             width={360}
             height={80}
+            priority
             className="h-auto w-28 sm:w-36"
           />
         </Link>

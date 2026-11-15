@@ -5,7 +5,7 @@ import { CreditoFoto } from "@/features/destinos/credito-foto";
 import { Suspense } from "react";
 import { categorias, enlaceFicha } from "@/features/destinos/catalogo";
 import { CarruselDestinos } from "@/features/portada/carrusel-destinos";
-import { Navbar, cargarCatalogo } from "@/features/navegacion/navbar";
+import { Navbar, cargarCatalogoPublico } from "@/features/navegacion/navbar";
 
 const contenedor = "mx-auto w-full max-w-[82rem] px-5 sm:px-8 lg:px-12";
 const botonPrincipal =
@@ -13,7 +13,7 @@ const botonPrincipal =
 const enlaceMapa = "/destinos?vista=mapa";
 
 async function obtenerDestacados() {
-  const catalogo = await cargarCatalogo();
+  const catalogo = await cargarCatalogoPublico();
   const fotografiados = (catalogo?.destinos ?? []).flatMap((destino) => {
     const imagenUrl = destino.imagenUrl?.trim();
     return imagenUrl &&

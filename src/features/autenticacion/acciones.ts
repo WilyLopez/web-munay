@@ -162,7 +162,8 @@ export async function ingresar(
     return { mensaje: ERROR_SERVICIO };
   }
 
-  redirect(destino);
+  const volver = leerCampo(datos, "volver");
+  redirect(destino !== "/superadmin" && ["/solicitar-acceso", "/invitacion-encargado"].includes(volver) ? volver : destino);
 }
 
 export async function confirmarCorreo(datos: FormData): Promise<void> {

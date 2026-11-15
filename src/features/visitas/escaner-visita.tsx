@@ -1,11 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { IScannerControls } from "@zxing/browser";
 import { enlaceFicha } from "@/features/destinos/catalogo";
 import { prepararVisita, verificarVisita } from "./acciones";
-import { MapaGeocerca } from "./mapa-geocerca";
 import {
   fechaVisita,
   type Coordenadas,
@@ -13,6 +13,18 @@ import {
   type Verificacion,
 } from "./tipos";
 import { obtenerUbicacion } from "./ubicacion-visita";
+
+const MapaGeocerca = dynamic(
+  () => import("./mapa-geocerca").then((m) => m.MapaGeocerca),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-48 items-center justify-center rounded-2xl border border-teal-200 bg-teal-100">
+        <p className="text-sm text-teal-800">Cargando mapa…</p>
+      </div>
+    ),
+  },
+);
 
 type ResultadoEscaneo =
   | { modo: "real"; datos: Verificacion; ubicacion?: Coordenadas }

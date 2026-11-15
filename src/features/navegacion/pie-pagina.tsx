@@ -5,6 +5,7 @@ const enlaces = [
   ["/destinos", "Destinos"],
   ["/destinos?vista=mapa", "Mapa interactivo"],
   ["/resenas", "Reseñas de visitantes"],
+  ["/solicitar-acceso", "Gestionar un atractivo"],
 ] as const;
 
 const redes = [

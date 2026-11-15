@@ -6,11 +6,22 @@ import { guardarFichaOperativa } from "./ficha-operativa";
 export type FichaOperativa = {
   nombre: string;
   horario: string | null;
+  diasAtencion: number[];
   tarifaGeneral: string | null;
   tarifaEstudiantes: string | null;
 };
 
 const campo = "rounded-lg border border-[#bdcfc2] bg-white px-3 py-2 text-sm";
+const diasSemana = [
+  "Domingo",
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+];
+const ordenDias = [1, 2, 3, 4, 5, 6, 0];
 
 export function FormularioFicha({
   ficha,
@@ -20,6 +31,7 @@ export function FormularioFicha({
   slug: string;
 }) {
   const [confirmar, mostrarConfirmacion] = useState(false);
+  const [dias, cambiarDias] = useState(ficha.diasAtencion ?? []);
   const [campos, cambiarCampos] = useState({
     horario: ficha.horario ?? "",
     tarifaGeneral: ficha.tarifaGeneral ?? "",
@@ -57,6 +69,40 @@ export function FormularioFicha({
           }}
         />
       </label>
+      <fieldset disabled={pendiente} className="space-y-2">
+        <legend className="text-sm font-semibold">
+          Días habituales de atención
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          {ordenDias.map((dia) => (
+            <label
+              key={dia}
+              className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#bdcfc2] px-3 py-2 text-sm has-checked:border-[#174238] has-checked:bg-[#e6eee6]"
+            >
+              <input
+                name="diasAtencion"
+                type="checkbox"
+                value={dia}
+                checked={dias.includes(dia)}
+                className="accent-[#174238]"
+                onChange={(evento) => {
+                  mostrarConfirmacion(false);
+                  cambiarDias(
+                    evento.target.checked
+                      ? [...dias, dia]
+                      : dias.filter((actual) => actual !== dia),
+                  );
+                }}
+              />
+              {diasSemana[dia]}
+            </label>
+          ))}
+        </div>
+        <p className="text-xs text-[#4d665b]">
+          La ficha usará estos días para la consulta de disponibilidad. Si dejas
+          todos sin marcar, se mostrará como pendiente de confirmación.
+        </p>
+      </fieldset>
       <div className="grid gap-4 sm:grid-cols-2">
         {(
           [

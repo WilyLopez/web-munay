@@ -16,6 +16,7 @@ export function Sidebar({ global }: { global: boolean }) {
     ? [
         ["/superadmin", "Gestión de portada"],
         ["/superadmin/usuarios", "Usuarios"],
+        ["/superadmin/accesos", "Accesos de encargados"],
         ["/superadmin/reportes", "Reportes"],
         ["/superadmin/blockchain", "Registros blockchain"],
         ...enlacesOperacion,

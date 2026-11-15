@@ -18,11 +18,12 @@ const avisos: Record<string, string> = {
 };
 
 async function ContenidoIngreso({ searchParams }: PageProps<"/ingresar">) {
-  const { aviso } = await searchParams;
+  const { aviso, volver } = await searchParams;
 
   return (
     <FormularioAcceso
       registro={false}
+      volver={typeof volver === "string" ? volver : undefined}
       aviso={
         typeof aviso === "string" && Object.hasOwn(avisos, aviso)
           ? avisos[aviso]

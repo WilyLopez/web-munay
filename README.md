@@ -19,7 +19,7 @@ Los comandos de desarrollo y compilación usan Webpack para procesar Tailwind co
 
 ## Despliegue en Vercel
 
-Importa el repositorio como Next.js con Node.js 24.x. Configura `NEXT_PUBLIC_API_URL` con el dominio HTTPS de la API desplegada y las dos variables públicas del proyecto Supabase correspondiente. Mantén `MUNAY_DEMO_ESCANEO=false` en producción. Configura la **Site URL** de Supabase con el dominio definitivo del frontend para los correos de acceso.
+Importa el repositorio como Next.js con Node.js 24.x. Configura `NEXT_PUBLIC_API_URL` con el dominio HTTPS del backend en **Render** y las dos variables públicas del proyecto Supabase correspondiente. Genera un nuevo despliegue después de cambiar estas variables. Mantén `MUNAY_DEMO_ESCANEO=false` en producción. Configura la **Site URL** de Supabase con el dominio definitivo del frontend para los correos de acceso.
 
 ## Supabase Auth
 

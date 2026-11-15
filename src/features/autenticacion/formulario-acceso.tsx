@@ -21,9 +21,11 @@ function ErrorCampo({ id, mensaje }: { id: string; mensaje?: string }) {
 export function FormularioAcceso({
   registro,
   aviso,
+  volver,
 }: {
   registro: boolean;
   aviso?: string;
+  volver?: string;
 }) {
   const [modoAlternado, cambiarModoAlternado] = useState<boolean | null>(null);
   const modoRegistro = modoAlternado ?? registro;
@@ -173,6 +175,7 @@ export function FormularioAcceso({
           )}
 
           <form action={accion} className="mt-6 space-y-4">
+            {!modoRegistro && volver && <input type="hidden" name="volver" value={volver} />}
             {modoRegistro && (
               <div className="space-y-1.5">
                 <label
