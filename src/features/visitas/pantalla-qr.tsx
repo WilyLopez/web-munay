@@ -151,29 +151,31 @@ export function PantallaQr({ slug }: { slug: string }) {
   const [ahora, cambiarAhora] = useState(0);
   const [error, cambiarError] = useState("");
   const [requiereSesion, cambiarRequiereSesion] = useState(false);
+  const [bloqueada, cambiarBloqueada] = useState(false);
   const [renovando, cambiarRenovando] = useState(false);
   const [sincronizando, cambiarSincronizando] = useState(false);
 
   const sincronizar = useCallback(
-    async function consultar(renovar = false) {
+    async function consultar(codigoId?: string) {
       if (solicitud.current || bloqueo.current || !navigator.onLine) return;
       solicitud.current = true;
       const version = versionConexion.current;
       cambiarSincronizando(true);
-      const inicio = Date.now();
-      if (renovar) cambiarRenovando(true);
+      const inicio = performance.now();
+      if (codigoId) cambiarRenovando(true);
       try {
-        const respuesta = await sincronizarPantalla(slug, renovar);
+        const respuesta = await sincronizarPantalla(slug, codigoId);
         if (!navigator.onLine || version !== versionConexion.current) return;
         if (!respuesta.ok) {
           cambiarPantalla(undefined);
           cambiarError(respuesta.mensaje);
           cambiarRequiereSesion(respuesta.estado === 401);
           bloqueo.current = [401, 403, 404].includes(respuesta.estado);
+          cambiarBloqueada(bloqueo.current);
           return;
         }
         const datos = respuesta.datos;
-        const instante = Date.now();
+        const instante = performance.now();
         cambiarAhora(instante);
         cambiarPantalla({
           datos,
@@ -190,7 +192,7 @@ export function PantallaQr({ slug }: { slug: string }) {
       } finally {
         solicitud.current = false;
         cambiarSincronizando(false);
-        if (renovar) cambiarRenovando(false);
+        if (codigoId) cambiarRenovando(false);
         if (version !== versionConexion.current && !document.hidden) {
           void consultar();
         }
@@ -201,7 +203,7 @@ export function PantallaQr({ slug }: { slug: string }) {
 
   useEffect(() => {
     function actualizar() {
-      cambiarAhora(Date.now());
+      cambiarAhora(performance.now());
       if (!document.hidden) void sincronizar();
     }
     function desconectar() {
@@ -209,7 +211,10 @@ export function PantallaQr({ slug }: { slug: string }) {
       cambiarPantalla(undefined);
       cambiarError("Se perdió la conexión. Esperando sincronización.");
     }
-    const reloj = window.setInterval(() => cambiarAhora(Date.now()), 250);
+    const reloj = window.setInterval(
+      () => cambiarAhora(performance.now()),
+      250,
+    );
     const consulta = window.setInterval(actualizar, 4000);
     window.addEventListener("offline", desconectar);
     window.addEventListener("online", actualizar);
@@ -224,6 +229,18 @@ export function PantallaQr({ slug }: { slug: string }) {
       document.removeEventListener("visibilitychange", actualizar);
     };
   }, [sincronizar]);
+
+  const venceLocal = pantalla?.venceLocal;
+  useEffect(() => {
+    if (venceLocal === undefined) return;
+    const demora = venceLocal - performance.now();
+    if (demora <= 0) return;
+    const renovar = window.setTimeout(() => {
+      cambiarAhora(performance.now());
+      if (!document.hidden) void sincronizar();
+    }, Math.ceil(demora));
+    return () => window.clearTimeout(renovar);
+  }, [venceLocal, sincronizar]);
 
   const restante = pantalla ? Math.max(0, pantalla.venceLocal - ahora) : 0;
   const codigo = pantalla?.datos.codigo;
@@ -271,11 +288,21 @@ export function PantallaQr({ slug }: { slug: string }) {
         <button
           type="button"
           disabled={!vigente || sincronizando}
-          onClick={() => void sincronizar(true)}
+          onClick={() => vigente && void sincronizar(codigo.id)}
           className="rounded-full bg-teal-950 px-5 py-3 font-semibold text-white disabled:opacity-50"
         >
-          Generar nuevo QR
+          {renovando ? "Generando nuevo QR…" : "Generar nuevo QR"}
         </button>
+        {error && !bloqueada && (
+          <button
+            type="button"
+            disabled={sincronizando}
+            onClick={() => void sincronizar()}
+            className="ml-3 min-h-11 font-semibold text-teal-900 underline disabled:opacity-50"
+          >
+            Reintentar sincronización
+          </button>
+        )}
         <p className="text-sm text-stone-700">
           El QR se renueva automáticamente y se invalida al registrar una
           visita. Evita compartir capturas de pantalla.

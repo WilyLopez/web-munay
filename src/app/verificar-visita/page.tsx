@@ -5,7 +5,12 @@ import { Suspense } from "react";
 import { MenuMovilVisitante } from "@/features/navegacion/menu-movil-visitante";
 import { solicitarVisitas } from "@/features/visitas/api";
 import { EscanerVisita } from "@/features/visitas/escaner-visita";
-import { codigoQrVisita, rutaQrVisita } from "@/features/visitas/enlace-qr";
+import {
+  codigoQrVisita,
+  ingresoParaVisita,
+  rutaEscanerVisita,
+} from "@/features/visitas/enlace-qr";
+import { BotonActualizarPanel } from "@/features/visitas/boton-actualizar-panel";
 
 type Consulta = { destino?: string; codigo?: string };
 
@@ -13,16 +18,20 @@ async function Escaneo({ consulta }: { consulta: Promise<Consulta> }) {
   await connection();
   const { destino, codigo } = await consulta;
   const id = typeof codigo === "string" ? codigo : undefined;
-  const ruta = id ? rutaQrVisita(id) : null;
   const codigoInicial = codigoQrVisita(id);
+  const slug = typeof destino === "string" ? destino : undefined;
   const sesion = await solicitarVisitas<{ perfil: { rol: string } }>(
     "/autenticacion/sesion",
   );
   if (!sesion.ok && sesion.estado === 401)
-    redirect(
-      `/ingresar?${new URLSearchParams({ aviso: "sesion", ...(ruta && { volver: ruta }) })}`,
+    redirect(ingresoParaVisita(slug, codigoInicial ?? undefined));
+  if (!sesion.ok)
+    return (
+      <div className="space-y-2 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+        <p role="alert">{sesion.mensaje}</p>
+        <BotonActualizarPanel reintentar />
+      </div>
     );
-  if (!sesion.ok) return <p role="alert">{sesion.mensaje}</p>;
   if (sesion.datos.perfil.rol !== "TURISTA") {
     return (
       <p role="alert">
@@ -33,8 +42,18 @@ async function Escaneo({ consulta }: { consulta: Promise<Consulta> }) {
   return (
     <>
       <EscanerVisita
-        destino={typeof destino === "string" ? destino : undefined}
+        key={
+          codigo !== undefined && !codigoInicial
+            ? "qr-invalido"
+            : rutaEscanerVisita(slug, id)
+        }
+        destino={slug}
         codigoInicial={codigoInicial ?? undefined}
+        avisoInicial={
+          codigo !== undefined && !codigoInicial
+            ? "Este enlace no contiene un QR válido. Escanea el código que muestra el encargado."
+            : undefined
+        }
         demoHabilitada={process.env.MUNAY_DEMO_ESCANEO === "true"}
       />
       <MenuMovilVisitante />
