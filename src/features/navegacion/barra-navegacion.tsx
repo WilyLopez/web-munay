@@ -76,17 +76,29 @@ function AccionesCuenta({ sesion }: { sesion?: Catalogo["sesion"] }) {
       </div>
       {encargado ? (
         <>
-          <Link href="/administracion/estadisticas" className={opcion}>
-            Panel del encargado
+          <Link
+            href={rol === "SUPER_ADMIN" ? "/superadmin" : "/administracion"}
+            className={opcion}
+          >
+            {rol === "SUPER_ADMIN"
+              ? "Panel de plataforma"
+              : "Panel del encargado"}
           </Link>
           <Link href="/administracion/visitas" className={opcion}>
             QR de visitas
           </Link>
         </>
       ) : (
-        <Link href="/verificar-visita" className={opcion}>
-          Escanear QR
-        </Link>
+        <>
+          <Link href="/mi-perfil" className={opcion}>
+            Mi perfil
+            {typeof sesion.saldoPuntos === "number" &&
+              ` · ${sesion.saldoPuntos} pts`}
+          </Link>
+          <Link href="/verificar-visita" className={opcion}>
+            Escanear QR
+          </Link>
+        </>
       )}
       <form action={cerrarSesion}>
         <button type="submit" className={opcion}>
@@ -223,6 +235,15 @@ export function BarraNavegacion({
           {enlacesPublicos()}
         </nav>
         <div className="flex items-center gap-1 sm:gap-2">
+          {typeof sesion?.saldoPuntos === "number" && (
+            <Link
+              href="/mi-perfil"
+              aria-label={`Mi perfil, ${sesion.saldoPuntos} puntos MUNAY`}
+              className="shrink-0 rounded-full bg-[#dbece0] px-2.5 py-1.5 text-xs font-semibold text-[#174238]"
+            >
+              {sesion.saldoPuntos} pts
+            </Link>
+          )}
           <button
             type="button"
             aria-label="Buscar destinos"

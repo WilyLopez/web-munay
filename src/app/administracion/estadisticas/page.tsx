@@ -7,6 +7,7 @@ import { BotonActualizarPanel } from "@/features/visitas/boton-actualizar-panel"
 import { PantallaQr } from "@/features/visitas/pantalla-qr";
 import { fechaVisita, type DestinoVisita } from "@/features/visitas/tipos";
 import type { Resena } from "@/features/resenas/tipos";
+import { ReportarResena } from "@/features/administracion/controles-reporte";
 
 type Consulta = {
   destino?: string;
@@ -249,12 +250,13 @@ async function Panel({ consulta }: { consulta: Promise<Consulta> }) {
                   : "Sin verificación"}
               </p>
               <p className="wrap-anywhere">{resena.comentario}</p>
+              <ReportarResena id={resena.id} />
             </li>
           ))}
         </ul>
         {datos.totalResenas > datos.recientes.length && (
           <Link
-            href={`/resenas?destino=${slug}`}
+            href={`/administracion/resenas?destino=${slug}`}
             className="font-semibold underline"
           >
             Ver todas
@@ -272,9 +274,6 @@ export default function PaginaEstadisticas({
 }) {
   return (
     <main className="mx-auto max-w-5xl space-y-5 pt-8 pb-24 sm:pb-8">
-      <Link href="/destinos" className="font-semibold underline">
-        Volver a destinos
-      </Link>
       <h1 className="text-3xl font-bold text-teal-950">
         Estadísticas del atractivo
       </h1>

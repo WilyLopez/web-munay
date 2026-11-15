@@ -69,9 +69,6 @@ export default function PaginaAdministracionVisitas({
 }) {
   return (
     <main className="mx-auto max-w-6xl space-y-5 py-8">
-      <Link href="/destinos" className="font-semibold text-teal-900 underline">
-        Volver a destinos
-      </Link>
       <h1 className="text-3xl font-bold text-teal-950">QR de visitas</h1>
       <Suspense
         fallback={<p role="status">Cargando destinos administrados…</p>}

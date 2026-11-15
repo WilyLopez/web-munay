@@ -5,7 +5,7 @@ import type { Resultado } from "./tipos";
 export async function solicitarVisitas<T>(
   ruta: string,
   datos?: Record<string, unknown>,
-  opciones?: { publica?: boolean; metodo?: "PUT" | "DELETE" },
+  opciones?: { publica?: boolean; metodo?: "PUT" | "DELETE" | "PATCH" },
 ): Promise<Resultado<T>> {
   try {
     const supabase = await crearSupabaseServidor();

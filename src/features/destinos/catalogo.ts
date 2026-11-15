@@ -58,6 +58,7 @@ export type Catalogo = {
   sesion: {
     perfil: { nombreCompleto: string; rol: string };
     venceEn: string;
+    saldoPuntos?: number | null;
   } | null;
   destinos: Destino[];
 };
