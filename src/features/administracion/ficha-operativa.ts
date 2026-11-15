@@ -16,6 +16,7 @@ export async function guardarFichaOperativa(
     `/destinos/administracion/${encodeURIComponent(slug)}/ficha`,
     {
       horario: leer("horario"),
+      diasAtencion: formulario.getAll("diasAtencion").map(Number),
       tarifaGeneral: leer("tarifaGeneral")?.replace(",", ".") ?? null,
       tarifaEstudiantes: leer("tarifaEstudiantes")?.replace(",", ".") ?? null,
     },
