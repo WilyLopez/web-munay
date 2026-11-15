@@ -17,6 +17,10 @@ Usa `npm run lint` para revisar el código y `npm run build` para generar la com
 
 Los comandos de desarrollo y compilación usan Webpack para procesar Tailwind con PostCSS.
 
+## Despliegue en Vercel
+
+Importa el repositorio como Next.js con Node.js 24.x. Configura `NEXT_PUBLIC_API_URL` con el dominio HTTPS de la API desplegada y las dos variables públicas del proyecto Supabase correspondiente. Mantén `MUNAY_DEMO_ESCANEO=false` en producción. Configura la **Site URL** de Supabase con el dominio definitivo del frontend para los correos de acceso.
+
 ## Supabase Auth
 
 Configura `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` con el mismo proyecto que usa la API. Las pantallas de acceso están en `/registro` y `/ingresar`. Los enlaces del registro abren `/terminos-de-uso` y `/politica-de-privacidad`.
