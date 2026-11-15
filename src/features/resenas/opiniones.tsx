@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { solicitarVisitas } from "@/features/visitas/api";
 import { fechaVisita } from "@/features/visitas/tipos";
-import { AccionesResena } from "./acciones-resena";
 import { FormularioResena } from "./formulario-resena";
 import { ReintentarOpiniones } from "./reintentar-opiniones";
 import type { ListadoResenas } from "./tipos";
-import { VerificarIntegridad } from "./verificar-integridad";
+import { TarjetaResena } from "./tarjeta-resena";
 
 export async function Opiniones({
   slug,
@@ -141,7 +140,25 @@ export async function Opiniones({
             <p>Esta reseña fue retirada de la publicación.</p>
           )}
           {datos.estado === "bloqueada" && (
-            <p>Visita el destino y escanea su QR para escribir una reseña.</p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <button
+                type="button"
+                disabled
+                aria-describedby="motivo-resena-bloqueada"
+                className="cursor-not-allowed rounded-full border border-teal-900/20 px-4 py-2 text-sm font-semibold text-stone-600"
+              >
+                Escribir una reseña
+              </button>
+              <p id="motivo-resena-bloqueada" className="text-sm">
+                Verifica tu visita escaneando el QR que muestra el encargado.
+              </p>
+              <Link
+                href={`/verificar-visita?destino=${encodeURIComponent(slug)}`}
+                className="text-sm font-semibold underline underline-offset-4"
+              >
+                Verificar mi visita
+              </Link>
+            </div>
           )}
           {datos.estado === "visitante" && (
             <Link
@@ -156,45 +173,8 @@ export async function Opiniones({
       {datos.resenas.length === 0 && <p>Aún no hay reseñas disponibles.</p>}
       <ul className="divide-y divide-stone-200">
         {datos.resenas.map((resena) => (
-          <li
-            key={resena.id}
-            id={`resena-${resena.id}`}
-            className="space-y-2 py-4"
-          >
-            {!slug && (
-              <Link
-                href={`/destinos/${encodeURIComponent(resena.destino.slug)}#opiniones`}
-                className="font-semibold underline"
-              >
-                {resena.destino.nombre}
-              </Link>
-            )}
-            <p className="font-semibold">{resena.usuario.nombreCompleto}</p>
-            <p className="text-sm text-stone-700">
-              <time dateTime={resena.creadaEn}>
-                {fechaVisita.format(new Date(resena.creadaEn))}
-              </time>{" "}
-              · {resena.calificacion} de 5 ★
-            </p>
-            <p className="text-sm font-semibold text-teal-900">
-              {resena.verificada
-                ? "Visita verificada · Opinión auténtica en sitio"
-                : "Sin verificación"}
-            </p>
-            <p className="wrap-anywhere whitespace-pre-wrap">
-              {resena.comentario}
-            </p>
-            {resena.verificada && (
-              <VerificarIntegridad
-                id={resena.id}
-                registro={resena.integridad}
-              />
-            )}
-            <AccionesResena
-              id={resena.id}
-              utiles={resena.utiles}
-              votoPropio={resena.votoPropio}
-            />
+          <li key={resena.id}>
+            <TarjetaResena resena={resena} mostrarDestino={!slug} />
           </li>
         ))}
       </ul>

@@ -1,18 +1,20 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { solicitarVisitas } from "@/features/visitas/api";
 
 export async function publicarResena(
   slug: string,
   calificacion: number,
   comentario: string,
+  solicitudId?: string,
 ) {
   const resultado = await solicitarVisitas<{ id: string }>(
     `/resenas/${encodeURIComponent(slug)}`,
-    { calificacion, comentario },
+    { calificacion, comentario, solicitudId },
   );
   if (resultado.ok) {
+    updateTag("destinos");
     revalidatePath("/");
     revalidatePath("/mi-perfil");
     revalidatePath("/destinos");

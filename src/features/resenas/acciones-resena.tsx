@@ -21,15 +21,21 @@ export function AccionesResena({
   const [avisoEnlace, cambiarAvisoEnlace] = useState("");
 
   async function votar() {
+    if (ocupado) return;
+    const anterior = voto;
+    const siguiente = !anterior;
     cambiarOcupado(true);
     cambiarAviso("");
+    cambiarVoto(siguiente);
     try {
-      const respuesta = await votarResena(id, !voto);
-      if (respuesta.ok) cambiarVoto(!voto);
-      else if (respuesta.estado === 401) router.push("/ingresar?aviso=sesion");
+      const respuesta = await votarResena(id, siguiente);
+      if (respuesta.ok) return;
+      cambiarVoto(anterior);
+      if (respuesta.estado === 401) router.push("/ingresar?aviso=sesion");
       else cambiarAviso(respuesta.mensaje);
     } catch {
-      cambiarAviso("No se pudo guardar tu voto.");
+      cambiarVoto(anterior);
+      cambiarAviso("No pudimos confirmar tu voto. Inténtalo de nuevo.");
     } finally {
       cambiarOcupado(false);
     }
@@ -37,8 +43,10 @@ export function AccionesResena({
 
   async function compartir() {
     cambiarAvisoEnlace("");
-    const url = new URL(window.location.href);
-    url.hash = `resena-${id}`;
+    const url = new URL(
+      `/resenas/${encodeURIComponent(id)}`,
+      window.location.origin,
+    );
     if (navigator.share) {
       try {
         await navigator.share({ title: "Reseña en Munay", url: url.href });

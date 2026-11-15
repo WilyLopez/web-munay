@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { publicarResena } from "./acciones";
 
@@ -13,6 +13,11 @@ export function FormularioResena({ slug }: { slug: string }) {
   const [reintento, cambiarReintento] = useState(false);
   const [publicando, cambiarPublicando] = useState(false);
   const [publicada, cambiarPublicada] = useState(false);
+  const solicitud = useRef<{
+    id: string;
+    calificacion: number;
+    comentario: string;
+  }>(null);
   const faltaNota = Boolean(error && !calificacion);
   const faltaComentario = Boolean(error && calificacion && !comentario.trim());
 
@@ -31,7 +36,22 @@ export function FormularioResena({ slug }: { slug: string }) {
     cambiarError("");
     cambiarPublicando(true);
     try {
-      const resultado = await publicarResena(slug, calificacion, comentario);
+      const texto = comentario.trim();
+      if (
+        solicitud.current?.calificacion !== calificacion ||
+        solicitud.current.comentario !== texto
+      )
+        solicitud.current = {
+          id: crypto.randomUUID(),
+          calificacion,
+          comentario: texto,
+        };
+      const resultado = await publicarResena(
+        slug,
+        calificacion,
+        texto,
+        solicitud.current.id,
+      );
       if (resultado.ok) cambiarPublicada(true);
       else if (resultado.estado === 401) router.push("/ingresar?aviso=sesion");
       else if (resultado.estado === 0 || resultado.estado >= 500) {
