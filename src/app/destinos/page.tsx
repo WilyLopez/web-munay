@@ -10,7 +10,7 @@ import { EsqueletoCatalogo } from "@/features/destinos/esqueletos";
 
 import { Navbar, NavbarCatalogo } from "@/features/navegacion/navbar";
 
-async function DestinosPublicos({ searchParams }: PageProps<"/destinos">) {
+async function DestinosPublicos() {
   await connection();
   let catalogo: Catalogo | undefined;
 
@@ -40,8 +40,6 @@ async function DestinosPublicos({ searchParams }: PageProps<"/destinos">) {
     );
   }
 
-  const { buscar } = await searchParams;
-
   return (
     <>
       <div className="sticky top-0 z-40 -mx-8 -mt-8">
@@ -55,7 +53,6 @@ async function DestinosPublicos({ searchParams }: PageProps<"/destinos">) {
           </p>
         </div>
         <CatalogoDestinos
-          key={typeof buscar === "string" ? buscar : ""}
           destinos={catalogo.destinos}
           tieneSesion={Boolean(catalogo.sesion)}
         />
@@ -65,10 +62,10 @@ async function DestinosPublicos({ searchParams }: PageProps<"/destinos">) {
   );
 }
 
-export default function PaginaDestinos(props: PageProps<"/destinos">) {
+export default function PaginaDestinos() {
   return (
     <Suspense fallback={<EsqueletoCatalogo />}>
-      <DestinosPublicos {...props} />
+      <DestinosPublicos />
     </Suspense>
   );
 }

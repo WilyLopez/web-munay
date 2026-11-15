@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import {
   categorias,
   normalizarBusqueda,
@@ -14,6 +14,20 @@ import { MapaDestinos } from "./mapa-destinos";
 import { TarjetaDestino } from "./tarjeta-destino";
 
 const comparador = new Intl.Collator("es-PE", { sensitivity: "base" });
+const calificaciones = ["1", "2", "3", "3.5", "4", "4.5", "5"];
+const formatoCalificacion = new Intl.NumberFormat("es-PE");
+
+function rutaCatalogo(consulta: URLSearchParams) {
+  return consulta.size ? `/destinos?${consulta}` : "/destinos";
+}
+
+function aplicarFiltro(campo: string, valor: string) {
+  const consulta = new URLSearchParams(window.location.search);
+  if (valor) consulta.set(campo, valor);
+  else consulta.delete(campo);
+  consulta.delete("destino");
+  window.history.replaceState(null, "", rutaCatalogo(consulta));
+}
 
 export function CatalogoDestinos({
   destinos,
@@ -25,23 +39,24 @@ export function CatalogoDestinos({
   const parametros = useSearchParams();
   const vistaMapa = parametros.get("vista") === "mapa";
   const destinoId = parametros.get("destino");
-  const categoriaInicial = parametros.get("categoria");
-  const provinciaInicial = parametros.get("provincia");
-  const [busqueda, cambiarBusqueda] = useState(parametros.get("buscar") ?? "");
-  const [categoria, cambiarCategoria] = useState<Categoria | "TODOS">(
-    categoriaInicial && Object.hasOwn(categorias, categoriaInicial)
-      ? (categoriaInicial as Categoria)
-      : "TODOS",
-  );
-  const [provincia, cambiarProvincia] = useState(
-    provinciaInicial && Object.hasOwn(provincias, provinciaInicial)
-      ? provinciaInicial
-      : "",
-  );
-  const [orden, cambiarOrden] = useState(
-    parametros.get("orden") === "nombre" ? "nombre" : "recomendados",
-  );
+  const busqueda = parametros.get("buscar") ?? "";
+  const categoriaUrl = parametros.get("categoria") ?? "";
+  const provinciaUrl = parametros.get("provincia") ?? "";
+  const calificacionUrl = parametros.get("calificacion") ?? "";
+  const categoria = Object.hasOwn(categorias, categoriaUrl)
+    ? categoriaUrl
+    : "TODOS";
+  const provincia = Object.hasOwn(provincias, provinciaUrl) ? provinciaUrl : "";
+  const calificacion = calificaciones.includes(calificacionUrl)
+    ? calificacionUrl
+    : "";
+  const minima = calificacion ? Number(calificacion) : null;
+  const orden =
+    parametros.get("orden") === "nombre" ? "nombre" : "recomendados";
   const consulta = normalizarBusqueda(busqueda.trim());
+  const tieneFiltros = Boolean(
+    consulta || categoria !== "TODOS" || provincia || calificacion,
+  );
   const resultados = useMemo(
     () =>
       destinos
@@ -49,6 +64,9 @@ export function CatalogoDestinos({
           (destino) =>
             (categoria === "TODOS" || destino.categoria === categoria) &&
             (!provincia || destino.provincia === provincia) &&
+            (minima === null ||
+              (destino.calificacionPromedio !== null &&
+                destino.calificacionPromedio >= minima)) &&
             (!consulta ||
               [destino.nombre, destino.ubicacion].some((texto) =>
                 normalizarBusqueda(texto).includes(consulta),
@@ -68,7 +86,7 @@ export function CatalogoDestinos({
             porNombre
           );
         }),
-    [destinos, categoria, provincia, consulta, orden],
+    [destinos, categoria, provincia, minima, consulta, orden],
   );
 
   const enlace = useCallback(
@@ -78,11 +96,12 @@ export function CatalogoDestinos({
       if (busqueda.trim()) consultaUrl.set("buscar", busqueda.trim());
       if (categoria !== "TODOS") consultaUrl.set("categoria", categoria);
       if (provincia) consultaUrl.set("provincia", provincia);
+      if (calificacion) consultaUrl.set("calificacion", calificacion);
       if (orden === "nombre") consultaUrl.set("orden", orden);
       if (id) consultaUrl.set("destino", id);
-      return consultaUrl.size ? `/destinos?${consultaUrl}` : "/destinos";
+      return rutaCatalogo(consultaUrl);
     },
-    [busqueda, categoria, provincia, orden],
+    [busqueda, categoria, provincia, calificacion, orden],
   );
   const seleccionar = useCallback(
     (id: string) => {
@@ -92,9 +111,6 @@ export function CatalogoDestinos({
   );
 
   function limpiarFiltros() {
-    cambiarBusqueda("");
-    cambiarCategoria("TODOS");
-    cambiarProvincia("");
     window.history.replaceState(
       null,
       "",
@@ -140,7 +156,9 @@ export function CatalogoDestinos({
               id="buscar-destinos"
               type="search"
               value={busqueda}
-              onChange={(evento) => cambiarBusqueda(evento.target.value)}
+              onChange={(evento) =>
+                aplicarFiltro("buscar", evento.target.value)
+              }
               placeholder="Nombre o ubicación"
               className="min-w-0 rounded-xl border border-stone-300 px-4 py-3 font-normal"
             />
@@ -153,7 +171,12 @@ export function CatalogoDestinos({
             <select
               id="orden-destinos"
               value={orden}
-              onChange={(evento) => cambiarOrden(evento.target.value)}
+              onChange={(evento) =>
+                aplicarFiltro(
+                  "orden",
+                  evento.target.value === "nombre" ? "nombre" : "",
+                )
+              }
               className="rounded-xl border border-stone-300 bg-white px-4 py-3 font-normal"
             >
               <option value="recomendados">Recomendados</option>
@@ -161,25 +184,50 @@ export function CatalogoDestinos({
             </select>
           </label>
         </div>
-        <label
-          className="grid max-w-60 gap-2 text-sm font-semibold"
-          htmlFor="provincia-destinos"
-        >
-          Provincia
-          <select
-            id="provincia-destinos"
-            value={provincia}
-            onChange={(evento) => cambiarProvincia(evento.target.value)}
-            className="rounded-xl border border-stone-300 bg-white px-4 py-2 font-normal"
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label
+            className="grid gap-2 text-sm font-semibold"
+            htmlFor="provincia-destinos"
           >
-            <option value="">Todas las provincias</option>
-            {Object.entries(provincias).map(([id, nombre]) => (
-              <option key={id} value={id}>
-                {nombre}
-              </option>
-            ))}
-          </select>
-        </label>
+            Provincia
+            <select
+              id="provincia-destinos"
+              value={provincia}
+              onChange={(evento) =>
+                aplicarFiltro("provincia", evento.target.value)
+              }
+              className="rounded-xl border border-stone-300 bg-white px-4 py-2 font-normal"
+            >
+              <option value="">Todas las provincias</option>
+              {Object.entries(provincias).map(([id, nombre]) => (
+                <option key={id} value={id}>
+                  {nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label
+            className="grid gap-2 text-sm font-semibold"
+            htmlFor="calificacion-destinos"
+          >
+            Calificación mínima
+            <select
+              id="calificacion-destinos"
+              value={calificacion}
+              onChange={(evento) =>
+                aplicarFiltro("calificacion", evento.target.value)
+              }
+              className="rounded-xl border border-stone-300 bg-white px-4 py-2 font-normal"
+            >
+              <option value="">Cualquier calificación</option>
+              {calificaciones.map((valor) => (
+                <option key={valor} value={valor}>
+                  {formatoCalificacion.format(Number(valor))} de 5 o más
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <div
           role="group"
           aria-label="Tipo de experiencia"
@@ -192,7 +240,9 @@ export function CatalogoDestinos({
               key={opcion}
               type="button"
               aria-pressed={categoria === opcion}
-              onClick={() => cambiarCategoria(opcion)}
+              onClick={() =>
+                aplicarFiltro("categoria", opcion === "TODOS" ? "" : opcion)
+              }
               className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium aria-pressed:border-teal-900 aria-pressed:bg-teal-900 aria-pressed:text-white"
             >
               {opcion === "TODOS" ? "Todos" : categorias[opcion]}
@@ -200,12 +250,22 @@ export function CatalogoDestinos({
           ))}
         </div>
       </div>
-      <p role="status" className="text-sm font-medium text-stone-700">
-        Catálogo cargado ·{" "}
-        {resultados.length === 1
-          ? "1 destino encontrado"
-          : `${resultados.length} destinos encontrados`}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p role="status" className="text-sm font-medium text-stone-700">
+          {resultados.length === 1
+            ? "1 destino encontrado"
+            : `${resultados.length} destinos encontrados`}
+        </p>
+        {tieneFiltros && (
+          <button
+            type="button"
+            onClick={limpiarFiltros}
+            className="text-sm font-semibold text-teal-800 underline underline-offset-4"
+          >
+            Limpiar filtros
+          </button>
+        )}
+      </div>
       {vistaMapa ? (
         <MapaDestinos
           destinos={resultados}
@@ -229,19 +289,11 @@ export function CatalogoDestinos({
       ) : (
         <div className="rounded-2xl border border-stone-200 bg-white p-8 text-center">
           <h2 className="text-xl font-bold">No se encontraron destinos</h2>
-          {busqueda || categoria !== "TODOS" || provincia ? (
-            <button
-              type="button"
-              onClick={limpiarFiltros}
-              className="mt-3 font-semibold text-teal-800 underline"
-            >
-              Limpiar filtros
-            </button>
-          ) : (
-            <p className="mt-2 text-sm text-stone-600">
-              Todavía no hay destinos publicados.
-            </p>
-          )}
+          <p className="mt-2 text-sm text-stone-600">
+            {tieneFiltros
+              ? "Prueba con una calificación menor o cambia los filtros."
+              : "Todavía no hay destinos publicados."}
+          </p>
         </div>
       )}
     </section>
