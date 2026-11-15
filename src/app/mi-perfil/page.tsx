@@ -4,10 +4,19 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { Navbar } from "@/features/navegacion/navbar";
 import { PiePagina } from "@/features/navegacion/pie-pagina";
+import { HistorialPerfil } from "@/features/perfil/historial";
 import { solicitarVisitas } from "@/features/visitas/api";
+import { BotonActualizarPanel } from "@/features/visitas/boton-actualizar-panel";
+
+type Props = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
 type Resumen = {
   nombre: string;
+  rol: "TURISTA";
+  visitas: number;
+  resenas: number;
   saldo: number;
   posicion: number | null;
   ranking: {
@@ -25,15 +34,24 @@ const niveles = [
   { nombre: "Embajador", minimo: 300 },
 ];
 
-async function ContenidoPerfil() {
+async function ContenidoPerfil({ searchParams }: Props) {
   await connection();
   const respuesta = await solicitarVisitas<Resumen>("/puntos/mi-resumen");
   if (!respuesta.ok) {
     if (respuesta.estado === 401) redirect("/ingresar?aviso=sesion");
     if (respuesta.estado === 403) redirect("/destinos");
-    return <p role="alert">{respuesta.mensaje}</p>;
+    return (
+      <div
+        role="alert"
+        className="space-y-2 rounded-3xl border border-stone-200 bg-white p-5"
+      >
+        <p>No pudimos cargar tu historial.</p>
+        <BotonActualizarPanel reintentar />
+      </div>
+    );
   }
-  const { saldo, nombre, posicion, ranking } = respuesta.datos;
+  const { saldo, nombre, rol, visitas, resenas, posicion, ranking } =
+    respuesta.datos;
   const indice = niveles.findLastIndex(({ minimo }) => saldo >= minimo);
   const nivel = niveles[Math.max(0, indice)];
   const siguiente = niveles[indice + 1];
@@ -48,6 +66,21 @@ async function ContenidoPerfil() {
       <h1 className="font-serif text-4xl">Mi perfil</h1>
       <section className="space-y-4 rounded-3xl border border-teal-200 bg-teal-50 p-5 sm:p-8">
         <h2 className="text-xl font-semibold">{nombre}</h2>
+        {rol === "TURISTA" && (
+          <p className="w-fit rounded-full bg-white px-3 py-1 text-xs font-semibold">
+            Visitante
+          </p>
+        )}
+        <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
+          <div>
+            <dt>Visitas verificadas</dt>
+            <dd className="text-xl font-semibold">{visitas}</dd>
+          </div>
+          <div>
+            <dt>Reseñas publicadas</dt>
+            <dd className="text-xl font-semibold">{resenas}</dd>
+          </div>
+        </dl>
         <p>
           <strong className="text-3xl">{saldo}</strong> puntos MUNAY
         </p>
@@ -64,6 +97,7 @@ async function ContenidoPerfil() {
             : "Alcanzaste el nivel más alto."}
         </p>
       </section>
+      <HistorialPerfil consulta={await searchParams} />
       <section
         id="ranking"
         className="space-y-4 rounded-3xl border border-stone-200 bg-white p-5 sm:p-8"
@@ -101,7 +135,7 @@ async function ContenidoPerfil() {
   );
 }
 
-export default function PaginaMiPerfil() {
+export default function PaginaMiPerfil(props: Props) {
   return (
     <div className="-m-8 min-h-dvh bg-[#f8f4ea] text-[#173b32]">
       <Navbar />
@@ -116,7 +150,7 @@ export default function PaginaMiPerfil() {
             </div>
           }
         >
-          <ContenidoPerfil />
+          <ContenidoPerfil {...props} />
         </Suspense>
       </main>
       <PiePagina />
