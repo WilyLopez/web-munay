@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 import { accesoPanel } from "./acceso";
 import { MenuCuenta } from "./menu-cuenta";
+import { MenuMovilEncargado } from "./menu-movil-encargado";
 import { Sidebar } from "./sidebar";
 
 const marco =
@@ -100,8 +101,17 @@ async function Marco({
             <MenuCuenta nombre={perfil.nombreCompleto} global={esSuperAdmin} />
           </div>
         </header>
-        <div className={contenido}>{children}</div>
+        <div
+          className={`${contenido} ${esSuperAdmin ? "" : "max-md:pb-[calc(4.5rem+env(safe-area-inset-bottom))]"}`}
+        >
+          {children}
+        </div>
       </div>
+      {!esSuperAdmin && (
+        <Suspense>
+          <MenuMovilEncargado />
+        </Suspense>
+      )}
     </div>
   );
 }

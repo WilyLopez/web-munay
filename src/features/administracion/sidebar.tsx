@@ -38,7 +38,7 @@ export function Sidebar({ global }: { global: boolean }) {
       </Link>
       <nav
         aria-label={global ? "Panel de SuperAdmin" : "Panel de Admin"}
-        className="flex flex-wrap gap-2 md:flex-col"
+        className={`${global ? "flex" : "hidden md:flex"} flex-wrap gap-2 md:flex-col`}
       >
         {enlaces.map(([href, etiqueta]) => (
           <Link
