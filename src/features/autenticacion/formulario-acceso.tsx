@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { ingresar, registrarCuenta } from "./acciones";
 import { AvisoAcceso, type DatosAviso } from "./aviso-acceso";
+import { BotonEnvioAcceso } from "./boton-envio-acceso";
 import {
-  botonAcceso,
   campoAcceso,
   enlaceAcceso,
   tituloAcceso,
@@ -33,9 +33,10 @@ function CampoContrasena({
 }) {
   const [visible, cambiarVisibilidad] = useState(false);
   const [valor, cambiarValor] = useState("");
+  const id = registro ? `registro-${clave}` : `ingreso-${clave}`;
   const ayuda = registro && clave === "contrasena" && !error;
   const descripcion = error
-    ? `${clave}-error`
+    ? `${id}-error`
     : ayuda
       ? "ayuda-contrasena"
       : undefined;
@@ -43,7 +44,7 @@ function CampoContrasena({
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-        <label className="text-sm font-semibold" htmlFor={clave}>
+        <label className="text-sm font-semibold" htmlFor={id}>
           {etiqueta}
         </label>
         {!registro && (
@@ -57,7 +58,7 @@ function CampoContrasena({
       </div>
       <div className="relative">
         <input
-          id={clave}
+          id={id}
           name={clave}
           type={visible ? "text" : "password"}
           className={`${campoAcceso} pe-24`}
@@ -83,7 +84,7 @@ function CampoContrasena({
           Usa al menos 8 caracteres.
         </p>
       )}
-      <ErrorCampo id={`${clave}-error`} mensaje={error} />
+      <ErrorCampo id={`${id}-error`} mensaje={error} />
     </div>
   );
 }
@@ -115,19 +116,30 @@ export function FormularioAcceso({
     },
     {},
   );
+  const formulario = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (estado.errores) {
+      formulario.current
+        ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+        ?.focus();
+    }
+  }, [estado]);
+
   const { errores = {}, mensaje, requiereConfirmacion } = estado;
   const avisoActual = mensaje
     ? { mensaje, tipo: "error" as const, reenviar: requiereConfirmacion }
     : !Object.keys(errores).length && !pendiente
       ? aviso
       : undefined;
+  const idCorreo = registro ? "registro-correo" : "ingreso-correo";
   const consulta = volver ? `?${new URLSearchParams({ volver })}` : "";
 
   return (
     <>
       <nav
         aria-label="Acceso a Munay"
-        className="grid grid-cols-2 gap-1 rounded-xl bg-[#eeeee5] p-1 text-sm"
+        className="grid grid-cols-2 border-b border-[#dbe2d7] text-sm"
       >
         {(
           [
@@ -139,7 +151,7 @@ export function FormularioAcceso({
             key={ruta}
             href={`${ruta}${consulta}`}
             aria-current={actual ? "page" : undefined}
-            className="flex min-h-11 items-center justify-center rounded-lg px-2 text-center font-semibold text-stone-700 motion-safe:transition-colors hover:bg-white/60 focus-visible:outline-2 focus-visible:outline-[#174238] aria-[current=page]:bg-white aria-[current=page]:text-[#174238] aria-[current=page]:shadow-xs"
+            className="flex min-h-11 items-center justify-center border-b-2 border-transparent px-2 text-center font-semibold text-stone-700 hover:bg-[#edf1e9] focus-visible:outline-2 focus-visible:outline-[#174238] aria-[current=page]:border-[#174238] aria-[current=page]:text-[#174238]"
           >
             {etiqueta}
           </Link>
@@ -148,17 +160,17 @@ export function FormularioAcceso({
       <div className="entrada-acceso space-y-5">
         <header className="space-y-2">
           <h1 className={tituloAcceso}>
-            {registro ? "Crea tu cuenta" : "Te damos la bienvenida"}
+            {registro ? "Crea tu cuenta" : "Inicia sesión"}
           </h1>
           <p className="text-sm leading-relaxed text-stone-600">
             {registro
               ? "Guarda tus destinos favoritos y registra tus visitas."
-              : "Ingresa a tu cuenta de Munay."}
+              : "Accede a tus visitas y destinos guardados."}
           </p>
         </header>
 
         {avisoActual && <AvisoAcceso {...avisoActual} />}
-        <form action={accion} className="space-y-4" aria-busy={pendiente}>
+        <form ref={formulario} action={accion} className="space-y-4" aria-busy={pendiente}>
           {!registro && volver && (
             <input type="hidden" name="volver" value={volver} />
           )}
@@ -187,15 +199,17 @@ export function FormularioAcceso({
           <div className="space-y-1.5">
             <label
               className="text-sm font-semibold"
-              htmlFor="correoElectronico"
+              htmlFor={idCorreo}
             >
               Correo electrónico
             </label>
             <input
-              id="correoElectronico"
+              id={idCorreo}
               name="correoElectronico"
               type="email"
-              autoComplete="email"
+              autoComplete={registro ? "email" : "username"}
+              spellCheck={false}
+              autoCapitalize="none"
               maxLength={254}
               required
               className={campoAcceso}
@@ -203,10 +217,10 @@ export function FormularioAcceso({
               onChange={(evento) => cambiarCorreo(evento.target.value)}
               aria-invalid={Boolean(errores.correoElectronico)}
               aria-describedby={
-                errores.correoElectronico ? "error-correo" : undefined
+                errores.correoElectronico ? `${idCorreo}-error` : undefined
               }
             />
-            <ErrorCampo id="error-correo" mensaje={errores.correoElectronico} />
+            <ErrorCampo id={`${idCorreo}-error`} mensaje={errores.correoElectronico} />
           </div>
           <CampoContrasena
             clave="contrasena"
@@ -222,7 +236,7 @@ export function FormularioAcceso({
                 error={errores.confirmarContrasena}
                 registro
               />
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 rounded-lg border border-[#dbe2d7] bg-white/60 p-3">
                 <div className="flex items-start gap-2.5 text-sm leading-relaxed">
                   <input
                     id="aceptaCondiciones"
@@ -268,21 +282,10 @@ export function FormularioAcceso({
               </div>
             </>
           )}
-          <button className={botonAcceso} disabled={pendiente}>
-            {pendiente && (
-              <span
-                aria-hidden="true"
-                className="size-4 rounded-full border-2 border-white/45 border-t-white motion-safe:animate-spin"
-              />
-            )}
-            {registro
-              ? pendiente
-                ? "Creando cuenta…"
-                : "Crear cuenta"
-              : pendiente
-                ? "Iniciando sesión…"
-                : "Iniciar sesión"}
-          </button>
+          <BotonEnvioAcceso
+            etiqueta={registro ? "Crear cuenta" : "Iniciar sesión"}
+            esperando={registro ? "Creando cuenta…" : "Iniciando sesión…"}
+          />
         </form>
       </div>
     </>
