@@ -195,6 +195,7 @@ export function MapaDestinos({
                 className="inline-block pt-1 text-sm font-semibold text-teal-800 underline"
               >
                 Abrir en Google Maps
+                <span className="sr-only"> (abre en otra pestaña)</span>
               </a>
               {seleccionado.imagenUrl !== imagenFallida && (
                 <CreditoFoto imagenUrl={seleccionado.imagenUrl} />

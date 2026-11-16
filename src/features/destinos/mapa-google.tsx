@@ -17,7 +17,7 @@ export function MapaGoogle({
 }: {
   destinos: Destino[];
   seleccionado?: Destino;
-  seleccionar: (id: string) => void;
+  seleccionar?: (id: string) => void;
   ubicacion?: google.maps.LatLngLiteral;
   volver: string;
 }) {
@@ -64,15 +64,15 @@ export function MapaGoogle({
         map: motor.mapa,
         position,
         title: destino.nombre,
-        gmpClickable: true,
+        gmpClickable: Boolean(seleccionar),
       });
-      const elegir = () => seleccionar(destino.id);
-      marcador.addEventListener("gmp-click", elegir);
+      const elegir = seleccionar ? () => seleccionar(destino.id) : undefined;
+      if (elegir) marcador.addEventListener("gmp-click", elegir);
       return { marcador, elegir };
     });
     return () => {
       for (const { marcador, elegir } of marcadores) {
-        marcador.removeEventListener("gmp-click", elegir);
+        if (elegir) marcador.removeEventListener("gmp-click", elegir);
         marcador.map = null;
       }
     };

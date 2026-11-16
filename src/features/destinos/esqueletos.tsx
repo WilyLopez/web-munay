@@ -37,14 +37,21 @@ export function EsqueletoCatalogo() {
 
 export function EsqueletoFicha() {
   return (
-    <div role="status" className="mx-auto max-w-6xl space-y-8 py-6 sm:py-10">
+    <div
+      role="status"
+      className="mx-auto max-w-[82rem] px-4 pb-12 pt-4 sm:px-8 lg:px-12"
+    >
       <span className="sr-only">Cargando ficha del destino</span>
       <div aria-hidden="true" className="space-y-8 motion-safe:animate-pulse">
         <div className={`${bloque} h-5 w-32`} />
-        <div className="space-y-3">
-          <div className={`${bloque} h-4 w-20`} />
-          <div className={`${bloque} h-10 w-full max-w-xl sm:h-12`} />
-          <div className={`${bloque} h-4 w-2/3 max-w-72`} />
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10">
+          <div className="space-y-3 lg:pt-5">
+            <div className={`${bloque} h-4 w-36`} />
+            <div className={`${bloque} h-11 w-full max-w-xl sm:h-16`} />
+            <div className={`${bloque} h-4 w-2/3 max-w-72`} />
+            <div className={`${bloque} h-11 w-32`} />
+          </div>
+          <div className="aspect-[4/3] rounded-2xl bg-[#dfd9cd] sm:aspect-[16/10]" />
         </div>
         <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
           <div className="space-y-4">

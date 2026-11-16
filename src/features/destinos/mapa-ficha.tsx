@@ -1,32 +1,72 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
-import type { LatLngTuple } from "leaflet";
-import { MapaUbicacion } from "./selector-ubicacion";
+import type { Destino } from "./catalogo";
 
-export function MapaFicha({ punto }: { punto: LatLngTuple }) {
-  const contenedor = useRef<HTMLDivElement>(null);
+const MapaGoogle = dynamic(
+  () => import("./mapa-google").then((modulo) => modulo.MapaGoogle),
+  {
+    ssr: false,
+    loading: EsqueletoMapaFicha,
+  },
+);
+
+function EsqueletoMapaFicha() {
+  return (
+    <div
+      role="status"
+      className="grid h-96 place-items-center rounded-2xl border border-[#dedacf] bg-[#e8eee6] p-4 text-center text-sm sm:h-[32rem]"
+    >
+      Cargando mapa del punto de llegada…
+    </div>
+  );
+}
+
+export function MapaFicha({
+  destino,
+  punto,
+  volver,
+}: {
+  destino: Destino;
+  punto: [number, number];
+  volver: string;
+}) {
   const [visible, cambiarVisible] = useState(false);
+  const contenedor = useRef<HTMLDivElement>(null);
+  const [latitud, longitud] = punto;
+  const llegada = { ...destino, latitud, longitud };
+
   useEffect(() => {
-    if (!contenedor.current) return;
-    const observador = new IntersectionObserver(([entrada]) => {
-      if (entrada?.isIntersecting) {
-        cambiarVisible(true);
-        observador.disconnect();
-      }
-    });
-    observador.observe(contenedor.current);
+    const elemento = contenedor.current;
+    if (!elemento) return;
+    if (typeof IntersectionObserver === "undefined") {
+      const carga = requestAnimationFrame(() => cambiarVisible(true));
+      return () => cancelAnimationFrame(carga);
+    }
+    const observador = new IntersectionObserver(
+      ([entrada]) => {
+        if (entrada?.isIntersecting) {
+          cambiarVisible(true);
+          observador.disconnect();
+        }
+      },
+      { rootMargin: "200px 0px" },
+    );
+    observador.observe(elemento);
     return () => observador.disconnect();
   }, []);
 
   return (
     <div ref={contenedor}>
       {visible ? (
-        <MapaUbicacion inicial={punto} />
+        <MapaGoogle
+          destinos={[llegada]}
+          seleccionado={llegada}
+          volver={volver}
+        />
       ) : (
-        <div className="grid h-64 place-items-center rounded-xl border border-teal-900/15 bg-teal-50 text-sm text-teal-950">
-          Mapa del punto de llegada
-        </div>
+        <EsqueletoMapaFicha />
       )}
     </div>
   );

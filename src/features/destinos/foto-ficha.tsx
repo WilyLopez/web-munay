@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { CreditoFoto } from "./credito-foto";
 import type { InformacionDestino } from "./informacion";
 
@@ -11,14 +11,12 @@ export function FotoFicha({
   nombre,
   verificado,
   informacion,
-  children,
 }: {
   url: string | null;
   adicionales?: string[];
   nombre: string;
   verificado: boolean;
   informacion?: InformacionDestino;
-  children?: ReactNode;
 }) {
   const fotos = Array.from(new Set(url ? [url, ...adicionales] : adicionales));
   const [seleccion, cambiarSeleccion] = useState<string>();
@@ -37,37 +35,39 @@ export function FotoFicha({
       : informacion?.galeria?.find((foto) => foto.url === principal);
 
   return (
-    <figure className="space-y-2">
-      <div className="relative isolate flex min-h-[26rem] items-end overflow-hidden rounded-3xl bg-teal-950 text-white sm:min-h-[34rem]">
+    <figure className="min-w-0 space-y-2">
+      <div className="relative isolate aspect-[4/3] overflow-hidden rounded-2xl bg-[#193b33] text-white sm:aspect-[16/10]">
         {principal ? (
           <Image
             key={principal}
             src={principal}
             alt={metadatos?.alt || nombre}
             fill
-            priority
+            preload={principal === fotos[0]}
             unoptimized={
               !principal.startsWith("/") && !principal.includes("wikimedia.org")
             }
-            sizes="(min-width: 1280px) 1152px, 100vw"
+            sizes="(min-width: 1280px) 640px, (min-width: 1024px) 54vw, 100vw"
             className="-z-20 object-cover"
             onError={() =>
               cambiarFallidas((anteriores) => [...anteriores, principal])
             }
           />
-        ) : null}
-        <div className="absolute inset-0 -z-10 bg-linear-to-t from-black/95 via-black/45 to-black/10" />
+        ) : (
+          <p className="grid h-full place-items-center px-4 text-center text-sm">
+            Fotografías aún no disponibles
+          </p>
+        )}
         {verificado && (
-          <span className="absolute top-4 left-4 rounded-full bg-white px-3 py-1 text-sm font-semibold text-teal-950">
+          <span className="absolute top-3 left-3 rounded-full bg-white px-3 py-1 text-xs font-semibold text-teal-950">
             Destino verificado
           </span>
         )}
-        <div className="w-full p-6 sm:p-10">{children}</div>
       </div>
       {disponibles.length > 1 && (
         <ul
           aria-label="Fotos del destino"
-          className="flex flex-wrap gap-3 pt-2"
+          className="flex max-w-full gap-2 overflow-x-auto p-1"
         >
           {disponibles.map((foto, indice) => (
             <li key={foto}>
@@ -75,7 +75,7 @@ export function FotoFicha({
                 type="button"
                 aria-label={`Mostrar foto ${indice + 1}`}
                 aria-pressed={foto === principal}
-                className="relative block h-16 w-24 overflow-hidden rounded-lg border-2 border-stone-300 aria-pressed:border-teal-900"
+                className="relative block h-13 w-19 overflow-hidden rounded-lg border-2 border-stone-300 focus-visible:outline-2 focus-visible:outline-offset-2 aria-pressed:border-teal-900 sm:h-16 sm:w-24"
                 onClick={() => cambiarSeleccion(foto)}
               >
                 <Image
@@ -83,7 +83,7 @@ export function FotoFicha({
                   alt=""
                   fill
                   unoptimized
-                  sizes="96px"
+                  sizes="(min-width: 640px) 96px, 76px"
                   className="object-cover"
                 />
               </button>
