@@ -25,9 +25,12 @@ export function TarjetaDestino({
   const [imagenFallida, marcarImagenFallida] = useState<string | null>(null);
   const mostrarImagen =
     destino.imagenUrl && imagenFallida !== destino.imagenUrl;
+  const ficha = enlaceFicha(destino.slug, volver);
+  const enlace =
+    "inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2";
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+    <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#dedacf] bg-[#fffdf6]">
       <div className="relative aspect-[16/9] bg-teal-950">
         {mostrarImagen && destino.imagenUrl ? (
           <Image
@@ -54,31 +57,48 @@ export function TarjetaDestino({
         )}
         <FavoritoDestino destino={destino} tieneSesion={tieneSesion} compacto />
       </div>
-      <div className="space-y-2 p-5">
-        <p className="text-sm font-semibold text-teal-800">
-          {categorias[destino.categoria]}
-        </p>
-        <h2 className="text-xl font-bold">
-          <Link
-            href={enlaceFicha(destino.slug, volver)}
-            className="hover:underline"
-          >
-            {destino.nombre}
-          </Link>
+      <div className="flex flex-1 flex-col gap-2 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+          <p className="font-semibold text-[#8d402d]">
+            {categorias[destino.categoria]}
+          </p>
+          {destino.calificacionPromedio !== null && (
+            <p className="font-medium text-[#465a50]">
+              <span aria-hidden="true">★ </span>
+              {formatoCalificacion.format(destino.calificacionPromedio)} de 5
+              {Boolean(destino.totalResenas) && (
+                <span className="ms-1">
+                  ({destino.totalResenas}{" "}
+                  {destino.totalResenas === 1 ? "reseña" : "reseñas"})
+                </span>
+              )}
+            </p>
+          )}
+        </div>
+        <h2 className="wrap-anywhere font-serif text-2xl leading-tight">
+          {destino.nombre}
         </h2>
-        <p className="text-sm text-stone-700">{destino.ubicacion}</p>
-        <p className="text-sm font-medium text-stone-700">
-          {destino.calificacionPromedio === null
-            ? "Sin calificaciones"
-            : `${formatoCalificacion.format(destino.calificacionPromedio)} de 5`}
+        <p className="text-sm text-[#465a50]">{destino.ubicacion}</p>
+        <p className="mb-2 line-clamp-3 text-sm leading-relaxed text-[#465a50]">
+          {destino.descripcion}
         </p>
-        <p className="leading-relaxed text-stone-700">{destino.descripcion}</p>
-        <Link
-          href={enlaceMapa}
-          className="inline-block text-sm font-semibold text-teal-800 underline"
-        >
-          Ver en el mapa
-        </Link>
+        <div className="mt-auto flex flex-wrap gap-2 border-t border-[#dedacf] pt-3">
+          <Link
+            href={ficha}
+            aria-label={`Ver detalles de ${destino.nombre}`}
+            className={`${enlace} bg-[#174238] text-white hover:bg-[#23574a]`}
+          >
+            Ver detalles
+          </Link>
+          <Link
+            href={enlaceMapa}
+            prefetch={false}
+            aria-label={`Ver ${destino.nombre} en el mapa`}
+            className={`${enlace} border border-[#b9c4b9] hover:bg-[#e8eee6]`}
+          >
+            Ver en el mapa
+          </Link>
+        </div>
         {mostrarImagen && <CreditoFoto imagenUrl={destino.imagenUrl} />}
       </div>
     </article>

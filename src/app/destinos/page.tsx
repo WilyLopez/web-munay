@@ -1,71 +1,48 @@
-import { PiePagina } from "@/features/navegacion/pie-pagina";
-import { connection } from "next/server";
+import type { Metadata } from "next";
 import { Suspense } from "react";
-import { crearSupabaseServidor } from "@/features/autenticacion/supabase/servidor";
-import { solicitarDestinos } from "@/features/destinos/api";
-import type { Catalogo } from "@/features/destinos/catalogo";
 import { CatalogoDestinos } from "@/features/destinos/catalogo-destinos";
 import { ErrorDestinos } from "@/features/destinos/error-destinos";
 import { EsqueletoCatalogo } from "@/features/destinos/esqueletos";
+import { Navbar, cargarCatalogo } from "@/features/navegacion/navbar";
+import { PiePagina } from "@/features/navegacion/pie-pagina";
 
-import { Navbar, NavbarCatalogo } from "@/features/navegacion/navbar";
+export const metadata: Metadata = {
+  title: "Explorar destinos · Munay",
+  description:
+    "Encuentra destinos turísticos de Lambayeque y ubícalos en el mapa.",
+};
 
 async function DestinosPublicos() {
-  await connection();
-  let catalogo: Catalogo | undefined;
-
-  try {
-    const supabase = await crearSupabaseServidor();
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    let respuesta = await solicitarDestinos(token);
-
-    if (token && respuesta.status === 401) {
-      respuesta = await solicitarDestinos();
-    }
-    if (respuesta.ok) catalogo = (await respuesta.json()) as Catalogo;
-  } catch {
-    catalogo = undefined;
-  }
-
-  if (!catalogo) {
-    return (
-      <>
-        <div className="-mx-8 -mt-8">
-          <Navbar />
-        </div>
-        <ErrorDestinos titulo="No pudimos cargar el catálogo" />
-        <PiePagina className="-mx-8 -mb-8" />
-      </>
-    );
-  }
+  const catalogo = await cargarCatalogo();
+  if (!catalogo)
+    return <ErrorDestinos titulo="No pudimos cargar el catálogo" />;
 
   return (
-    <>
-      <div className="sticky top-0 z-40 -mx-8 -mt-8">
-        <NavbarCatalogo catalogo={catalogo} />
-      </div>
-      <main className="mx-auto max-w-6xl space-y-7 py-4 sm:py-8">
-        <div className="rounded-2xl bg-teal-950 px-6 py-9 text-white sm:px-9">
-          <h1 className="text-3xl font-bold sm:text-5xl">Explorar destinos</h1>
-          <p className="mt-3 max-w-xl text-teal-50">
-            Descubre lugares para visitar en Lambayeque.
-          </p>
-        </div>
-        <CatalogoDestinos
-          destinos={catalogo.destinos}
-          tieneSesion={Boolean(catalogo.sesion)}
-        />
-      </main>
-      <PiePagina className="-mx-8 -mb-8" />
-    </>
+    <CatalogoDestinos
+      destinos={catalogo.destinos}
+      tieneSesion={Boolean(catalogo.sesion)}
+    />
   );
 }
 
 export default function PaginaDestinos() {
   return (
-    <Suspense fallback={<EsqueletoCatalogo />}>
-      <DestinosPublicos />
-    </Suspense>
+    <div className="-m-8 min-h-dvh bg-[#f8f4ea] text-[#193b33]">
+      <Navbar />
+      <main className="mx-auto max-w-[82rem] px-4 pb-12 sm:px-8 lg:px-12">
+        <header className="border-b border-[#d9d2c2] py-7 sm:py-10">
+          <h1 className="text-balance font-serif text-[clamp(2.4rem,6.5vw,5rem)] leading-none tracking-tight">
+            Explorar destinos
+          </h1>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#465a50] sm:text-base">
+            Encuentra lugares para visitar en Lambayeque y ubícalos en el mapa.
+          </p>
+        </header>
+        <Suspense fallback={<EsqueletoCatalogo />}>
+          <DestinosPublicos />
+        </Suspense>
+      </main>
+      <PiePagina />
+    </div>
   );
 }

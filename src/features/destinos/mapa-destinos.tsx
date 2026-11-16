@@ -1,37 +1,32 @@
 "use client";
 
-import type * as Leaflet from "leaflet";
 import Image from "next/image";
 import Link from "next/link";
-import { enlaceFicha } from "./catalogo";
-import { useEffect, useRef, useState } from "react";
-import { categorias, type Destino } from "./catalogo";
+import { useState } from "react";
+import { obtenerUbicacion } from "@/features/visitas/ubicacion-visita";
+import { categorias, enlaceFicha, type Destino } from "./catalogo";
 import { CreditoFoto } from "./credito-foto";
 import { MapaGoogle } from "./mapa-google";
-import "leaflet/dist/leaflet.css";
 
-const centroLambayeque: Leaflet.LatLngTuple = [-6.53, -79.83];
 const soles = new Intl.NumberFormat("es-PE", {
   style: "currency",
   currency: "PEN",
 });
 const kilometros = new Intl.NumberFormat("es-PE", { maximumFractionDigits: 1 });
 
-type MotorMapa = { mapa: Leaflet.Map; biblioteca: typeof Leaflet };
-
-function coordenadas(destino: Destino): Leaflet.LatLngTuple {
-  return [destino.latitud, destino.longitud];
-}
-
-function encuadrar({ mapa }: MotorMapa, destinos: Destino[]) {
-  if (destinos.length === 0) {
-    mapa.setView(centroLambayeque, 10);
-  } else {
-    mapa.fitBounds(destinos.map(coordenadas), {
-      padding: [28, 28],
-      maxZoom: 13,
-    });
-  }
+function distanciaEnLineaRecta(
+  origen: google.maps.LatLngLiteral,
+  destino: Destino,
+) {
+  const radianes = Math.PI / 180;
+  const latitud = (destino.latitud - origen.lat) * radianes;
+  const longitud = (destino.longitud - origen.lng) * radianes;
+  const a =
+    Math.sin(latitud / 2) ** 2 +
+    Math.cos(origen.lat * radianes) *
+      Math.cos(destino.latitud * radianes) *
+      Math.sin(longitud / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(a)));
 }
 
 export function MapaDestinos({
@@ -49,170 +44,32 @@ export function MapaDestinos({
   volverFicha: string;
   limpiarFiltros: () => void;
 }) {
-  const contenedor = useRef<HTMLDivElement>(null);
-  const marcadores = useRef(new Map<string, Leaflet.Marker>());
-  const [motor, cambiarMotor] = useState<MotorMapa | null>(null);
-  const [mapaNoDisponible, cambiarDisponibilidad] = useState(false);
-  const [ubicacion, cambiarUbicacion] = useState<Leaflet.LatLngTuple>();
+  const [ubicacion, cambiarUbicacion] = useState<google.maps.LatLngLiteral>();
   const [avisoUbicacion, cambiarAviso] = useState("");
+  const [buscandoUbicacion, cambiarBusquedaUbicacion] = useState(false);
   const [imagenFallida, cambiarImagenFallida] = useState<string>();
-  const [vista, cambiarVista] = useState<"pines" | "google">("pines");
 
-  useEffect(() => {
-    let desmontado = false;
-    let mapa: Leaflet.Map | undefined;
-    let observador: ResizeObserver | undefined;
-
-    async function iniciar() {
-      const modulo = await import("leaflet");
-      const biblioteca = modulo.default ?? modulo;
-      await import("leaflet.markercluster");
-
-      if (desmontado || !contenedor.current) return;
-
-      mapa = biblioteca
-        .map(contenedor.current, { scrollWheelZoom: false })
-        .setView(centroLambayeque, 10);
-      let teselasCargadas = 0;
-      const teselas = biblioteca.tileLayer(
-        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-          maxZoom: 19,
-          attribution:
-            '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        },
-      );
-      teselas.on("loading", () => {
-        teselasCargadas = 0;
-      });
-      teselas.on("tileload", () => {
-        teselasCargadas++;
-      });
-      teselas.on("load", () => cambiarDisponibilidad(teselasCargadas === 0));
-      teselas.addTo(mapa);
-
-      observador = new ResizeObserver(() => mapa?.invalidateSize());
-      observador.observe(contenedor.current);
-      cambiarMotor({ mapa, biblioteca });
-    }
-
-    void iniciar().catch(() => {
-      if (!desmontado) cambiarDisponibilidad(true);
-    });
-
-    return () => {
-      desmontado = true;
-      observador?.disconnect();
-      mapa?.remove();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!motor) return;
-
-    const { mapa, biblioteca } = motor;
-    const grupo = biblioteca.markerClusterGroup({
-      showCoverageOnHover: false,
-      iconCreateFunction: (agrupacion) =>
-        biblioteca.divIcon({
-          className: "",
-          html: `<span class="flex size-9 items-center justify-center rounded-full border-2 border-white bg-teal-900 text-sm font-bold text-white shadow">${agrupacion.getChildCount()}</span>`,
-          iconSize: [36, 36],
-        }),
-    });
-    const icono = biblioteca.divIcon({
-      className: "",
-      html: '<span class="block size-5 rounded-full border-2 border-white bg-teal-700 shadow"></span>',
-      iconSize: [20, 20],
-    });
-
-    for (const destino of destinos) {
-      const marcador = biblioteca
-        .marker(coordenadas(destino), {
-          icon: icono,
-          title: destino.nombre,
-        })
-        .on("click", () => seleccionar(destino.id));
-      marcadores.current.set(destino.id, marcador);
-      grupo.addLayer(marcador);
-    }
-
-    grupo.addTo(mapa);
-    const actuales = marcadores.current;
-    return () => {
-      mapa.removeLayer(grupo);
-      actuales.clear();
-    };
-  }, [motor, destinos, seleccionar]);
-
-  useEffect(() => {
-    if (!motor) return;
-
-    if (seleccionado) {
-      motor.mapa.setView(coordenadas(seleccionado), 15);
-      const marcador = marcadores.current.get(seleccionado.id);
-      const icono = motor.biblioteca.divIcon({
-        className: "",
-        html: '<span class="block size-6 rounded-full border-2 border-white bg-orange-600 shadow"></span>',
-        iconSize: [24, 24],
-      });
-      const anterior = marcador?.getIcon();
-      marcador?.setIcon(icono);
-      return () => {
-        if (anterior) marcador?.setIcon(anterior);
-      };
-    }
-
-    encuadrar(motor, destinos);
-  }, [motor, destinos, seleccionado, seleccionar]);
-
-  useEffect(() => {
-    if (!motor || !ubicacion) return;
-
-    const punto = motor.biblioteca
-      .circleMarker(ubicacion, {
-        color: "white",
-        fillColor: "#2563eb",
-        fillOpacity: 1,
-        weight: 2,
-        radius: 8,
-      })
-      .bindTooltip("Mi posición")
-      .addTo(motor.mapa);
-
-    return () => {
-      punto.remove();
-    };
-  }, [motor, ubicacion]);
-
-  function mostrarPosicion() {
-    if (!motor || !navigator.geolocation) {
-      cambiarAviso("Tu navegador no puede obtener la ubicación.");
-      return;
-    }
-
+  async function mostrarPosicion() {
+    cambiarBusquedaUbicacion(true);
     cambiarAviso("Buscando tu ubicación…");
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        if (!contenedor.current) return;
-        const punto: Leaflet.LatLngTuple = [coords.latitude, coords.longitude];
-        cambiarUbicacion(punto);
-        motor.mapa.setView(punto, 14);
-        cambiarAviso("");
-      },
-      ({ code }) =>
-        cambiarAviso(
-          code === 1
-            ? "Permite el acceso a tu ubicación para ver tu posición."
-            : "No pudimos obtener tu ubicación. Puedes seguir usando el mapa.",
-        ),
-      { timeout: 10000 },
-    );
+    try {
+      const { latitud, longitud } = await obtenerUbicacion();
+      cambiarUbicacion({ lat: latitud, lng: longitud });
+      cambiarAviso("Ubicación encontrada.");
+    } catch (error) {
+      cambiarAviso(
+        error instanceof Error
+          ? error.message
+          : "No pudimos obtener tu ubicación.",
+      );
+    } finally {
+      cambiarBusquedaUbicacion(false);
+    }
   }
 
   const distancia =
-    motor && ubicacion && seleccionado
-      ? motor.mapa.distance(ubicacion, coordenadas(seleccionado)) / 1000
+    ubicacion && seleccionado
+      ? distanciaEnLineaRecta(ubicacion, seleccionado)
       : null;
 
   return (
@@ -222,41 +79,28 @@ export function MapaDestinos({
     >
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">
-          <div role="group" aria-label="Vista del mapa" className="flex gap-2">
-            {(["pines", "google"] as const).map((opcion) => (
-              <button
-                key={opcion}
-                type="button"
-                aria-pressed={vista === opcion}
-                onClick={() => cambiarVista(opcion)}
-                className="rounded-lg border border-teal-900 px-3 py-2 text-sm font-semibold aria-pressed:bg-teal-950 aria-pressed:text-white"
-              >
-                {opcion === "pines" ? "Pines" : "Google Maps"}
-              </button>
-            ))}
-          </div>
           <button
             type="button"
-            disabled={!motor || vista !== "pines"}
+            disabled={buscandoUbicacion}
             onClick={mostrarPosicion}
-            className="rounded-lg border border-teal-900 bg-white px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            className="min-h-11 rounded-lg border border-teal-900 bg-white px-3 text-sm font-semibold disabled:opacity-50"
           >
             Mi posición
           </button>
           <button
             type="button"
-            disabled={!motor}
             onClick={() => {
-              if (motor) encuadrar(motor, destinos);
+              cambiarUbicacion(undefined);
+              cambiarAviso("");
               limpiarFiltros();
             }}
-            className="rounded-lg border border-teal-900 bg-white px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            className="min-h-11 rounded-lg border border-teal-900 bg-white px-3 text-sm font-semibold"
           >
             Ver todos
           </button>
           <Link
             href={volver}
-            className="px-3 py-2 text-sm font-semibold text-teal-800 underline"
+            className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-teal-800 underline"
           >
             Volver al catálogo
           </Link>
@@ -266,37 +110,13 @@ export function MapaDestinos({
             {avisoUbicacion}
           </p>
         )}
-        {vista === "pines" && mapaNoDisponible && (
-          <p
-            role="alert"
-            className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950"
-          >
-            No pudimos cargar el mapa. Revisa tu conexión o{" "}
-            <Link href={volver} className="font-semibold underline">
-              consulta la lista de destinos
-            </Link>
-            .
-          </p>
-        )}
-        {vista === "pines" && !motor && !mapaNoDisponible && (
-          <p role="status" className="text-sm">
-            Cargando mapa…
-          </p>
-        )}
-        <div
-          ref={contenedor}
-          hidden={vista !== "pines"}
-          role="region"
-          aria-label="Mapa interactivo de Lambayeque"
-          className="relative z-0 h-[24rem] overflow-hidden rounded-2xl border border-stone-200 bg-stone-100 sm:h-[32rem]"
+        <MapaGoogle
+          destinos={destinos}
+          seleccionado={seleccionado}
+          seleccionar={seleccionar}
+          ubicacion={ubicacion}
+          volver={volver}
         />
-        {vista === "google" && (
-          <MapaGoogle
-            destinos={destinos}
-            seleccionado={seleccionado}
-            seleccionar={seleccionar}
-          />
-        )}
       </div>
       <div className="space-y-4">
         {seleccionado && (

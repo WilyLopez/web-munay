@@ -69,7 +69,11 @@ export function CatalogoDestinos({
     parametros.get("orden") === "nombre" ? "nombre" : "recomendados";
   const consulta = normalizarBusqueda(busqueda.trim());
   const tieneFiltros = Boolean(
-    consulta || categoria !== "TODOS" || provincia || calificacion,
+    consulta ||
+    categoria !== "TODOS" ||
+    provincia ||
+    calificacion ||
+    orden === "nombre",
   );
   const resultados = useMemo(
     () =>
@@ -136,116 +140,67 @@ export function CatalogoDestinos({
     resultados.find(({ id }) => id === destinoId) ??
     (consulta && resultados.length === 1 ? resultados[0] : undefined);
 
+  const filtrosAvanzados =
+    Number(Boolean(provincia)) + Number(Boolean(calificacion));
+  const campo =
+    "min-h-11 w-full min-w-0 rounded-lg border border-[#b9c4b9] bg-white px-3 text-base font-normal text-[#193b33] focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm";
+  const pestana =
+    "inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-semibold hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 aria-[current=page]:bg-[#174238] aria-[current=page]:text-white";
+
   return (
-    <section aria-label="Catálogo de destinos" className="space-y-6">
-      <div className="space-y-4 rounded-2xl border border-stone-200 bg-white p-4 sm:p-6">
-        <nav
-          aria-label="Vista de destinos"
-          className="flex flex-wrap gap-3 text-sm font-semibold"
-        >
-          <Link
-            href={enlace(false)}
-            scroll={false}
-            aria-current={!vistaMapa ? "page" : undefined}
-            className="rounded-lg border border-teal-900 px-3 py-2 aria-[current=page]:bg-teal-900 aria-[current=page]:text-white"
-          >
-            Lista
-          </Link>
-          <Link
-            href={enlace(true)}
-            scroll={false}
-            aria-current={vistaMapa ? "page" : undefined}
-            className="rounded-lg border border-teal-900 px-3 py-2 aria-[current=page]:bg-teal-900 aria-[current=page]:text-white"
-          >
-            Mapa
-          </Link>
-        </nav>
-        <div className="grid gap-4 sm:grid-cols-[1fr_13rem]">
+    <section
+      aria-label="Catálogo de destinos"
+      className="space-y-5 py-5 sm:py-7"
+    >
+      <div className="space-y-4">
+        <div className="grid items-end gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
           <label
-            className="grid gap-2 text-sm font-semibold"
+            className="grid min-w-0 gap-1.5 text-sm font-semibold"
             htmlFor="buscar-destinos"
           >
             Buscar destinos
             <input
               id="buscar-destinos"
+              name="buscar"
               type="search"
+              autoComplete="off"
               value={busqueda}
               onChange={(evento) =>
                 aplicarFiltro("buscar", evento.target.value)
               }
-              placeholder="Nombre o ubicación"
-              className="min-w-0 rounded-xl border border-stone-300 px-4 py-3 font-normal"
+              placeholder="Nombre o ubicación…"
+              className={campo}
             />
           </label>
-          <label
-            className="grid gap-2 text-sm font-semibold"
-            htmlFor="orden-destinos"
+          <nav
+            aria-label="Vista de destinos"
+            className="grid grid-cols-2 gap-1 rounded-xl border border-[#dedacf] bg-[#eee9dc] p-1"
           >
-            Ordenar por
-            <select
-              id="orden-destinos"
-              value={orden}
-              onChange={(evento) =>
-                aplicarFiltro(
-                  "orden",
-                  evento.target.value === "nombre" ? "nombre" : "",
-                )
-              }
-              className="rounded-xl border border-stone-300 bg-white px-4 py-3 font-normal"
+            <Link
+              href={enlace(false)}
+              scroll={false}
+              prefetch={false}
+              aria-current={!vistaMapa ? "page" : undefined}
+              className={pestana}
             >
-              <option value="recomendados">Recomendados</option>
-              <option value="nombre">Nombre (A–Z)</option>
-            </select>
-          </label>
+              Lista
+            </Link>
+            <Link
+              href={enlace(true)}
+              scroll={false}
+              prefetch={false}
+              aria-current={vistaMapa ? "page" : undefined}
+              className={pestana}
+            >
+              Mapa
+            </Link>
+          </nav>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label
-            className="grid gap-2 text-sm font-semibold"
-            htmlFor="provincia-destinos"
-          >
-            Provincia
-            <select
-              id="provincia-destinos"
-              value={provincia}
-              onChange={(evento) =>
-                aplicarFiltro("provincia", evento.target.value)
-              }
-              className="rounded-xl border border-stone-300 bg-white px-4 py-2 font-normal"
-            >
-              <option value="">Todas las provincias</option>
-              {Object.entries(provincias).map(([id, nombre]) => (
-                <option key={id} value={id}>
-                  {nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label
-            className="grid gap-2 text-sm font-semibold"
-            htmlFor="calificacion-destinos"
-          >
-            Calificación mínima
-            <select
-              id="calificacion-destinos"
-              value={calificacion}
-              onChange={(evento) =>
-                aplicarFiltro("calificacion", evento.target.value)
-              }
-              className="rounded-xl border border-stone-300 bg-white px-4 py-2 font-normal"
-            >
-              <option value="">Cualquier calificación</option>
-              {calificaciones.map((valor) => (
-                <option key={valor} value={valor}>
-                  {formatoCalificacion.format(Number(valor))} de 5 o más
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+
         <div
+          className="flex flex-wrap items-center gap-2"
           role="group"
           aria-label="Tipo de experiencia"
-          className="flex flex-wrap gap-2"
         >
           {(
             ["TODOS", ...Object.keys(categorias)] as (Categoria | "TODOS")[]
@@ -257,12 +212,78 @@ export function CatalogoDestinos({
               onClick={() =>
                 aplicarFiltro("categoria", opcion === "TODOS" ? "" : opcion)
               }
-              className="rounded-full border border-stone-300 px-4 py-2 text-sm font-medium aria-pressed:border-teal-900 aria-pressed:bg-teal-900 aria-pressed:text-white"
+              className="min-h-11 rounded-full border border-[#b9c4b9] px-4 text-sm font-semibold hover:bg-[#e8eee6] focus-visible:outline-2 focus-visible:outline-offset-2 aria-pressed:border-[#174238] aria-pressed:bg-[#174238] aria-pressed:text-white"
             >
               {opcion === "TODOS" ? "Todos" : categorias[opcion]}
             </button>
           ))}
         </div>
+
+        <details className="group rounded-xl border border-[#dedacf] bg-[#fffdf6] px-4">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-md text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+            <span>
+              Más filtros{filtrosAvanzados > 0 ? ` (${filtrosAvanzados})` : ""}
+            </span>
+            <span aria-hidden="true" className="group-open:rotate-180">
+              ⌄
+            </span>
+          </summary>
+          <div className="grid gap-3 border-t border-[#dedacf] py-4 sm:grid-cols-3">
+            <label className="grid min-w-0 gap-1.5 text-sm font-semibold">
+              Provincia
+              <select
+                name="provincia"
+                value={provincia}
+                onChange={(evento) =>
+                  aplicarFiltro("provincia", evento.target.value)
+                }
+                className={campo}
+              >
+                <option value="">Todas las provincias</option>
+                {Object.entries(provincias).map(([id, nombre]) => (
+                  <option key={id} value={id}>
+                    {nombre}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid min-w-0 gap-1.5 text-sm font-semibold">
+              Calificación mínima
+              <select
+                name="calificacion"
+                value={calificacion}
+                onChange={(evento) =>
+                  aplicarFiltro("calificacion", evento.target.value)
+                }
+                className={campo}
+              >
+                <option value="">Cualquier calificación</option>
+                {calificaciones.map((valor) => (
+                  <option key={valor} value={valor}>
+                    {formatoCalificacion.format(Number(valor))} de 5 o más
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid min-w-0 gap-1.5 text-sm font-semibold">
+              Ordenar por
+              <select
+                name="orden"
+                value={orden}
+                onChange={(evento) =>
+                  aplicarFiltro(
+                    "orden",
+                    evento.target.value === "nombre" ? "nombre" : "",
+                  )
+                }
+                className={campo}
+              >
+                <option value="recomendados">Recomendados</option>
+                <option value="nombre">Nombre (A–Z)</option>
+              </select>
+            </label>
+          </div>
+        </details>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p role="status" className="text-sm font-medium text-stone-700">
@@ -274,7 +295,7 @@ export function CatalogoDestinos({
           <button
             type="button"
             onClick={limpiarFiltros}
-            className="text-sm font-semibold text-teal-800 underline underline-offset-4"
+            className="min-h-11 rounded-sm text-sm font-semibold text-teal-800 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             Limpiar filtros
           </button>
@@ -306,7 +327,7 @@ export function CatalogoDestinos({
           <h2 className="text-xl font-bold">No se encontraron destinos</h2>
           <p className="mt-2 text-sm text-stone-600">
             {tieneFiltros
-              ? "Prueba con una calificación menor o cambia los filtros."
+              ? "Cambia la búsqueda o ajusta los filtros para ver más lugares."
               : "Todavía no hay destinos publicados."}
           </p>
         </div>
