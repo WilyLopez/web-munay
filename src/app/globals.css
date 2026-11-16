@@ -7,6 +7,36 @@ body {
   font-family: system-ui, sans-serif;
 }
 
+html:has(.menu-lateral-munay[open]) {
+  overflow: hidden;
+}
+
+.menu-lateral-munay {
+  position: fixed;
+  inset: 0 auto 0 0;
+  margin: 0;
+  width: min(22rem, calc(100% - 3rem));
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #fffdf7;
+  color: #193b33;
+  box-shadow: 0 0 2rem #152b2533;
+}
+
+.menu-lateral-munay::backdrop {
+  background: #152b2575;
+}
+
+.menu-lateral-contenido {
+  min-height: 100%;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem
+    max(1rem, env(safe-area-inset-bottom))
+    max(1rem, env(safe-area-inset-left));
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .entrada-portada {
     animation: abrir-panel-navbar 260ms ease-out both;
@@ -14,12 +44,14 @@ body {
   .panel-navbar {
     animation: abrir-panel-navbar 150ms ease-out both;
   }
+  .menu-lateral-munay[open] {
+    animation: abrir-menu-lateral 200ms ease-out both;
+  }
 }
 
-@media (width < 48rem) {
-  body:has([data-menu-visitante]) {
-    padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
-    scroll-padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+@keyframes abrir-menu-lateral {
+  from {
+    transform: translateX(-100%);
   }
 }
 
