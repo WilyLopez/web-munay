@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { AvisoAcceso } from "./aviso-acceso";
+import { BotonEnvioAcceso } from "./boton-envio-acceso";
 import {
   botonAcceso as boton,
   campoAcceso as campo,
@@ -61,7 +62,7 @@ export function SolicitudRecuperacion() {
           Ingresa el correo de tu cuenta para recibir un enlace de recuperación.
         </p>
       ) : null}
-      <form action={enviar} className="space-y-4">
+      <form action={enviar} className="space-y-4" aria-busy={pendiente}>
         {enviado ? (
           <input type="hidden" name="correoElectronico" value={correo} />
         ) : (
@@ -71,6 +72,8 @@ export function SolicitudRecuperacion() {
               type="email"
               name="correoElectronico"
               autoComplete="email"
+              spellCheck={false}
+              autoCapitalize="none"
               className={campo}
               value={correo}
               onChange={(evento) => cambiarCorreo(evento.target.value)}
@@ -84,13 +87,10 @@ export function SolicitudRecuperacion() {
           <AvisoAcceso tipo="error" mensaje={estado.mensaje} />
         )}
         <div className="flex flex-wrap items-center gap-3">
-          <button className={boton} disabled={pendiente}>
-            {pendiente
-              ? "Enviando…"
-              : enviado
-                ? "Reenviar enlace"
-                : "Enviar enlace"}
-          </button>
+          <BotonEnvioAcceso
+            etiqueta={enviado ? "Reenviar enlace" : "Enviar enlace"}
+            esperando="Enviando…"
+          />
           {enviado && buzon && (
             <a href={buzon} target="_blank" rel="noreferrer" className={enlace}>
               Abrir mi correo
@@ -148,7 +148,7 @@ export function FormularioRestablecer({ token }: { token?: string }) {
   return (
     <>
       <h1 className={tituloAcceso}>Crea una nueva contraseña</h1>
-      <form action={actualizar} className="space-y-4">
+      <form action={actualizar} className="space-y-4" aria-busy={pendiente}>
         <label className="grid gap-2 text-sm font-semibold text-stone-900">
           Nueva contraseña
           <input
@@ -160,6 +160,7 @@ export function FormularioRestablecer({ token }: { token?: string }) {
             required
             minLength={8}
             aria-describedby="reglas-contrasena"
+            aria-invalid={Boolean(estado.errores?.contrasena)}
             className={campo}
           />
         </label>
@@ -174,6 +175,7 @@ export function FormularioRestablecer({ token }: { token?: string }) {
             required
             minLength={8}
             aria-describedby="reglas-contrasena"
+            aria-invalid={Boolean(estado.errores?.confirmarContrasena)}
             className={campo}
           />
         </label>
@@ -208,9 +210,7 @@ export function FormularioRestablecer({ token }: { token?: string }) {
             }
           />
         )}
-        <button className={boton} disabled={pendiente || !minimo || !coinciden}>
-          {pendiente ? "Guardando…" : "Guardar contraseña"}
-        </button>
+        <BotonEnvioAcceso etiqueta="Guardar contraseña" esperando="Guardando…" />
       </form>
       <Link className={enlace} href="/autenticacion/recuperar">
         Solicitar nuevo enlace

@@ -1,6 +1,7 @@
 "use client";
 
 import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Destino } from "./catalogo";
 
@@ -11,10 +12,14 @@ export function MapaGoogle({
   destinos,
   seleccionado,
   seleccionar,
+  ubicacion,
+  volver,
 }: {
   destinos: Destino[];
   seleccionado?: Destino;
-  seleccionar: (id: string) => void;
+  seleccionar?: (id: string) => void;
+  ubicacion?: google.maps.LatLngLiteral;
+  volver: string;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
   const [motor, cambiarMotor] = useState<{
@@ -53,44 +58,80 @@ export function MapaGoogle({
 
   useEffect(() => {
     if (!motor) return;
-    const limites = new google.maps.LatLngBounds();
     const marcadores = destinos.map((destino) => {
       const position = { lat: destino.latitud, lng: destino.longitud };
-      limites.extend(position);
       const marcador = new motor.Marcador({
         map: motor.mapa,
         position,
         title: destino.nombre,
-        gmpClickable: true,
+        gmpClickable: Boolean(seleccionar),
       });
-      const elegir = () => seleccionar(destino.id);
-      marcador.addEventListener("gmp-click", elegir);
+      const elegir = seleccionar ? () => seleccionar(destino.id) : undefined;
+      if (elegir) marcador.addEventListener("gmp-click", elegir);
       return { marcador, elegir };
     });
-    if (destinos.length > 1) motor.mapa.fitBounds(limites, 32);
-    else if (destinos.length === 1) {
-      motor.mapa.setCenter(limites.getCenter());
-      motor.mapa.setZoom(13);
-    }
     return () => {
       for (const { marcador, elegir } of marcadores) {
-        marcador.removeEventListener("gmp-click", elegir);
+        if (elegir) marcador.removeEventListener("gmp-click", elegir);
         marcador.map = null;
       }
     };
   }, [motor, destinos, seleccionar]);
 
   useEffect(() => {
-    if (!motor || !seleccionado) return;
-    motor.mapa.panTo({ lat: seleccionado.latitud, lng: seleccionado.longitud });
-    motor.mapa.setZoom(15);
-  }, [motor, seleccionado]);
+    if (!motor) return;
+    if (seleccionado) {
+      motor.mapa.panTo({
+        lat: seleccionado.latitud,
+        lng: seleccionado.longitud,
+      });
+      motor.mapa.setZoom(15);
+    } else if (destinos.length > 1) {
+      const limites = new google.maps.LatLngBounds();
+      for (const { latitud, longitud } of destinos) {
+        limites.extend({ lat: latitud, lng: longitud });
+      }
+      motor.mapa.fitBounds(limites, 32);
+    } else {
+      const [destino] = destinos;
+      motor.mapa.setCenter(
+        destino
+          ? { lat: destino.latitud, lng: destino.longitud }
+          : { lat: -6.53, lng: -79.83 },
+      );
+      motor.mapa.setZoom(destino ? 13 : 10);
+    }
+  }, [motor, destinos, seleccionado, ubicacion]);
+
+  useEffect(() => {
+    if (!motor || !ubicacion) return;
+    const indicador = new google.maps.marker.PinElement({
+      background: "#2563eb",
+      borderColor: "#fff",
+      glyphColor: "#fff",
+    });
+    const marcador = new motor.Marcador({
+      map: motor.mapa,
+      position: ubicacion,
+      title: "Mi posición",
+    });
+    marcador.append(indicador);
+    motor.mapa.panTo(ubicacion);
+    motor.mapa.setZoom(14);
+    return () => {
+      marcador.map = null;
+    };
+  }, [motor, ubicacion]);
 
   return (
     <div className="space-y-2">
       {!clave || fallo ? (
         <p role="status" className="rounded-xl border border-stone-300 p-4">
-          Google Maps no está disponible. Puedes seguir explorando en Pines.
+          Google Maps no está disponible. Puedes{" "}
+          <Link href={volver} className="font-semibold underline">
+            consultar la lista de destinos
+          </Link>
+          .
         </p>
       ) : (
         <>

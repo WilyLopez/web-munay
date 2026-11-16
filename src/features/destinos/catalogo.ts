@@ -31,6 +31,7 @@ export type Destino = {
   tarifaGeneral: number | null;
   tarifaEstudiantes: number | null;
   calificacionPromedio: number | null;
+  totalResenas?: number;
   verificado: boolean;
   favorito: boolean;
 };

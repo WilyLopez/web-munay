@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { confirmarCorreo } from "@/features/autenticacion/acciones";
+import { BotonEnvioAcceso } from "@/features/autenticacion/boton-envio-acceso";
 import {
   AvisoAcceso,
   EsqueletoAcceso,
 } from "@/features/autenticacion/aviso-acceso";
 import {
-  botonAcceso,
   enlaceAcceso,
   tituloAcceso,
 } from "@/features/autenticacion/estilos-acceso";
@@ -35,9 +35,7 @@ async function ContenidoConfirmacion({
             Confirma tu correo para activar el acceso a tu cuenta.
           </p>
           <input type="hidden" name="tokenHash" value={tokenHash} />
-          <button className={botonAcceso} type="submit">
-            Confirmar correo
-          </button>
+          <BotonEnvioAcceso etiqueta="Confirmar correo" esperando="Confirmando…" />
         </form>
       ) : (
         <AvisoAcceso

@@ -84,7 +84,7 @@ async function Panel({ consulta }: { consulta: Promise<Consulta> }) {
   const navegacion = (
     <nav
       aria-label="Panel del encargado"
-      className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 gap-1 border-t border-teal-200 bg-teal-50 p-2 text-center text-xs font-semibold sm:static sm:flex sm:gap-4 sm:rounded-xl sm:border-0 sm:p-3 sm:text-sm"
+      className={`${perfil?.rol === "SUPER_ADMIN" ? "flex" : "hidden md:flex"} flex-wrap gap-4 rounded-xl bg-teal-50 p-3 text-sm font-semibold`}
     >
       <Link
         className="py-2"
@@ -174,7 +174,10 @@ async function Panel({ consulta }: { consulta: Promise<Consulta> }) {
           Aplicar
         </button>
       </form>
-      <Suspense key={`resultados-${filtro}`} fallback={<EsqueletoEstadisticas />}>
+      <Suspense
+        key={`resultados-${filtro}`}
+        fallback={<EsqueletoEstadisticas />}
+      >
         <ResultadosEstadisticas slug={slug} meses={meses} />
       </Suspense>
     </>
@@ -276,7 +279,9 @@ async function ResultadosEstadisticas({
         )}
         {datos.recientes.length > 0 && (
           <p>
-            El promedio de las últimas {datos.recientes.length} reseñas es{" "}
+            {datos.recientes.length === 1
+              ? "La reseña más reciente tiene "
+              : `El promedio de las últimas ${datos.recientes.length} reseñas es `}
             {(
               datos.recientes.reduce(
                 (suma, resena) => suma + resena.calificacion,
@@ -345,7 +350,7 @@ export default function PaginaEstadisticas({
   searchParams: Promise<Consulta>;
 }) {
   return (
-    <main className="mx-auto max-w-5xl space-y-5 pt-8 pb-24 sm:pb-8">
+    <main className="mx-auto max-w-5xl space-y-5 pt-8 pb-8">
       <h1 className="text-3xl font-bold text-teal-950">
         Estadísticas del atractivo
       </h1>

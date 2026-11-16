@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { cerrarSesion } from "@/features/autenticacion/acciones";
 import { AvisoExpiracion } from "@/features/autenticacion/aviso-expiracion";
 import {
@@ -128,8 +128,11 @@ export function BarraNavegacion({
   const [panel, cambiarPanel] = useState<"busqueda" | "menu" | "cuenta">();
   const [texto, cambiarTexto] = useState("");
   const [sombra, cambiarSombra] = useState(false);
+  const idPanel = useId();
+  const idMenu = useId();
   const barra = useRef<HTMLElement>(null);
   const disparador = useRef<HTMLButtonElement>(null);
+  const menuMovil = useRef<HTMLDialogElement>(null);
   const campo = useRef<HTMLInputElement>(null);
   const consulta = normalizarBusqueda(texto.trim());
   const resultados = consulta
@@ -174,6 +177,24 @@ export function BarraNavegacion({
     if (panel === "busqueda") campo.current?.focus();
   }, [panel]);
 
+  useEffect(() => {
+    const menu = menuMovil.current;
+    if (panel !== "menu" || !menu) return;
+
+    const escritorio = window.matchMedia("(min-width: 64rem)");
+    function cerrarEnEscritorio() {
+      if (escritorio.matches) cambiarPanel(undefined);
+    }
+    if (escritorio.matches) return cerrarEnEscritorio();
+
+    menu.showModal();
+    escritorio.addEventListener("change", cerrarEnEscritorio);
+    return () => {
+      escritorio.removeEventListener("change", cerrarEnEscritorio);
+      menu.close();
+    };
+  }, [panel]);
+
   function abrir(opcion: typeof panel, elemento: HTMLButtonElement) {
     disparador.current = elemento;
     cambiarPanel(panel === opcion ? undefined : opcion);
@@ -193,7 +214,6 @@ export function BarraNavegacion({
         href={href}
         aria-current={activa === href ? "page" : undefined}
         className={`${boton} relative aria-[current=page]:bg-[#e8eee6] aria-[current=page]:text-[#174238]`}
-        onClick={() => cambiarPanel(undefined)}
       >
         {etiqueta}
       </Link>
@@ -204,8 +224,21 @@ export function BarraNavegacion({
     <header
       ref={barra}
       className={`sticky top-0 z-40 border-b border-[#e5ded0] bg-[#f8f4ea]/95 text-[#193b33] backdrop-blur transition-shadow motion-reduce:transition-none ${sombra ? "shadow-sm" : ""}`}
+      onBlur={(evento) => {
+        if (
+          evento.relatedTarget &&
+          !evento.currentTarget.contains(evento.relatedTarget)
+        ) {
+          cambiarPanel(undefined);
+        }
+      }}
+      onClick={(evento) => {
+        if (evento.target instanceof Element && evento.target.closest("a")) {
+          cambiarPanel(undefined);
+        }
+      }}
       onKeyDown={(evento) => {
-        if (evento.key === "Escape" && panel) {
+        if (evento.key === "Escape" && panel && panel !== "menu") {
           evento.preventDefault();
           cambiarPanel(undefined);
           disparador.current?.focus();
@@ -214,21 +247,35 @@ export function BarraNavegacion({
     >
       {sesion && <AvisoExpiracion venceEn={sesion.venceEn} />}
       <div className="relative mx-auto flex min-h-[4.5rem] max-w-[82rem] items-center justify-between gap-2 px-4 sm:gap-5 sm:px-8 lg:px-12">
-        <Link
-          href="/"
-          aria-label="Munay, inicio"
-          onClick={() => cambiarPanel(undefined)}
-          className="shrink-0 rounded focus-visible:outline-2 focus-visible:outline-offset-4"
-        >
-          <Image
-            src="/marca/logo-navbar.webp"
-            alt=""
-            width={360}
-            height={80}
-            priority
-            className="h-auto w-28 sm:w-36"
-          />
-        </Link>
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            aria-label="Abrir menú"
+            aria-expanded={panel === "menu"}
+            aria-controls={idMenu}
+            aria-haspopup="dialog"
+            onClick={(evento) => abrir("menu", evento.currentTarget)}
+            className={`${boton} size-11 shrink-0 touch-manipulation justify-center border border-[#dedacf] lg:hidden`}
+          >
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+            </svg>
+          </button>
+          <Link
+            href="/"
+            aria-label="Munay, inicio"
+            className="min-w-0 rounded focus-visible:outline-2 focus-visible:outline-offset-4"
+          >
+            <Image
+              src="/marca/logo-navbar.webp"
+              alt=""
+              width={360}
+              height={80}
+              priority
+              className="h-auto w-28 sm:w-36"
+            />
+          </Link>
+        </div>
         <nav
           aria-label="Navegación principal"
           className="hidden items-center gap-1 lg:flex"
@@ -240,7 +287,7 @@ export function BarraNavegacion({
             <Link
               href="/mi-perfil"
               aria-label={`Mi perfil, ${sesion.saldoPuntos} puntos MUNAY`}
-              className="shrink-0 rounded-full bg-[#dbece0] px-2.5 py-1.5 text-xs font-semibold text-[#174238]"
+              className="hidden min-h-11 shrink-0 items-center rounded-full bg-[#dbece0] px-2.5 py-1.5 text-xs font-semibold text-[#174238] lg:inline-flex"
             >
               {sesion.saldoPuntos} pts
             </Link>
@@ -249,19 +296,21 @@ export function BarraNavegacion({
             type="button"
             aria-label="Buscar destinos"
             aria-expanded={panel === "busqueda"}
+            aria-controls={panel === "busqueda" ? idPanel : undefined}
             onClick={(e) => abrir("busqueda", e.currentTarget)}
-            className={`${boton} sm:border sm:border-[#dedacf]`}
+            className={`${boton} touch-manipulation border border-[#dedacf]`}
           >
             <Lupa />
-            <span className="hidden sm:inline">Buscar destinos</span>
+            <span className="hidden lg:inline">Buscar destinos</span>
           </button>
           {sesion ? (
             <button
               type="button"
               aria-label={`Cuenta de ${nombre}`}
               aria-expanded={panel === "cuenta"}
+              aria-controls={panel === "cuenta" ? idPanel : undefined}
               onClick={(e) => abrir("cuenta", e.currentTarget)}
-              className={`${boton} hidden sm:flex`}
+              className={`${boton} hidden lg:flex`}
             >
               <span
                 aria-hidden="true"
@@ -275,7 +324,7 @@ export function BarraNavegacion({
               <span aria-hidden="true">⌄</span>
             </button>
           ) : (
-            <div className="hidden items-center sm:flex">
+            <div className="hidden items-center lg:flex">
               <Link href="/ingresar" className={boton}>
                 Iniciar sesión
               </Link>
@@ -287,30 +336,12 @@ export function BarraNavegacion({
               </Link>
             </div>
           )}
-          <button
-            type="button"
-            aria-expanded={panel === "menu"}
-            onClick={(e) => abrir("menu", e.currentTarget)}
-            className={`${boton} lg:hidden`}
-          >
-            <svg
-              aria-hidden="true"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            >
-              <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
-            </svg>
-            Menú
-          </button>
         </div>
-        {panel && (
+        {(panel === "busqueda" || panel === "cuenta") && (
           <div
             key={panel}
-            className={`panel-navbar absolute inset-x-4 top-full max-h-[calc(100dvh-5rem)] overflow-auto rounded-xl border border-[#dedacf] bg-[#fffdf7] p-2 shadow-lg sm:right-8 sm:left-auto lg:right-12 ${panel === "busqueda" ? "sm:w-96" : "sm:w-64"} ${panel === "menu" ? "lg:hidden" : panel === "cuenta" ? "hidden sm:block" : ""}`}
+            id={idPanel}
+            className={`panel-navbar absolute inset-x-4 top-full max-h-[calc(100dvh-5rem)] overflow-auto overscroll-contain rounded-xl border border-[#dedacf] bg-[#fffdf7] p-2 shadow-lg sm:right-8 sm:left-auto lg:right-12 ${panel === "busqueda" ? "sm:w-96" : "hidden sm:w-72 lg:block"}`}
           >
             {panel === "busqueda" ? (
               <div className="space-y-2 p-2">
@@ -324,7 +355,8 @@ export function BarraNavegacion({
                     ref={campo}
                     type="search"
                     aria-label="Buscar por nombre o ubicación"
-                    placeholder="Nombre o ubicación"
+                    placeholder="Nombre o ubicación…"
+                    autoComplete="off"
                     className="min-h-11 min-w-0 flex-1 outline-none"
                     value={texto}
                     onChange={(e) => cambiarTexto(e.target.value)}
@@ -344,7 +376,6 @@ export function BarraNavegacion({
                         <Link
                           href={enlaceFicha(slug)}
                           className={opcion}
-                          onClick={() => cambiarPanel(undefined)}
                         >
                           {nombre}
                           <span className="block text-xs font-normal text-[#52665e]">
@@ -358,28 +389,55 @@ export function BarraNavegacion({
                 {consulta && (
                   <Link
                     href={busqueda}
-                    onClick={() => cambiarPanel(undefined)}
                     className={opcion}
                   >
                     Ver resultados en el catálogo
                   </Link>
                 )}
               </div>
-            ) : panel === "cuenta" ? (
-              <AccionesCuenta sesion={sesion} />
-            ) : (
-              <>
-                <nav aria-label="Navegación principal móvil">
-                  {enlacesPublicos()}
-                </nav>
-                <div className="mt-2 border-t border-[#e5ded0] pt-2 sm:hidden">
-                  <AccionesCuenta sesion={sesion} />
-                </div>
-              </>
-            )}
+            ) : <AccionesCuenta sesion={sesion} />}
           </div>
         )}
       </div>
+      <dialog
+        ref={menuMovil}
+        id={idMenu}
+        aria-label="Menú de Munay"
+        className="menu-lateral-munay"
+        onCancel={(evento) => {
+          evento.preventDefault();
+          cambiarPanel(undefined);
+        }}
+        onClick={(evento) => {
+          if (evento.target === evento.currentTarget) cambiarPanel(undefined);
+        }}
+      >
+        {panel === "menu" && (
+          <div className="menu-lateral-contenido">
+            <div className="flex items-center justify-between gap-3 border-b border-[#e5ded0] pb-4">
+              <Link href="/" aria-label="Munay, inicio" className="rounded focus-visible:outline-2 focus-visible:outline-offset-4">
+                <Image src="/marca/logo-navbar.webp" alt="" width={360} height={80} className="h-auto w-32" />
+              </Link>
+              <button
+                type="button"
+                aria-label="Cerrar menú"
+                onClick={() => cambiarPanel(undefined)}
+                className={`${boton} size-11 shrink-0 touch-manipulation justify-center`}
+              >
+                <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <path d="m6 6 12 12M18 6 6 18" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+            <nav aria-label="Navegación principal móvil" className="grid gap-1 py-4">
+              {enlacesPublicos()}
+            </nav>
+            <div className="space-y-1 border-t border-[#e5ded0] pt-4">
+              <AccionesCuenta sesion={sesion} />
+            </div>
+          </div>
+        )}
+      </dialog>
     </header>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { votarResena } from "./acciones";
 
@@ -18,7 +18,9 @@ export function AccionesResena({
   const [ocupado, cambiarOcupado] = useState(false);
   const [aviso, cambiarAviso] = useState("");
   const [enlace, cambiarEnlace] = useState("");
+  const [compartirNativo, cambiarCompartirNativo] = useState(false);
   const [avisoEnlace, cambiarAvisoEnlace] = useState("");
+  const panel = useId();
 
   async function votar() {
     if (ocupado) return;
@@ -41,22 +43,28 @@ export function AccionesResena({
     }
   }
 
-  async function compartir() {
+  function alternarCompartir() {
     cambiarAvisoEnlace("");
+    if (enlace) {
+      cambiarEnlace("");
+      return;
+    }
     const url = new URL(
       `/resenas/${encodeURIComponent(id)}`,
       window.location.origin,
     );
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "Reseña en Munay", url: url.href });
-        return;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError")
-          return;
-      }
-    }
+    cambiarCompartirNativo(typeof navigator.share === "function");
     cambiarEnlace(url.href);
+  }
+
+  async function compartirConAplicacion() {
+    cambiarAvisoEnlace("");
+    try {
+      await navigator.share({ title: "Reseña en Munay", url: enlace });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      cambiarAvisoEnlace("Puedes copiar el enlace para compartir la reseña.");
+    }
   }
 
   async function copiarEnlace() {
@@ -81,34 +89,47 @@ export function AccionesResena({
       </button>
       <button
         type="button"
-        onClick={() => void compartir()}
+        onClick={alternarCompartir}
+        aria-expanded={Boolean(enlace)}
+        aria-controls={panel}
         className="underline"
       >
         Compartir
       </button>
-      {enlace && (
-        <div className="flex w-full flex-wrap items-center gap-2">
-          <input
-            aria-label="Enlace de la reseña"
-            readOnly
-            value={enlace}
-            onFocus={(evento) => evento.target.select()}
-            className="min-w-0 flex-1 rounded border border-stone-300 p-1"
-          />
-          <button
-            type="button"
-            onClick={() => void copiarEnlace()}
-            className="font-semibold underline"
-          >
-            Copiar enlace
-          </button>
-          {avisoEnlace && (
-            <p role="status" className="w-full">
-              {avisoEnlace}
-            </p>
-          )}
-        </div>
-      )}
+      <div id={panel} hidden={!enlace} className="w-full">
+        {enlace && (
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-stone-200 bg-stone-50 p-3">
+            <input
+              aria-label="Enlace de la reseña"
+              readOnly
+              value={enlace}
+              onFocus={(evento) => evento.target.select()}
+              className="min-w-0 flex-1 rounded border border-stone-300 p-1"
+            />
+            <button
+              type="button"
+              onClick={() => void copiarEnlace()}
+              className="font-semibold underline"
+            >
+              Copiar enlace
+            </button>
+            {compartirNativo && (
+              <button
+                type="button"
+                onClick={() => void compartirConAplicacion()}
+                className="font-semibold underline"
+              >
+                Compartir con una aplicación
+              </button>
+            )}
+            {avisoEnlace && (
+              <p role="status" className="w-full">
+                {avisoEnlace}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
       {aviso && <p role="alert">{aviso}</p>}
     </div>
   );

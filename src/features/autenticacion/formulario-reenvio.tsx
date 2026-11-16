@@ -3,7 +3,8 @@
 import { useActionState, useState } from "react";
 import { reenviarConfirmacion } from "./acciones";
 import { AvisoAcceso } from "./aviso-acceso";
-import { botonAcceso, campoAcceso } from "./estilos-acceso";
+import { BotonEnvioAcceso } from "./boton-envio-acceso";
+import { campoAcceso } from "./estilos-acceso";
 
 export function FormularioReenvio() {
   const [estado, enviar, pendiente] = useActionState(reenviarConfirmacion, {});
@@ -11,13 +12,15 @@ export function FormularioReenvio() {
   const error = estado.errores?.correoElectronico;
 
   return (
-    <form action={enviar} className="space-y-4">
+    <form action={enviar} className="space-y-4" aria-busy={pendiente}>
       <label className="grid gap-2 text-sm font-semibold">
         Correo electrónico
         <input
           name="correoElectronico"
           type="email"
           autoComplete="email"
+          spellCheck={false}
+          autoCapitalize="none"
           required
           value={correo}
           onChange={(evento) => cambiarCorreo(evento.target.value)}
@@ -33,9 +36,7 @@ export function FormularioReenvio() {
         </p>
       )}
       {estado.mensaje && <AvisoAcceso tipo="error" mensaje={estado.mensaje} />}
-      <button disabled={pendiente} className={botonAcceso}>
-        {pendiente ? "Solicitando…" : "Reenviar confirmación"}
-      </button>
+      <BotonEnvioAcceso etiqueta="Reenviar confirmación" esperando="Solicitando…" />
     </form>
   );
 }
