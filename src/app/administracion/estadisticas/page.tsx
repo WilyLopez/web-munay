@@ -1,3 +1,4 @@
+import Form from "next/form";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
@@ -26,6 +27,10 @@ type Estadisticas = {
   >[];
   actualizadoEn: string;
 };
+
+const campoFiltro = "min-h-11 w-full rounded-xl border border-[#b8cbbb] bg-white px-3 font-medium";
+const tarjeta = "min-w-0 rounded-2xl border border-[#d5e0d6] bg-white p-4 sm:p-6";
+const distribucionDetalle = "grid items-start gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]";
 
 const formatoMes = new Intl.DateTimeFormat("es-PE", {
   month: "short",
@@ -121,59 +126,51 @@ async function Panel({ consulta }: { consulta: Promise<Consulta> }) {
     return (
       <>
         {navegacion}
-        <h2 className="text-2xl font-bold">QR dinámico · {destino.nombre}</h2>
+        <h1 className="text-2xl font-bold">QR dinámico · {destino.nombre}</h1>
         <PantallaQr key={destino.slug} slug={destino.slug} />
       </>
     );
   return (
     <>
-      {navegacion}
-      <form
-        id="atractivos"
-        key={`filtros-${filtro}`}
-        action={ruta}
-        className="flex flex-wrap items-end gap-3"
-      >
-        {perfil?.rol === "SUPER_ADMIN" && acceso.datos.length > 1 ? (
-          <label className="grid gap-1">
-            Atractivo
-            <select
-              name="destino"
-              aria-label="Atractivo"
-              defaultValue={destino.slug}
-              className="w-full max-w-72 rounded border p-2"
-            >
-              {acceso.datos.map((item) => (
-                <option key={item.id} value={item.slug}>
-                  {item.nombre}
-                </option>
-              ))}
+      {perfil?.rol === "SUPER_ADMIN" && navegacion}
+      <header className="flex flex-col gap-5 border-b border-[#d5e0d6] pb-5 xl:flex-row xl:items-end xl:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[#426456]">Estadísticas del atractivo</p>
+          <h1 className="mt-1 wrap-anywhere font-serif text-3xl leading-tight text-[#14382e] sm:text-4xl">
+            {destino.nombre}
+          </h1>
+        </div>
+        <Form
+          id="atractivos"
+          key={`filtros-${filtro}`}
+          action={ruta}
+          className="grid items-end gap-3 sm:flex sm:flex-wrap"
+        >
+          {perfil?.rol === "SUPER_ADMIN" && acceso.datos.length > 1 ? (
+            <label className="grid min-w-0 gap-1 text-sm font-semibold text-[#14382e]">
+              Atractivo
+              <select name="destino" defaultValue={destino.slug} className={campoFiltro + " sm:max-w-64"}>
+                {acceso.datos.map((item) => (
+                  <option key={item.id} value={item.slug}>{item.nombre}</option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <input type="hidden" name="destino" value={destino.slug} />
+          )}
+          <label className="grid gap-1 text-sm font-semibold text-[#14382e]">
+            Período
+            <select name="meses" defaultValue={meses} className={campoFiltro}>
+              <option value="3">Últimos 3 meses</option>
+              <option value="6">Últimos 6 meses</option>
+              <option value="12">Últimos 12 meses</option>
             </select>
           </label>
-        ) : (
-          <div className="grid gap-1">
-            <span className="text-sm text-stone-600">Atractivo</span>
-            <p className="py-2 font-semibold">{destino.nombre}</p>
-            <input type="hidden" name="destino" value={destino.slug} />
-          </div>
-        )}
-        <label className="grid gap-1">
-          Período
-          <select
-            name="meses"
-            aria-label="Período"
-            defaultValue={meses}
-            className="rounded border p-2"
-          >
-            <option value="3">Últimos 3 meses</option>
-            <option value="6">Últimos 6 meses</option>
-            <option value="12">Últimos 12 meses</option>
-          </select>
-        </label>
-        <button className="rounded border px-4 py-2 font-semibold">
-          Aplicar
-        </button>
-      </form>
+          <button className="min-h-11 rounded-xl bg-[#174238] px-4 text-sm font-semibold text-white hover:bg-[#245649]">
+            Aplicar filtros
+          </button>
+        </Form>
+      </header>
       <Suspense
         key={`resultados-${filtro}`}
         fallback={<EsqueletoEstadisticas />}
@@ -213,11 +210,21 @@ async function ResultadosEstadisticas({
   const primerMes = datos.tendencia[0]?.mes;
   const ultimoMes = datos.tendencia.at(-1)?.mes;
 
+  const indicadores = [
+    { titulo: "Visitas verificadas", valor: datos.totalVisitas.toLocaleString("es-PE"), detalle: "Registradas mediante QR" },
+    { titulo: "Reseñas recibidas", valor: datos.totalResenas.toLocaleString("es-PE") },
+    {
+      titulo: "Calificación promedio",
+      valor: datos.promedio === null ? "Sin calificaciones" : datos.promedio.toLocaleString("es-PE", { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+      unidad: datos.promedio === null ? undefined : "de 5",
+    },
+  ];
+
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p role="status" className="text-sm">
-          Última actualización:{" "}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm text-stone-700">
+        <p>
+          Actualizado el{" "}
           <time dateTime={datos.actualizadoEn}>
             {fechaVisita.format(new Date(datos.actualizadoEn))}
           </time>
@@ -225,121 +232,111 @@ async function ResultadosEstadisticas({
         <BotonActualizarPanel />
       </div>
       <dl className="grid gap-3 sm:grid-cols-3">
-        {[
-          ["Visitas verificadas por QR", datos.totalVisitas],
-          [
-            "Calificación promedio",
-            datos.promedio?.toFixed(1) ?? "Sin calificaciones",
-          ],
-          ["Reseñas recibidas", datos.totalResenas],
-        ].map(([titulo, valor]) => (
-          <div key={titulo} className="rounded-xl border bg-white p-5">
-            <dt>{titulo}</dt>
-            <dd className="text-2xl font-bold text-teal-950">{valor}</dd>
+        {indicadores.map(({ titulo, valor, detalle, unidad }, indice) => (
+          <div key={titulo} className={indice === 0 ? "rounded-2xl bg-[#174238] p-4 text-white sm:p-6" : tarjeta}>
+            <dt className="text-sm font-semibold">{titulo}</dt>
+            <dd className={`mt-2 font-semibold tabular-nums ${valor === "Sin calificaciones" ? "text-lg" : "text-3xl sm:text-4xl"}`}>
+              {valor}
+              {unidad && <span className="ml-2 text-sm font-medium">{unidad}</span>}
+            </dd>
+            {detalle && <dd className="mt-1 text-sm text-teal-100">{detalle}</dd>}
           </div>
         ))}
       </dl>
-      {datos.totalVisitas === 0 && datos.totalResenas === 0 && (
-        <p>Aún no hay visitas ni reseñas para este período.</p>
-      )}
-      <section className="space-y-3 rounded-xl border bg-white p-5">
-        <h2 className="text-xl font-bold">Visitas por mes</h2>
-        {primerMes && ultimoMes && (
-          <p className="text-sm text-stone-600">
-            {formatoMes.format(new Date(`${primerMes}-01T00:00:00Z`))} a{" "}
-            {formatoMes.format(new Date(`${ultimoMes}-01T00:00:00Z`))}
-          </p>
-        )}
-        <ul className="space-y-2">
-          {datos.tendencia.map(({ mes, total }) => (
-            <li
-              key={mes}
-              className="grid grid-cols-[6rem_1fr_2rem] items-center gap-2"
-            >
-              <span>{formatoMes.format(new Date(`${mes}-01T00:00:00Z`))}</span>
-              <meter
-                min={0}
-                max={Math.max(1, pico.total)}
-                value={total}
-                aria-label={`Visitas en ${mes}`}
-                className="w-full"
-              />
-              <span className="text-right">{total}</span>
-            </li>
-          ))}
-        </ul>
-        <p>Total del período: {datos.totalVisitas}</p>
-        {pico.total > 0 && (
-          <p>
-            <strong>Lectura del período.</strong>{" "}
-            {formatoMes.format(new Date(`${pico.mes}-01T00:00:00Z`))} concentró
-            el {Math.round((100 * pico.total) / datos.totalVisitas)} % de las
-            visitas.
-          </p>
-        )}
-        {datos.recientes.length > 0 && (
-          <p>
-            {datos.recientes.length === 1
-              ? "La reseña más reciente tiene "
-              : `El promedio de las últimas ${datos.recientes.length} reseñas es `}
-            {(
-              datos.recientes.reduce(
-                (suma, resena) => suma + resena.calificacion,
-                0,
-              ) / datos.recientes.length
-            ).toFixed(1)}{" "}
-            de 5.
-          </p>
-        )}
-      </section>
-      <section
-        id="resenas-recientes"
-        className="space-y-3 rounded-xl border bg-white p-5"
-      >
-        <h2 className="text-xl font-bold">Reseñas recientes</h2>
-        {datos.recientes.length === 0 && (
-          <p>Aún no hay reseñas para este período.</p>
-        )}
-        <ul className="divide-y divide-stone-200">
-          {datos.recientes.map((resena) => (
-            <li key={resena.id} className="space-y-1 py-3">
-              <p className="font-semibold">
-                {resena.usuario.nombreCompleto} · {resena.calificacion} de 5 ★
+      <div className={distribucionDetalle}>
+        <section className={tarjeta} aria-labelledby="visitas-por-mes">
+          <h2 id="visitas-por-mes" className="font-serif text-2xl text-[#14382e]">Visitas por mes</h2>
+          {primerMes && ultimoMes && (
+            <p className="mt-1 text-sm text-stone-700">
+              {formatoMes.format(new Date(`${primerMes}-01T00:00:00Z`))} a{" "}
+              {formatoMes.format(new Date(`${ultimoMes}-01T00:00:00Z`))}
+            </p>
+          )}
+          {pico.total > 0 ? (
+            <>
+              <p className="mt-4 rounded-lg bg-[#edf4ed] px-3 py-2 text-sm text-[#174238]">
+                <strong className="capitalize">{formatoMes.format(new Date(`${pico.mes}-01T00:00:00Z`))}</strong>{" "}
+                registró {pico.total.toLocaleString("es-PE")} {pico.total === 1 ? "visita" : "visitas"}, el valor más alto del período.
               </p>
-              <p className="text-sm">
-                {fechaVisita.format(new Date(resena.creadaEn))} ·{" "}
-                {resena.verificada
-                  ? "Visita verificada por QR"
-                  : "Sin verificación"}
-              </p>
-              <p className="wrap-anywhere">{resena.comentario}</p>
-              <ReportarResena id={resena.id} />
-            </li>
-          ))}
-        </ul>
-        {datos.totalResenas > datos.recientes.length && (
-          <Link
-            href={`/administracion/resenas?destino=${slug}`}
-            className="font-semibold underline"
-          >
-            Ver todas
-          </Link>
-        )}
-      </section>
+              <ul className="mt-5 space-y-3">
+                {datos.tendencia.map(({ mes, total }) => (
+                  <li key={mes} className="grid grid-cols-[5rem_minmax(0,1fr)_4rem] items-center gap-2 text-sm sm:grid-cols-[6.5rem_minmax(0,1fr)_4rem] sm:gap-3">
+                    <span className="whitespace-nowrap capitalize text-stone-700">
+                      {formatoMes.format(new Date(`${mes}-01T00:00:00Z`))}
+                    </span>
+                    <span aria-hidden="true" className="h-2.5 overflow-hidden rounded-full bg-[#e5eee7]">
+                      <span
+                        className={`block h-full rounded-full ${total === pico.total ? "bg-[#174238]" : "bg-[#638d77]"}`}
+                        style={{ width: `${(total / pico.total) * 100}%` }}
+                      />
+                    </span>
+                    <span className="text-right font-semibold tabular-nums">
+                      {total.toLocaleString("es-PE")}<span className="sr-only"> visitas</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="mt-4 rounded-xl bg-[#f4f6f1] p-4 text-sm text-stone-700">
+              Aún no hay visitas verificadas en este período.
+            </p>
+          )}
+        </section>
+        <section id="resenas-recientes" className={tarjeta} aria-labelledby="titulo-resenas">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="titulo-resenas" className="font-serif text-2xl text-[#14382e]">Reseñas recientes</h2>
+            <Link href={`/administracion/resenas?destino=${slug}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-[#174238] underline underline-offset-4">
+              Ver todas las reseñas
+            </Link>
+          </div>
+          {datos.recientes.length === 0 ? (
+            <p className="mt-3 rounded-xl bg-[#f4f6f1] p-4 text-sm text-stone-700">
+              Aún no hay reseñas en este período.
+            </p>
+          ) : (
+            <ul className="mt-2 divide-y divide-[#d5e0d6]">
+              {datos.recientes.map((resena) => (
+                <li key={resena.id} className="space-y-2 py-4 last:pb-0">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className="min-w-0 wrap-anywhere font-semibold text-[#14382e]">{resena.usuario.nombreCompleto}</p>
+                    <p className="shrink-0 rounded-md bg-amber-50 px-2.5 py-1 text-sm font-semibold text-amber-950">
+                      <span aria-hidden="true">★ </span>{resena.calificacion} de 5
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-700">
+                    <time dateTime={resena.creadaEn}>{fechaVisita.format(new Date(resena.creadaEn))}</time>
+                    <span className={resena.verificada ? "rounded-full bg-emerald-50 px-2 py-1 font-medium text-emerald-950" : "rounded-full bg-stone-100 px-2 py-1 font-medium"}>
+                      {resena.verificada ? "Visita verificada" : "Sin verificación"}
+                    </span>
+                  </div>
+                  <p className="wrap-anywhere text-sm leading-relaxed text-stone-800">{resena.comentario}</p>
+                  <ReportarResena id={resena.id} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
     </>
   );
 }
 
-function EsqueletoEstadisticas() {
+function EsqueletoEstadisticas({ encabezado = false }: { encabezado?: boolean }) {
   return (
     <div role="status" className="space-y-4 motion-safe:animate-pulse">
       <span className="sr-only">Cargando estadísticas</span>
+      {encabezado && <div aria-hidden="true" className="h-24 rounded-2xl bg-[#e5eee7]" />}
+      <div aria-hidden="true" className="h-5 w-44 rounded bg-[#e5eee7]" />
       <div aria-hidden="true" className="grid gap-3 sm:grid-cols-3">
-        {[1, 2, 3].map((tarjeta) => (
-          <div key={tarjeta} className="h-24 rounded-xl bg-teal-100" />
+        {[1, 2, 3].map((indicador) => (
+          <div key={indicador} className="h-28 rounded-2xl bg-[#e5eee7]" />
         ))}
       </div>
-      <div aria-hidden="true" className="h-40 rounded-xl bg-stone-200" />
+      <div aria-hidden="true" className={distribucionDetalle}>
+        <div className="h-64 rounded-2xl bg-[#e5eee7]" />
+        <div className="h-48 rounded-2xl bg-[#e5eee7]" />
+      </div>
     </div>
   );
 }
@@ -350,11 +347,8 @@ export default function PaginaEstadisticas({
   searchParams: Promise<Consulta>;
 }) {
   return (
-    <main className="mx-auto max-w-5xl space-y-5 pt-8 pb-8">
-      <h1 className="text-3xl font-bold text-teal-950">
-        Estadísticas del atractivo
-      </h1>
-      <Suspense fallback={<EsqueletoEstadisticas />}>
+    <main className="mx-auto w-full max-w-[100rem] space-y-5 py-6 sm:py-8">
+      <Suspense fallback={<EsqueletoEstadisticas encabezado />}>
         <Panel consulta={searchParams} />
       </Suspense>
     </main>

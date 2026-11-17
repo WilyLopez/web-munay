@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
+import { BotonCopiarEnlaceTransmision } from "./boton-copiar-transmision";
 import { consultarHistorial, sincronizarPantalla } from "./acciones";
 import { generarEnlaceQr } from "./enlace-qr";
+import { useReintentoAlVencer } from "./usar-reintento-al-vencer";
 import {
   fechaVisita,
   type HistorialVisitas,
@@ -12,15 +14,8 @@ import {
   type Visita,
 } from "./tipos";
 
-function CodigoQr({
-  valor,
-  lienzoRef,
-}: {
-  valor: string;
-  lienzoRef?: React.RefObject<HTMLCanvasElement | null>;
-}) {
-  const localRef = useRef<HTMLCanvasElement>(null);
-  const lienzo = lienzoRef ?? localRef;
+function CodigoQr({ valor }: { valor: string }) {
+  const lienzo = useRef<HTMLCanvasElement>(null);
   const [fallo, cambiarFallo] = useState(false);
 
   useEffect(() => {
@@ -39,17 +34,17 @@ function CodigoQr({
         },
       ).catch(() => cambiarFallo(true));
     }
-  }, [valor, lienzo]);
+  }, [valor]);
 
   return fallo ? (
     <p role="alert">No se pudo dibujar el QR.</p>
   ) : (
-    <div className="relative isolate mx-auto flex items-center justify-center rounded-2xl bg-white p-2">
+    <div className="relative isolate mx-auto w-full max-w-xs rounded-2xl bg-white p-2">
       <canvas
         ref={lienzo}
         role="img"
         aria-label="QR de verificación de visita"
-        className="mx-auto h-auto max-w-[280px] sm:max-w-[340px]"
+        className="block h-auto! max-w-full"
       />
     </div>
   );
@@ -67,7 +62,7 @@ function ListaVisitas({ visitas }: { visitas: Visita[] }) {
     <ul className="divide-y divide-stone-200">
       {visitas.map((visita) => (
         <li key={visita.id} className="space-y-1 py-2 text-sm">
-          <p className="break-all font-semibold">{visita.id}</p>
+          <p className="font-semibold text-teal-950">Visita verificada</p>
           <time dateTime={visita.verificadaEn}>
             {fechaVisita.format(new Date(visita.verificadaEn))}
           </time>
@@ -160,7 +155,7 @@ export function PantallaQr({ slug }: { slug: string }) {
   const solicitud = useRef(false);
   const versionConexion = useRef(0);
   const bloqueo = useRef(false);
-  const lienzoRef = useRef<HTMLCanvasElement>(null);
+  const [confirmacion, cambiarConfirmacion] = useState<string>();
   const ultimoTotalHoy = useRef<number | undefined>(undefined);
   const [alertaEscaneo, setAlertaEscaneo] = useState<string | null>(null);
   const [pantalla, cambiarPantalla] = useState<EstadoPantalla>();
@@ -207,7 +202,7 @@ export function PantallaQr({ slug }: { slug: string }) {
           datos.totalHoy > ultimoTotalHoy.current
         ) {
           setAlertaEscaneo(
-            `¡Código QR escaneado! Visita registrada a las ${new Date().toLocaleTimeString("es-PE")}.`,
+            `Visita registrada a las ${new Date().toLocaleTimeString("es-PE")}.`,
           );
         }
         ultimoTotalHoy.current = datos.totalHoy;
@@ -270,99 +265,84 @@ export function PantallaQr({ slug }: { slug: string }) {
 
   const restante = pantalla ? Math.max(0, pantalla.venceLocal - ahora) : 0;
   const codigo = pantalla?.datos.codigo;
+  useReintentoAlVencer(
+    pantalla !== undefined && restante === 0 && !sincronizando,
+    sincronizar,
+  );
   const duracion = codigo
     ? Date.parse(codigo.venceEn) - Date.parse(codigo.creadoEn)
     : 1;
   const vigente = codigo && restante > 0 && !renovando;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <section className="space-y-4 rounded-3xl border border-stone-200 bg-white p-5">
-        {alertaEscaneo && (
-          <div
-            role="status"
-            className="flex items-center justify-between rounded-xl border border-emerald-500 bg-emerald-50 p-3.5 text-xs sm:text-sm text-emerald-900 font-semibold"
-          >
-            <span>✓ {alertaEscaneo} (El QR anterior fue descartado)</span>
-            <button
-              type="button"
-              onClick={() => setAlertaEscaneo(null)}
-              className="text-emerald-700 hover:text-emerald-950 font-bold ml-2 text-base"
-            >
-              ✕
-            </button>
+    <div className="grid items-start gap-5 lg:grid-cols-[1.2fr_1fr]">
+      <section className="space-y-5 rounded-3xl border border-stone-200 bg-white p-5 sm:p-7">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-bold text-teal-950">Código de acceso</h2>
+          <span className={vigente ? "rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-950" : "rounded-full bg-stone-100 px-3 py-1 text-sm font-semibold text-stone-700"}>
+            {vigente ? "Disponible para escanear" : error ? "QR no disponible" : "Sincronizando"}
+          </span>
+        </div>
+        <div className="rounded-2xl bg-[#f5f2e8] p-3 sm:p-5">
+          {vigente ? (
+            <CodigoQr key={codigo.id} valor={codigo.valor} />
+          ) : (
+            <p role="status" className="mx-auto grid min-h-56 max-w-xs place-items-center text-center text-sm text-stone-700">
+              {error || (pantalla ? "Renovando código…" : "Preparando el código…")}
+            </p>
+          )}
+        </div>
+        {vigente && (
+          <div className="space-y-2">
+            <div className="flex flex-wrap justify-between gap-2 text-sm text-stone-700">
+              <span>Renovación automática</span>
+              <span className="font-semibold tabular-nums text-teal-950">{Math.ceil(restante / 1000)} s</span>
+            </div>
+            <div aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-stone-200">
+              <div className="h-full rounded-full bg-teal-800 motion-safe:transition-[width]" style={{ width: `${Math.min(100, (restante / Math.max(1, duracion)) * 100)}%` }} />
+            </div>
           </div>
         )}
-        {vigente ? (
-          <>
-            <div className="flex items-center justify-between">
-              <p className="font-semibold text-teal-900">Sesión activa</p>
-              <span className="text-xs text-stone-400">
-                Generado: {fechaVisita.format(new Date(codigo.creadoEn))}
-              </span>
-            </div>
-            <CodigoQr key={codigo.id} valor={codigo.valor} lienzoRef={lienzoRef} />
-            <p className="mt-2 text-center font-mono text-[11px] text-stone-400 select-all break-all tracking-wide">
-              ID: <span className="font-medium text-stone-500">{codigo.id}</span>
-            </p>
-            <div className="w-full space-y-1.5 pt-1">
-              <div className="flex justify-between text-xs font-medium text-stone-500">
-                <span>Código dinámico activo</span>
-                <span className="font-semibold text-teal-900">
-                  Renovación en {Math.ceil(restante / 1000)}s
-                </span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200">
-                <div
-                  className="h-full bg-[#174238] transition-all duration-200 ease-linear rounded-full"
-                  style={{ width: `${Math.min(100, Math.max(0, (restante / duracion) * 100))}%` }}
-                />
-              </div>
-            </div>
-          </>
-        ) : (
-          <p role="status" className="text-stone-700">
-            {error || "Sincronizando el código QR…"}
-          </p>
-        )}
-        {requiereSesion && (
-          <Link
-            href="/ingresar?aviso=sesion"
-            className="font-semibold underline"
-          >
-            Iniciar sesión
+        <p className="text-sm text-stone-700">
+          Varias personas pueden escanear el mismo QR mientras esté activo. Quien ya comprobó el código puede confirmar su ubicación aunque se renueve.
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link href={`/pantalla-qr?destino=${encodeURIComponent(slug)}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-xl bg-teal-950 px-4 text-sm font-semibold text-white hover:bg-teal-800">
+            Abrir pantalla para visitantes ↗
           </Link>
-        )}
-        <button
-          type="button"
-          disabled={!vigente || sincronizando}
-          onClick={() => vigente && void sincronizar(codigo.id)}
-          className="rounded-full bg-teal-950 px-5 py-3 font-semibold text-white disabled:opacity-50 active:scale-95 transition-transform"
-        >
-          {renovando ? "Generando nuevo QR…" : "Generar nuevo QR"}
-        </button>
+          <BotonCopiarEnlaceTransmision slug={slug} />
+        </div>
+        {requiereSesion && <Link href="/ingresar?aviso=sesion" className="font-semibold underline">Iniciar sesión</Link>}
         {error && !bloqueada && (
-          <button
-            type="button"
-            disabled={sincronizando}
-            onClick={() => void sincronizar()}
-            className="ml-3 min-h-11 font-semibold text-teal-900 underline disabled:opacity-50"
-          >
+          <button type="button" disabled={sincronizando} onClick={() => void sincronizar()} className="min-h-11 font-semibold text-teal-900 underline disabled:opacity-50">
             Reintentar sincronización
           </button>
         )}
-        <p className="text-sm text-stone-700">
-          El QR se renueva automáticamente y se invalida al registrar una
-          visita. Evita compartir capturas de pantalla.
-        </p>
+        {vigente && (confirmacion === codigo.id ? (
+          <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+            <p className="font-semibold">¿Renovar el QR ahora?</p>
+            <p>El código que se muestra dejará de aceptar nuevos escaneos. Las verificaciones en curso podrán continuar.</p>
+            <div className="flex flex-wrap gap-3">
+              <button type="button" disabled={sincronizando} onClick={() => { cambiarConfirmacion(undefined); void sincronizar(codigo.id); }} className="min-h-11 rounded-lg bg-teal-950 px-4 font-semibold text-white disabled:opacity-50">Confirmar renovación</button>
+              <button type="button" onClick={() => cambiarConfirmacion(undefined)} className="min-h-11 px-2 font-semibold underline">Cancelar</button>
+            </div>
+          </div>
+        ) : (
+          <button type="button" onClick={() => cambiarConfirmacion(codigo.id)} className="min-h-11 text-sm font-semibold text-teal-950 underline underline-offset-4">
+            Renovar código ahora
+          </button>
+        ))}
       </section>
-      <section className="space-y-4 rounded-3xl border border-stone-200 bg-white p-5">
-        <h2 className="text-xl font-bold">Verificaciones recientes</h2>
+      <section className="space-y-5 rounded-3xl border border-stone-200 bg-white p-5 sm:p-7">
+        <h2 className="text-xl font-bold text-teal-950">Actividad de visitas</h2>
         {pantalla && (
           <>
-            <p className="font-semibold text-teal-950">
-              Verificaciones de hoy: {pantalla.datos.totalHoy}
-            </p>
+            <div className="rounded-2xl bg-teal-50 p-5 text-teal-950">
+              <p className="text-sm font-medium">Visitas verificadas hoy</p>
+              <p className="mt-1 text-4xl font-semibold tabular-nums">{pantalla.datos.totalHoy}</p>
+            </div>
+            <div role="status" className={alertaEscaneo ? "rounded-xl bg-emerald-50 p-3 text-sm font-medium text-emerald-950" : "sr-only"}>{alertaEscaneo}</div>
+            <h3 className="font-semibold text-teal-950">Últimas verificaciones</h3>
             <ListaVisitas visitas={pantalla.datos.recientes} />
           </>
         )}

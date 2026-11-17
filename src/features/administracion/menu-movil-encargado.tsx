@@ -4,9 +4,10 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
 const enlaces = [
-  ["/administracion/estadisticas", "Estadísticas"],
-  ["/administracion", "Atractivos"],
+  ["/administracion", "Dashboard"],
+  ["/administracion/atractivos", "Mi atractivo"],
   ["/administracion/visitas", "Mi QR"],
+  ["/administracion/estadisticas", "Estadísticas"],
   ["/administracion/resenas", "Reseñas"],
 ] as const;
 
@@ -22,13 +23,13 @@ export function MenuMovilEncargado() {
     ruta === "/administracion/estadisticas" && actual.get("seccion") === "qr"
       ? "/administracion/visitas"
       : ruta.startsWith("/administracion/atractivos/")
-        ? "/administracion"
+        ? "/administracion/atractivos"
         : ruta;
 
   return (
     <nav
       aria-label="Panel del encargado"
-      className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-teal-900/15 bg-[#f8f5ea] px-2 pt-1 pb-[calc(0.35rem+env(safe-area-inset-bottom))] text-center text-xs font-semibold md:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-teal-900/15 bg-[#f8f5ea] px-1 pt-1 pb-[calc(0.35rem+env(safe-area-inset-bottom))] text-center text-[0.65rem] font-semibold sm:text-xs md:hidden"
     >
       {enlaces.map(([href, etiqueta]) => (
         <Link

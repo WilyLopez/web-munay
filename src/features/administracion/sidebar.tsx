@@ -22,7 +22,13 @@ export function Sidebar({ global }: { global: boolean }) {
         ["/superadmin/blockchain", "Registros blockchain"],
         ...enlacesOperacion,
       ]
-    : [["/administracion", "Mis atractivos"], ...enlacesOperacion];
+    : [
+        ["/administracion", "Dashboard"],
+        ["/administracion/atractivos", "Mi atractivo"],
+        enlacesOperacion[1],
+        enlacesOperacion[0],
+        enlacesOperacion[2],
+      ];
 
   return (
     <aside className="flex flex-col gap-5 bg-[#11342c] px-5 py-4 text-[#f7f5ea] md:sticky md:top-0 md:h-dvh md:gap-8 md:px-6 md:py-7">
@@ -46,7 +52,7 @@ export function Sidebar({ global }: { global: boolean }) {
             href={href}
             aria-current={
               ruta === href ||
-              (href === "/administracion" &&
+              (href === "/administracion/atractivos" &&
                 ruta.startsWith("/administracion/atractivos/")) ||
               (["/superadmin/usuarios", "/superadmin/destinos"].includes(
                 href,
