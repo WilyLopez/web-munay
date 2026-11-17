@@ -12,8 +12,15 @@ import {
   type Visita,
 } from "./tipos";
 
-function CodigoQr({ valor }: { valor: string }) {
-  const lienzo = useRef<HTMLCanvasElement>(null);
+function CodigoQr({
+  valor,
+  lienzoRef,
+}: {
+  valor: string;
+  lienzoRef?: React.RefObject<HTMLCanvasElement | null>;
+}) {
+  const localRef = useRef<HTMLCanvasElement>(null);
+  const lienzo = lienzoRef ?? localRef;
   const [fallo, cambiarFallo] = useState(false);
 
   useEffect(() => {
@@ -28,7 +35,7 @@ function CodigoQr({ valor }: { valor: string }) {
         },
       ).catch(() => cambiarFallo(true));
     }
-  }, [valor]);
+  }, [valor, lienzo]);
 
   return fallo ? (
     <p role="alert">No se pudo dibujar el QR.</p>
@@ -147,6 +154,9 @@ export function PantallaQr({ slug }: { slug: string }) {
   const solicitud = useRef(false);
   const versionConexion = useRef(0);
   const bloqueo = useRef(false);
+  const lienzoRef = useRef<HTMLCanvasElement>(null);
+  const ultimoTotalHoy = useRef<number | undefined>(undefined);
+  const [alertaEscaneo, setAlertaEscaneo] = useState<string | null>(null);
   const [pantalla, cambiarPantalla] = useState<EstadoPantalla>();
   const [ahora, cambiarAhora] = useState(0);
   const [error, cambiarError] = useState("");
@@ -185,6 +195,16 @@ export function PantallaQr({ slug }: { slug: string }) {
             Date.parse(datos.horaServidor),
         });
         cambiarError("");
+
+        if (
+          ultimoTotalHoy.current !== undefined &&
+          datos.totalHoy > ultimoTotalHoy.current
+        ) {
+          setAlertaEscaneo(
+            `¡Código QR escaneado! Visita registrada a las ${new Date().toLocaleTimeString("es-PE")}.`,
+          );
+        }
+        ultimoTotalHoy.current = datos.totalHoy;
       } catch {
         if (version !== versionConexion.current) return;
         cambiarPantalla(undefined);
@@ -252,10 +272,25 @@ export function PantallaQr({ slug }: { slug: string }) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <section className="space-y-4 rounded-3xl border border-stone-200 bg-white p-5">
+        {alertaEscaneo && (
+          <div
+            role="status"
+            className="flex items-center justify-between rounded-xl border border-emerald-500 bg-emerald-50 p-3.5 text-xs sm:text-sm text-emerald-900 font-semibold"
+          >
+            <span>✓ {alertaEscaneo} (El QR anterior fue descartado)</span>
+            <button
+              type="button"
+              onClick={() => setAlertaEscaneo(null)}
+              className="text-emerald-700 hover:text-emerald-950 font-bold ml-2 text-base"
+            >
+              ✕
+            </button>
+          </div>
+        )}
         {vigente ? (
           <>
             <p className="font-semibold text-teal-900">Sesión activa</p>
-            <CodigoQr key={codigo.id} valor={codigo.valor} />
+            <CodigoQr key={codigo.id} valor={codigo.valor} lienzoRef={lienzoRef} />
             <p className="break-all text-sm">
               Identificador del QR: {codigo.id}
             </p>
@@ -285,14 +320,30 @@ export function PantallaQr({ slug }: { slug: string }) {
             Iniciar sesión
           </Link>
         )}
-        <button
-          type="button"
-          disabled={!vigente || sincronizando}
-          onClick={() => vigente && void sincronizar(codigo.id)}
-          className="rounded-full bg-teal-950 px-5 py-3 font-semibold text-white disabled:opacity-50"
-        >
-          {renovando ? "Generando nuevo QR…" : "Generar nuevo QR"}
-        </button>
+        <div className="flex flex-wrap gap-2.5">
+          <button
+            type="button"
+            disabled={!vigente || sincronizando}
+            onClick={() => vigente && void sincronizar(codigo.id)}
+            className="rounded-full bg-teal-950 px-5 py-3 font-semibold text-white disabled:opacity-50 active:scale-95 transition-transform"
+          >
+            {renovando ? "Generando nuevo QR…" : "Generar nuevo QR"}
+          </button>
+          <button
+            type="button"
+            disabled={!vigente}
+            onClick={() => {
+              if (!lienzoRef.current || !codigo) return;
+              const enlace = document.createElement("a");
+              enlace.download = `munay-qr-${slug}-${codigo.id.slice(0, 8)}.png`;
+              enlace.href = lienzoRef.current.toDataURL("image/png");
+              enlace.click();
+            }}
+            className="rounded-full border border-teal-900 bg-white px-5 py-3 font-semibold text-teal-950 hover:bg-teal-50 disabled:opacity-50 active:scale-95 transition-transform"
+          >
+            Descargar QR (PNG)
+          </button>
+        </div>
         {error && !bloqueada && (
           <button
             type="button"
