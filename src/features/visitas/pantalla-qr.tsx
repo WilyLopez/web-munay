@@ -12,8 +12,15 @@ import {
   type Visita,
 } from "./tipos";
 
-function CodigoQr({ valor }: { valor: string }) {
-  const lienzo = useRef<HTMLCanvasElement>(null);
+function CodigoQr({
+  valor,
+  lienzoRef,
+}: {
+  valor: string;
+  lienzoRef?: React.RefObject<HTMLCanvasElement | null>;
+}) {
+  const localRef = useRef<HTMLCanvasElement>(null);
+  const lienzo = lienzoRef ?? localRef;
   const [fallo, cambiarFallo] = useState(false);
 
   useEffect(() => {
@@ -22,23 +29,29 @@ function CodigoQr({ valor }: { valor: string }) {
         lienzo.current,
         generarEnlaceQr(valor, window.location.origin),
         {
-          width: 320,
-          margin: 4,
-          errorCorrectionLevel: "M",
+          width: 360,
+          margin: 3,
+          errorCorrectionLevel: "H",
+          color: {
+            dark: "#14312b",
+            light: "#ffffff",
+          },
         },
       ).catch(() => cambiarFallo(true));
     }
-  }, [valor]);
+  }, [valor, lienzo]);
 
   return fallo ? (
     <p role="alert">No se pudo dibujar el QR.</p>
   ) : (
-    <canvas
-      ref={lienzo}
-      role="img"
-      aria-label="QR de verificación de visita"
-      className="mx-auto h-auto max-w-full"
-    />
+    <div className="relative isolate mx-auto flex items-center justify-center rounded-2xl bg-white p-2">
+      <canvas
+        ref={lienzo}
+        role="img"
+        aria-label="QR de verificación de visita"
+        className="mx-auto h-auto max-w-[280px] sm:max-w-[340px]"
+      />
+    </div>
   );
 }
 
@@ -147,6 +160,9 @@ export function PantallaQr({ slug }: { slug: string }) {
   const solicitud = useRef(false);
   const versionConexion = useRef(0);
   const bloqueo = useRef(false);
+  const lienzoRef = useRef<HTMLCanvasElement>(null);
+  const ultimoTotalHoy = useRef<number | undefined>(undefined);
+  const [alertaEscaneo, setAlertaEscaneo] = useState<string | null>(null);
   const [pantalla, cambiarPantalla] = useState<EstadoPantalla>();
   const [ahora, cambiarAhora] = useState(0);
   const [error, cambiarError] = useState("");
@@ -185,6 +201,16 @@ export function PantallaQr({ slug }: { slug: string }) {
             Date.parse(datos.horaServidor),
         });
         cambiarError("");
+
+        if (
+          ultimoTotalHoy.current !== undefined &&
+          datos.totalHoy > ultimoTotalHoy.current
+        ) {
+          setAlertaEscaneo(
+            `¡Código QR escaneado! Visita registrada a las ${new Date().toLocaleTimeString("es-PE")}.`,
+          );
+        }
+        ultimoTotalHoy.current = datos.totalHoy;
       } catch {
         if (version !== versionConexion.current) return;
         cambiarPantalla(undefined);
@@ -252,25 +278,47 @@ export function PantallaQr({ slug }: { slug: string }) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <section className="space-y-4 rounded-3xl border border-stone-200 bg-white p-5">
+        {alertaEscaneo && (
+          <div
+            role="status"
+            className="flex items-center justify-between rounded-xl border border-emerald-500 bg-emerald-50 p-3.5 text-xs sm:text-sm text-emerald-900 font-semibold"
+          >
+            <span>✓ {alertaEscaneo} (El QR anterior fue descartado)</span>
+            <button
+              type="button"
+              onClick={() => setAlertaEscaneo(null)}
+              className="text-emerald-700 hover:text-emerald-950 font-bold ml-2 text-base"
+            >
+              ✕
+            </button>
+          </div>
+        )}
         {vigente ? (
           <>
-            <p className="font-semibold text-teal-900">Sesión activa</p>
-            <CodigoQr key={codigo.id} valor={codigo.valor} />
-            <p className="break-all text-sm">
-              Identificador del QR: {codigo.id}
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-teal-900">Sesión activa</p>
+              <span className="text-xs text-stone-400">
+                Generado: {fechaVisita.format(new Date(codigo.creadoEn))}
+              </span>
+            </div>
+            <CodigoQr key={codigo.id} valor={codigo.valor} lienzoRef={lienzoRef} />
+            <p className="mt-2 text-center font-mono text-[11px] text-stone-400 select-all break-all tracking-wide">
+              ID: <span className="font-medium text-stone-500">{codigo.id}</span>
             </p>
-            <p className="text-sm">
-              Generado: {fechaVisita.format(new Date(codigo.creadoEn))}
-            </p>
-            <p className="text-sm">
-              Renovación en {Math.ceil(restante / 1000)} s
-            </p>
-            <progress
-              aria-label="Tiempo restante del QR"
-              className="w-full accent-teal-800"
-              max={duracion}
-              value={restante}
-            />
+            <div className="w-full space-y-1.5 pt-1">
+              <div className="flex justify-between text-xs font-medium text-stone-500">
+                <span>Código dinámico activo</span>
+                <span className="font-semibold text-teal-900">
+                  Renovación en {Math.ceil(restante / 1000)}s
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200">
+                <div
+                  className="h-full bg-[#174238] transition-all duration-200 ease-linear rounded-full"
+                  style={{ width: `${Math.min(100, Math.max(0, (restante / duracion) * 100))}%` }}
+                />
+              </div>
+            </div>
           </>
         ) : (
           <p role="status" className="text-stone-700">
@@ -289,7 +337,7 @@ export function PantallaQr({ slug }: { slug: string }) {
           type="button"
           disabled={!vigente || sincronizando}
           onClick={() => vigente && void sincronizar(codigo.id)}
-          className="rounded-full bg-teal-950 px-5 py-3 font-semibold text-white disabled:opacity-50"
+          className="rounded-full bg-teal-950 px-5 py-3 font-semibold text-white disabled:opacity-50 active:scale-95 transition-transform"
         >
           {renovando ? "Generando nuevo QR…" : "Generar nuevo QR"}
         </button>
