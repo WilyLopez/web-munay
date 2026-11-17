@@ -23,6 +23,24 @@ export type AccesoEncargado = {
 
 export type ListadoAccesos = { filas: AccesoEncargado[]; hayMas: boolean };
 export type OpcionDestino = { id: string; nombre: string };
+
+export type DetalleInvitacion = {
+  valida: boolean;
+  estado: string;
+  vencida: boolean;
+  correo: string;
+  nuevo: boolean;
+  destino: {
+    id: string;
+    nombre: string;
+    ubicacion: string;
+    imagenUrl: string | null;
+    provincia: string;
+    categoria: string;
+    descripcion?: string;
+  } | null;
+  venceEn: string | null;
+};
 export const campo =
   "min-w-0 w-full min-h-12 rounded-xl border border-[#bdcfc2] bg-white px-3 py-2.5 text-base sm:text-sm font-normal";
 export const principal =

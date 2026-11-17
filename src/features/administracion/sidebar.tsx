@@ -14,7 +14,7 @@ export function Sidebar({ global }: { global: boolean }) {
   const ruta = usePathname();
   const enlaces = global
     ? [
-        ["/superadmin", "Gestión de portada"],
+        ["/superadmin", "Dashboard"],
         ["/superadmin/usuarios", "Usuarios"],
         ["/superadmin/accesos", "Accesos de encargados"],
         ["/superadmin/destinos", "Revisión de destinos"],

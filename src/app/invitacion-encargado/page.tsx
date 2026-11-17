@@ -1,37 +1,68 @@
-import Link from "next/link";
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { connection } from "next/server";
 import { AceptarInvitacion } from "@/features/accesos/formularios";
 import { solicitarVisitas } from "@/features/visitas/api";
+import type { DetalleInvitacion } from "@/features/accesos/tipos";
 
-async function Acceso() {
+export const metadata: Metadata = {
+  title: "Invitación para gestionar un atractivo · Munay",
+  referrer: "no-referrer",
+  robots: { index: false, follow: false },
+};
+
+async function ContenidoInvitacion({
+  searchParams,
+}: {
+  searchParams: Promise<{ token?: string }>;
+}) {
   await connection();
-  const sesion = await solicitarVisitas("/autenticacion/sesion");
-  return <AceptarInvitacion autenticado={sesion.ok} />;
+  const { token } = await searchParams;
+  const tokenLimpio = typeof token === "string" ? token.trim() : undefined;
+
+  let detalle: DetalleInvitacion | null = null;
+  if (tokenLimpio) {
+    const respuestaDetalle = await solicitarVisitas<DetalleInvitacion>(
+      `/gestion-accesos/invitacion/${encodeURIComponent(tokenLimpio)}`,
+      undefined,
+      { publica: true },
+    );
+    if (respuestaDetalle.ok) {
+      detalle = respuestaDetalle.datos;
+    }
+  }
+
+  const respuestaSesion = await solicitarVisitas<{
+    perfil: { id: string; correo: string; rol: string };
+  }>("/autenticacion/sesion");
+
+  const sesionOk = respuestaSesion.ok;
+  const correoSesion = sesionOk ? respuestaSesion.datos.perfil.correo : null;
+
+  return (
+    <AceptarInvitacion
+      autenticado={sesionOk}
+      tokenInicial={tokenLimpio}
+      detalleInicial={detalle}
+      correoSesion={correoSesion}
+    />
+  );
 }
 
-export default function PaginaInvitacion() {
+export default function PaginaInvitacion(props: {
+  searchParams: Promise<{ token?: string }>;
+}) {
   return (
-    <main className="mx-auto grid min-h-dvh max-w-xl place-items-center px-4 py-8 text-[#173b32] sm:px-6">
-      <section className="w-full space-y-5 rounded-3xl border border-[#dce3da] bg-white p-6 sm:p-9">
-        <Link
-          href="/"
-          className="inline-flex min-h-12 items-center font-serif text-xl font-semibold hover:text-[#0b6b52]"
-        >
-          Munay
-        </Link>
-        <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl">
-          Invitación para gestionar un atractivo
-        </h1>
-        <p className="text-sm leading-relaxed text-[#4d665b]">
-          Usa la cuenta con el correo al que llegó la invitación. Si recién
-          creas una cuenta, confirma tu correo y vuelve a abrir el enlace de
-          invitación.
-        </p>
-        <Suspense fallback={<p role="status">Comprobando sesión…</p>}>
-          <Acceso />
-        </Suspense>
-      </section>
+    <main className="mx-auto min-h-[calc(100vh-4rem)] max-w-6xl px-4 py-8 sm:px-6 lg:px-8 text-[#173b32]">
+      <Suspense
+        fallback={
+          <div className="flex min-h-[50vh] items-center justify-center text-sm text-[#465a50]">
+            Cargando información de la invitación…
+          </div>
+        }
+      >
+        <ContenidoInvitacion searchParams={props.searchParams} />
+      </Suspense>
     </main>
   );
 }
