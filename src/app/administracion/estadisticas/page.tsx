@@ -1,3 +1,4 @@
+import { ContenidoResena } from "@/features/resenas/contenido-resena";
 import Form from "next/form";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -298,19 +299,8 @@ async function ResultadosEstadisticas({
             <ul className="mt-2 divide-y divide-[#d5e0d6]">
               {datos.recientes.map((resena) => (
                 <li key={resena.id} className="space-y-2 py-4 last:pb-0">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <p className="min-w-0 wrap-anywhere font-semibold text-[#14382e]">{resena.usuario.nombreCompleto}</p>
-                    <p className="shrink-0 rounded-md bg-amber-50 px-2.5 py-1 text-sm font-semibold text-amber-950">
-                      <span aria-hidden="true">★ </span>{resena.calificacion} de 5
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-700">
-                    <time dateTime={resena.creadaEn}>{fechaVisita.format(new Date(resena.creadaEn))}</time>
-                    <span className={resena.verificada ? "rounded-full bg-emerald-50 px-2 py-1 font-medium text-emerald-950" : "rounded-full bg-stone-100 px-2 py-1 font-medium"}>
-                      {resena.verificada ? "Visita verificada" : "Sin verificación"}
-                    </span>
-                  </div>
-                  <p className="wrap-anywhere text-sm leading-relaxed text-stone-800">{resena.comentario}</p>
+                  <ContenidoResena autor={resena.usuario.nombreCompleto} creadaEn={resena.creadaEn} calificacion={resena.calificacion}
+                    verificada={resena.verificada} comentario={resena.comentario} compacto />
                   <ReportarResena id={resena.id} />
                 </li>
               ))}

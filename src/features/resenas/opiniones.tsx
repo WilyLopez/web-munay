@@ -54,8 +54,8 @@ export async function Opiniones({
   const conteos = new Map(
     datos.distribucion.map(({ calificacion, total }) => [calificacion, total]),
   );
-  return (
-    <section id="opiniones" className="scroll-mt-24 space-y-5 py-5 sm:py-7">
+  const controles = (
+    <div className="space-y-4">
       <form
         action={`${ruta}#opiniones`}
         className="grid items-end gap-3 rounded-2xl border border-[#dedacf] bg-[#fffdf6] p-4 sm:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] sm:p-5"
@@ -97,7 +97,7 @@ export async function Opiniones({
         </button>
       </form>
       {datos.total > 0 && (
-        <div className="grid min-w-0 gap-4 rounded-2xl border border-[#dedacf] bg-[#fffdf6] p-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] sm:p-6">
+        <div className="grid min-w-0 gap-4 rounded-2xl border border-[#dedacf] bg-[#fffdf6] p-5 sm:p-6">
           <div>
             <h2 className="font-serif text-2xl tracking-tight">Valoraciones</h2>
             {datos.promedio !== null && (
@@ -147,134 +147,165 @@ export async function Opiniones({
           </ul>
         </div>
       )}
-      {destino && (
-        <div className="space-y-2 rounded-xl bg-teal-50 p-4">
-          {datos.estado === "habilitada" && (
-            <FormularioResena
-              key={destino}
-              slug={destino}
-              fechaVisita={datos.fechaVisita}
-              puntosResena={datos.puntosResena}
-              puntosSelfie={datos.puntosSelfie}
-            />
-          )}
-          {datos.estado === "publicada" &&
-            (datos.recompensa ? (
-              <div id="escribir-resena" className="scroll-mt-28 space-y-2 text-teal-950">
-                <p className="font-semibold">
-                  +{datos.recompensa.puntos} puntos MUNAY
-                </p>
-                <p className="text-sm">
-                  Reseña verificada de {datos.recompensa.destino} ·{" "}
-                  {fechaVisita.format(new Date(datos.recompensa.creadoEn))}
-                </p>
+    </div>
+  );
+  return (
+    <section id="opiniones" className="scroll-mt-24 space-y-5 py-5 sm:py-7">
+      <div
+        className={
+          slug
+            ? "space-y-5"
+            : "grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]"
+        }
+      >
+        {slug ? (
+          controles
+        ) : (
+          <div className="min-w-0 lg:col-start-2 lg:row-start-1">
+            <details className="rounded-2xl border border-[#dce3da] bg-white p-4 lg:hidden">
+              <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold text-[#174238]">
+                Filtrar reseñas y ver valoraciones
+              </summary>
+              <div className="mt-3">{controles}</div>
+            </details>
+            <div className="hidden lg:block">{controles}</div>
+          </div>
+        )}
+        <div className="min-w-0 space-y-5 lg:col-start-1 lg:row-start-1">
+          {destino && (
+            <div className="space-y-2 rounded-xl bg-teal-50 p-4">
+              {datos.estado === "habilitada" && (
+                <FormularioResena
+                  key={destino}
+                  slug={destino}
+                  fechaVisita={datos.fechaVisita}
+                  puntosResena={datos.puntosResena}
+                  puntosSelfie={datos.puntosSelfie}
+                />
+              )}
+              {datos.estado === "publicada" &&
+                (datos.recompensa ? (
+                  <div
+                    id="escribir-resena"
+                    className="scroll-mt-28 space-y-2 text-teal-950"
+                  >
+                    <p className="font-semibold">
+                      +{datos.recompensa.puntos} puntos MUNAY
+                    </p>
+                    <p className="text-sm">
+                      Reseña verificada de {datos.recompensa.destino} ·{" "}
+                      {fechaVisita.format(new Date(datos.recompensa.creadoEn))}
+                    </p>
+                    <Link
+                      href="/mi-perfil#ranking"
+                      className="text-sm font-semibold underline underline-offset-4"
+                    >
+                      Ver mi perfil y ranking
+                    </Link>
+                  </div>
+                ) : (
+                  <p id="escribir-resena" className="scroll-mt-28">
+                    Tu reseña está publicada. La acreditación de puntos está
+                    pendiente.
+                  </p>
+                ))}
+              {datos.estado === "retirada" && (
+                <p>Esta reseña fue retirada de la publicación.</p>
+              )}
+              {datos.estado === "bloqueada" && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <button
+                    type="button"
+                    disabled
+                    aria-describedby="motivo-resena-bloqueada"
+                    className="inline-flex min-h-12 items-center justify-center cursor-not-allowed rounded-full border border-teal-900/20 px-4 py-2 text-sm font-semibold text-stone-600"
+                  >
+                    Escribir una reseña
+                  </button>
+                  <p id="motivo-resena-bloqueada" className="text-sm">
+                    Verifica tu visita escaneando el QR que muestra el
+                    encargado.
+                  </p>
+                  <Link
+                    href={`/verificar-visita?destino=${encodeURIComponent(destino)}`}
+                    className="inline-flex min-h-12 items-center text-sm font-semibold underline underline-offset-4 hover:text-[#0b6b52]"
+                  >
+                    Verificar mi visita
+                  </Link>
+                </div>
+              )}
+              {datos.estado === "visitante" && (
                 <Link
-                  href="/mi-perfil#ranking"
-                  className="text-sm font-semibold underline underline-offset-4"
+                  href="/ingresar?aviso=sesion"
+                  className="inline-flex min-h-12 items-center font-semibold underline hover:text-[#0b6b52]"
                 >
-                  Ver mi perfil y ranking
+                  Escribir una reseña
                 </Link>
-              </div>
-            ) : (
-              <p id="escribir-resena" className="scroll-mt-28">
-                Tu reseña está publicada. La acreditación de puntos está
-                pendiente.
-              </p>
-            ))}
-          {datos.estado === "retirada" && (
-            <p>Esta reseña fue retirada de la publicación.</p>
-          )}
-          {datos.estado === "bloqueada" && (
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <button
-                type="button"
-                disabled
-                aria-describedby="motivo-resena-bloqueada"
-                className="inline-flex min-h-12 items-center justify-center cursor-not-allowed rounded-full border border-teal-900/20 px-4 py-2 text-sm font-semibold text-stone-600"
-              >
-                Escribir una reseña
-              </button>
-              <p id="motivo-resena-bloqueada" className="text-sm">
-                Verifica tu visita escaneando el QR que muestra el encargado.
-              </p>
-              <Link
-                href={`/verificar-visita?destino=${encodeURIComponent(destino)}`}
-                className="inline-flex min-h-12 items-center text-sm font-semibold underline underline-offset-4 hover:text-[#0b6b52]"
-              >
-                Verificar mi visita
-              </Link>
+              )}
             </div>
           )}
-          {datos.estado === "visitante" && (
-            <Link
-              href="/ingresar?aviso=sesion"
-              className="inline-flex min-h-12 items-center font-semibold underline hover:text-[#0b6b52]"
+          {datos.resenas.length ? (
+            <ul className="grid gap-4" aria-label="Reseñas publicadas">
+              {datos.resenas.map((resena) => (
+                <li key={resena.id} className="min-w-0">
+                  <TarjetaResena
+                    resena={resena}
+                    mostrarDestino={!slug}
+                    puedeResponder={datos.puedeResponder}
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="rounded-2xl border border-[#dedacf] bg-[#fffdf6] px-5 py-8 text-center">
+              <h2 className="font-serif text-2xl">
+                Aún no hay reseñas disponibles
+              </h2>
+              <p className="mx-auto mt-2 max-w-md text-sm text-[#465a50]">
+                {destino
+                  ? "Las opiniones aparecerán aquí cuando se publiquen."
+                  : "Explora el catálogo para planear tu próxima visita."}
+              </p>
+              {!slug && (
+                <Link
+                  href={filtro ? "/resenas#opiniones" : "/destinos"}
+                  className="mt-2 inline-flex min-h-12 items-center rounded-lg text-sm font-semibold underline underline-offset-4 hover:text-[#0b6b52] focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  {filtro
+                    ? "Ver todos los destinos con reseñas"
+                    : "Explorar destinos"}
+                </Link>
+              )}
+            </div>
+          )}
+          {(pagina > 1 || datos.hayMas) && (
+            <nav
+              aria-label="Paginación de reseñas"
+              className="flex flex-wrap items-center gap-2 text-sm font-semibold"
             >
-              Escribir una reseña
-            </Link>
+              {pagina > 1 && (
+                <Link
+                  href={parametrosPagina(pagina - 1)}
+                  className="inline-flex min-h-12 items-center rounded-lg border border-[#dedacf] px-4 hover:bg-[#e8eee6] focus-visible:outline-2"
+                >
+                  Página anterior
+                </Link>
+              )}
+              <span aria-current="page" className="px-2 tabular-nums">
+                Página {pagina}
+              </span>
+              {datos.hayMas && (
+                <Link
+                  href={parametrosPagina(pagina + 1)}
+                  className="inline-flex min-h-12 items-center rounded-lg border border-[#dedacf] px-4 hover:bg-[#e8eee6] focus-visible:outline-2"
+                >
+                  Página siguiente
+                </Link>
+              )}
+            </nav>
           )}
         </div>
-      )}
-      {datos.resenas.length ? (
-        <ul className="grid gap-4" aria-label="Reseñas publicadas">
-          {datos.resenas.map((resena) => (
-            <li key={resena.id} className="min-w-0">
-              <TarjetaResena
-                resena={resena}
-                mostrarDestino={!slug}
-                puedeResponder={datos.puedeResponder}
-              />
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="rounded-2xl border border-[#dedacf] bg-[#fffdf6] px-5 py-8 text-center">
-          <h2 className="font-serif text-2xl">
-            Aún no hay reseñas disponibles
-          </h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-[#465a50]">
-            {destino
-              ? "Las opiniones aparecerán aquí cuando se publiquen."
-              : "Explora el catálogo para planear tu próxima visita."}
-          </p>
-          {!slug && (
-            <Link
-              href={filtro ? "/resenas#opiniones" : "/destinos"}
-              className="mt-2 inline-flex min-h-12 items-center rounded-lg text-sm font-semibold underline underline-offset-4 hover:text-[#0b6b52] focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              {filtro
-                ? "Ver todos los destinos con reseñas"
-                : "Explorar destinos"}
-            </Link>
-          )}
-        </div>
-      )}
-      {(pagina > 1 || datos.hayMas) && (
-        <nav
-          aria-label="Paginación de reseñas"
-          className="flex flex-wrap items-center gap-2 text-sm font-semibold"
-        >
-          {pagina > 1 && (
-            <Link
-              href={parametrosPagina(pagina - 1)}
-              className="inline-flex min-h-12 items-center rounded-lg border border-[#dedacf] px-4 hover:bg-[#e8eee6] focus-visible:outline-2"
-            >
-              Página anterior
-            </Link>
-          )}
-          <span aria-current="page" className="px-2 tabular-nums">
-            Página {pagina}
-          </span>
-          {datos.hayMas && (
-            <Link
-              href={parametrosPagina(pagina + 1)}
-              className="inline-flex min-h-12 items-center rounded-lg border border-[#dedacf] px-4 hover:bg-[#e8eee6] focus-visible:outline-2"
-            >
-              Página siguiente
-            </Link>
-          )}
-        </nav>
-      )}
+      </div>
     </section>
   );
 }

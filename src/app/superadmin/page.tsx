@@ -1,3 +1,4 @@
+import { TextoResena } from "@/features/resenas/texto-resena";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -323,9 +324,7 @@ async function ContenidoDashboard() {
                     <p className="truncate text-sm font-semibold text-stone-900">
                       {reporte.resena.destino.nombre}
                     </p>
-                    <p className="line-clamp-1 text-xs text-stone-600">
-                      {reporte.resena.comentario}
-                    </p>
+                    <TextoResena texto={reporte.resena.comentario} compacto />
                     <span className="inline-block rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-800">
                       Motivo: {reporte.motivo}
                     </span>

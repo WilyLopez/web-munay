@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useRef, useState, type FormEvent } from "react";
-import { fechaVisita } from "@/features/visitas/tipos";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { ContenidoResena } from "./contenido-resena";
+import { IconoResena } from "./icono-resena";
 import {
   consultarRespuestas,
   publicarRespuesta,
@@ -21,6 +22,8 @@ export function RespuestasResena({
   puedeResponder?: boolean;
 }) {
   const router = useRouter();
+  const campoRespuesta = useRef<HTMLTextAreaElement>(null);
+  const enfocarRespuesta = useRef(false);
   const [abierto, cambiarAbierto] = useState(false);
   const [datos, cambiarDatos] = useState<ListadoRespuestas>();
   const [pagina, cambiarPagina] = useState(1);
@@ -102,27 +105,44 @@ export function RespuestasResena({
 
   const habilitado = datos?.puedeResponder ?? puedeResponder;
 
+  useEffect(() => {
+    if (
+      abierto &&
+      habilitado &&
+      enfocarRespuesta.current &&
+      campoRespuesta.current
+    ) {
+      campoRespuesta.current.focus();
+      enfocarRespuesta.current = false;
+    }
+  }, [abierto, habilitado]);
+
   return (
-    <div className="border-t border-[#dedacf] pt-3">
+    <div className="contents">
       <button
         type="button"
         aria-expanded={abierto}
         aria-controls={`respuestas-${resenaId}`}
         disabled={ocupado}
         onClick={() => {
+          enfocarRespuesta.current = !abierto && total === 0;
           cambiarAbierto(!abierto);
           if (!abierto && !datos) void cargar(1);
         }}
-        className="min-h-11 text-sm font-semibold text-[#174238] underline underline-offset-4 disabled:opacity-60"
+        className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-[#526a60] hover:bg-[#edf4ed] aria-expanded:bg-[#edf4ed] disabled:opacity-60"
       >
+        <IconoResena tipo="responder" />
         {abierto
           ? "Cerrar respuestas"
           : total > 0
             ? `Ver respuestas (${total})`
-            : "Responder a esta reseña"}
+            : "Responder"}
       </button>
       {abierto && (
-        <div id={`respuestas-${resenaId}`} className="space-y-4 pt-2">
+        <div
+          id={`respuestas-${resenaId}`}
+          className="w-full basis-full space-y-4 border-t border-[#e5e9df] pt-4"
+        >
           {ocupado && (
             <p role="status" className="text-sm text-stone-600">
               Actualizando respuestas…
@@ -139,18 +159,12 @@ export function RespuestasResena({
                 key={respuesta.id}
                 className="space-y-2 rounded-xl border-l-2 border-[#aac4b2] bg-white p-3 sm:p-4"
               >
-                <p className="wrap-anywhere text-sm font-semibold">
-                  {respuesta.usuario.nombreCompleto}
-                </p>
-                <time
-                  dateTime={respuesta.creadaEn}
-                  className="block text-xs text-stone-600"
-                >
-                  {fechaVisita.format(new Date(respuesta.creadaEn))}
-                </time>
-                <p className="wrap-anywhere whitespace-pre-wrap text-sm leading-relaxed">
-                  {respuesta.comentario}
-                </p>
+                <ContenidoResena
+                  autor={respuesta.usuario.nombreCompleto}
+                  creadaEn={respuesta.creadaEn}
+                  comentario={respuesta.comentario}
+                  compacto
+                />
                 {respuesta.propia &&
                   (confirmacion === respuesta.id ? (
                     <div className="space-y-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-950">
@@ -216,6 +230,7 @@ export function RespuestasResena({
               <label className="grid gap-2 text-sm font-semibold">
                 Tu respuesta
                 <textarea
+                  ref={campoRespuesta}
                   required
                   maxLength={1000}
                   rows={3}

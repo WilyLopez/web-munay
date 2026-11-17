@@ -53,6 +53,8 @@ export async function solicitarVisitas<T>(
     const error = (await respuesta.json().catch(() => null)) as {
       mensaje?: unknown;
       message?: unknown;
+      codigo?: unknown;
+      geocerca?: { distanciaMetros?: unknown; radioMetros?: unknown };
     } | null;
     const mensaje = error?.mensaje ?? error?.message;
     return {
@@ -62,6 +64,19 @@ export async function solicitarVisitas<T>(
         respuesta.status >= 500 || typeof mensaje !== "string"
           ? "No pudimos completar la solicitud. Intenta de nuevo."
           : mensaje,
+      codigo: typeof error?.codigo === "string" ? error.codigo : undefined,
+      geocerca:
+        typeof error?.geocerca?.distanciaMetros === "number" &&
+        Number.isFinite(error.geocerca.distanciaMetros) &&
+        error.geocerca.distanciaMetros >= 0 &&
+        typeof error.geocerca.radioMetros === "number" &&
+        Number.isFinite(error.geocerca.radioMetros) &&
+        error.geocerca.radioMetros > 0
+          ? {
+              distanciaMetros: error.geocerca.distanciaMetros,
+              radioMetros: error.geocerca.radioMetros,
+            }
+          : undefined,
     };
   } catch {
     return {

@@ -1,3 +1,4 @@
+import { ContenidoResena } from "@/features/resenas/contenido-resena";
 import Link from "next/link";
 import { Suspense } from "react";
 import { accesoPanel } from "@/features/administracion/acceso";
@@ -30,6 +31,8 @@ type Listado = {
       | "destino"
       | "usuario"
       | "verificada"
+      | "fotoUrl"
+      | "creadaEn"
     >;
   }[];
   hayMas: boolean;
@@ -164,9 +167,9 @@ async function Bandeja({ consulta }: { consulta: Promise<Consulta> }) {
                   motivoDecision,
                 }) => (
                   <li key={id} className="space-y-3 p-5">
-                    <p className="font-semibold">
-                      {resena.destino.nombre} · {resena.calificacion} de 5
-                    </p>
+                    <ContenidoResena autor={resena.usuario.nombreCompleto} creadaEn={resena.creadaEn}
+                      comentario={resena.comentario} calificacion={resena.calificacion}
+                      verificada={resena.verificada} fotoUrl={resena.fotoUrl} destino={resena.destino} compacto />
                     <div className="flex flex-wrap gap-2 text-xs font-semibold">
                       <span
                         className={`rounded-full px-2.5 py-1 ${riesgo === null ? "bg-stone-100" : "bg-amber-100 text-amber-950"}`}
@@ -175,15 +178,7 @@ async function Bandeja({ consulta }: { consulta: Promise<Consulta> }) {
                           ? "Reporte manual"
                           : `Alerta automática · ${riesgo}/100`}
                       </span>
-                      {resena.verificada && (
-                        <span className="rounded-full bg-[#edf3ec] px-2.5 py-1">
-                          Visita con QR dinámico
-                        </span>
-                      )}
                     </div>
-                    <p className="wrap-anywhere text-sm">
-                      {resena.usuario.nombreCompleto} · {resena.comentario}
-                    </p>
                     <div className="rounded-xl bg-[#edf3ec] p-3 text-sm">
                       <p className="font-semibold">
                         {riesgo === null

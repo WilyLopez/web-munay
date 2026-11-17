@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { ContenidoResena } from "@/features/resenas/contenido-resena";
 import Form from "next/form";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -7,7 +7,7 @@ import { ReportarResena } from "@/features/administracion/controles-reporte";
 import type { ListadoResenas, Resena } from "@/features/resenas/tipos";
 import { solicitarVisitas } from "@/features/visitas/api";
 import { BotonActualizarPanel } from "@/features/visitas/boton-actualizar-panel";
-import { fechaVisita, type DestinoVisita } from "@/features/visitas/tipos";
+import type { DestinoVisita } from "@/features/visitas/tipos";
 
 type Consulta = { destino?: string; pagina?: string; orden?: string };
 
@@ -77,36 +77,8 @@ function ResumenResenas({ datos }: { datos: ListadoResenas }) {
 function TarjetaResena({ resena }: { resena: Resena }) {
   return (
     <li className="p-4 sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="wrap-anywhere font-semibold text-[#14382e]">{resena.usuario.nombreCompleto}</h3>
-          <time dateTime={resena.creadaEn} className="mt-1 block text-sm text-stone-600">
-            {fechaVisita.format(new Date(resena.creadaEn))}
-          </time>
-        </div>
-        <p className="rounded-lg bg-amber-50 px-2.5 py-1 text-sm font-semibold text-amber-950">
-          <span aria-hidden="true">★ </span>{resena.calificacion} de 5
-        </p>
-      </div>
-      <span className={`mt-3 inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${resena.verificada ? "bg-emerald-50 text-emerald-950" : "bg-stone-100 text-stone-700"}`}>
-        {resena.verificada ? "Visita verificada por QR" : "Sin verificación"}
-      </span>
-      <p className="mt-3 wrap-anywhere whitespace-pre-line text-sm leading-relaxed text-stone-800 sm:text-base">
-        {resena.comentario}
-      </p>
-      {resena.fotoUrl && (
-        <a href={resena.fotoUrl} target="_blank" rel="noopener noreferrer" className="mt-3 block max-w-lg">
-          <Image
-            src={resena.fotoUrl}
-            alt={`Foto de visita compartida por ${resena.usuario.nombreCompleto}`}
-            width={640}
-            height={480}
-            unoptimized
-            className="max-h-72 w-full rounded-xl bg-stone-50 object-contain"
-          />
-          <span className="sr-only">Abrir foto en otra pestaña</span>
-        </a>
-      )}
+      <ContenidoResena autor={resena.usuario.nombreCompleto} creadaEn={resena.creadaEn} fechaVisita={resena.fechaVisita}
+        calificacion={resena.calificacion} verificada={resena.verificada} comentario={resena.comentario} fotoUrl={resena.fotoUrl} compacto />
       <ReportarResena id={resena.id} />
     </li>
   );

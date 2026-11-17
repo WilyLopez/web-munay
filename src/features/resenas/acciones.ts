@@ -2,7 +2,7 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { crearSupabaseServidor } from "@/features/autenticacion/supabase/servidor";
-import type { ListadoRespuestas } from "./tipos";
+import type { ListadoRespuestas, PreparacionResena } from "./tipos";
 import { solicitarVisitas } from "@/features/visitas/api";
 
 export async function publicarResena(
@@ -51,21 +51,16 @@ export async function prepararFotoResena(slug: string, tipo: string) {
     "image/webp": "webp",
   };
   if (!extensiones[tipo]) return { error: "Elige una imagen JPG, PNG o WebP." };
-  const resultado = await solicitarVisitas<{
-    estado: string;
-    fechaVisita?: string;
-    destinos: { slug: string }[];
-  }>(`/resenas?destino=${encodeURIComponent(slug)}`);
+  const resultado = await solicitarVisitas<PreparacionResena>(
+    `/resenas/escribir/${encodeURIComponent(slug)}`,
+  );
   if (!resultado.ok || resultado.datos.estado !== "habilitada")
     return { error: "Verifica tu visita antes de añadir una foto." };
-  const destino = await solicitarVisitas<{ destino: { id: string } }>(
-    `/destinos/${encodeURIComponent(slug)}`,
-  );
-  if (!destino.ok) return { error: "El atractivo ya no está disponible." };
+  const destino = resultado.datos.destino;
   const supabase = await crearSupabaseServidor();
   const { data } = await supabase.auth.getUser();
   if (!data.user) return { error: "Inicia sesión para subir tu foto." };
-  const archivo = `${data.user.id}/${destino.datos.destino.id}/${crypto.randomUUID()}.${extensiones[tipo]}`;
+  const archivo = `${data.user.id}/${destino.id}/${crypto.randomUUID()}.${extensiones[tipo]}`;
   const almacen = supabase.storage.from("resenas");
   const subida = await almacen.createSignedUploadUrl(archivo);
   if (subida.error)

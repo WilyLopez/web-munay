@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import { createClient } from "@supabase/supabase-js";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { obtenerConfiguracionSupabase } from "@/features/autenticacion/supabase/configuracion";
+import { CamaraFotoResena } from "./camara-foto-resena";
 import { prepararFotoResena } from "./acciones";
 
 export type FotoResena = {
@@ -55,6 +56,10 @@ export function AdjuntarFotoResena({
   cambiarSubiendo: (subiendo: boolean) => void;
   bono: number;
 }) {
+  const galeria = useRef<HTMLInputElement>(null);
+  const clienteSubida = useRef<ReturnType<typeof createClient> | null>(null);
+  const capturaNativa = useRef<HTMLInputElement>(null);
+  const [camaraAbierta, cambiarCamaraAbierta] = useState(false);
   const [consentimiento, cambiarConsentimiento] = useState(false);
   const [subiendo, cambiarEstadoSubida] = useState(false);
   const [error, cambiarError] = useState("");
@@ -76,13 +81,13 @@ export function AdjuntarFotoResena({
       const subida = await prepararFotoResena(slug, "image/jpeg");
       if (!subida.token) throw new Error(subida.error);
       const { url, clave } = obtenerConfiguracionSupabase();
-      const supabase = createClient(url, clave, {
+      const supabase = (clienteSubida.current ??= createClient(url, clave, {
         auth: {
           persistSession: false,
           autoRefreshToken: false,
           detectSessionInUrl: false,
         },
-      });
+      }));
       const resultado = await supabase.storage
         .from("resenas")
         .uploadToSignedUrl(subida.archivo, subida.token, imagen, {
@@ -134,20 +139,64 @@ export function AdjuntarFotoResena({
           permiso de las personas que aparecen en ella.
         </span>
       </label>
-      <label className="grid gap-2 text-sm font-medium">
-        Seleccionar foto
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
+      <div className="grid gap-2 sm:grid-cols-2">
+        <button
+          type="button"
           disabled={!consentimiento}
-          onChange={(evento) => {
-            const archivo = evento.target.files?.[0];
-            if (archivo) void subir(archivo);
-            evento.target.value = "";
+          onClick={() => cambiarCamaraAbierta(true)}
+          className="min-h-12 rounded-xl bg-[#174238] px-4 text-sm font-semibold text-white disabled:opacity-40"
+        >
+          Tomar una foto
+        </button>
+        <button
+          type="button"
+          disabled={!consentimiento}
+          onClick={() => galeria.current?.click()}
+          className="min-h-12 rounded-xl border border-[#bdcfc2] px-4 text-sm font-semibold text-[#174238] hover:bg-[#edf4ed] disabled:opacity-40"
+        >
+          Elegir de la galería
+        </button>
+      </div>
+      <input
+        ref={galeria}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        disabled={!consentimiento}
+        aria-label="Elegir una foto de la galería"
+        hidden
+        onChange={(evento) => {
+          const archivo = evento.target.files?.[0];
+          if (archivo) void subir(archivo);
+          evento.target.value = "";
+        }}
+      />
+      <input
+        ref={capturaNativa}
+        type="file"
+        accept="image/*"
+        capture="user"
+        disabled={!consentimiento}
+        aria-label="Tomar foto con la cámara del dispositivo"
+        hidden
+        onChange={(evento) => {
+          const archivo = evento.target.files?.[0];
+          if (archivo) void subir(archivo);
+          evento.target.value = "";
+        }}
+      />
+      {camaraAbierta && (
+        <CamaraFotoResena
+          cerrar={() => cambiarCamaraAbierta(false)}
+          tomar={(archivo) => {
+            cambiarCamaraAbierta(false);
+            void subir(archivo);
           }}
-          className="min-w-0 w-full text-sm file:mr-3 file:min-h-11 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:font-semibold file:text-teal-950 disabled:opacity-50"
+          usarCamaraDispositivo={() => {
+            capturaNativa.current?.click();
+            cambiarCamaraAbierta(false);
+          }}
         />
-      </label>
+      )}
       <p className="text-xs text-stone-600">
         JPG, PNG o WebP, hasta 5 MB. Optimizamos la foto antes de enviarla.
       </p>
