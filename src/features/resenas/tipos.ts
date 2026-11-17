@@ -7,7 +7,7 @@ export type Resena = {
   fotoUrl?: string | null;
   totalRespuestas?: number;
   usuario: { nombreCompleto: string };
-  destino: { nombre: string; slug: string };
+  destino: { nombre: string; slug: string; imagenUrl?: string | null };
   verificada: boolean;
   utiles: number;
   votoPropio: boolean;
@@ -42,4 +42,18 @@ export type ListadoRespuestas = {
   respuestas: RespuestaResena[];
   hayMas: boolean;
   puedeResponder: boolean;
+};
+
+export type PreparacionResena = {
+  destino: {
+    id: string;
+    nombre: string;
+    slug: string;
+    imagenUrl: string | null;
+  };
+  fechaVisita: string | null;
+  estado: "habilitada" | "bloqueada" | "publicada" | "retirada";
+  resenaId: string | null;
+  puntosResena: number;
+  puntosSelfie: number;
 };

@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
+import { IconoResena } from "./icono-resena";
 import { votarResena } from "./acciones";
 
 export function AccionesResena({
@@ -77,23 +78,25 @@ export function AccionesResena({
   }
 
   return (
-    <div className="flex flex-wrap gap-3 text-sm">
+    <div className="contents">
       <button
         type="button"
         aria-pressed={voto}
         disabled={ocupado}
         onClick={() => void votar()}
-        className="underline"
+        className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-[#526a60] hover:bg-[#edf4ed] aria-pressed:bg-[#e7eee5] aria-pressed:text-[#174238] disabled:opacity-60"
       >
-        Útil ({utiles + Number(voto) - Number(votoPropio)})
+        <IconoResena tipo="util" />
+        Me resultó útil ({utiles + Number(voto) - Number(votoPropio)})
       </button>
       <button
         type="button"
         onClick={alternarCompartir}
         aria-expanded={Boolean(enlace)}
         aria-controls={panel}
-        className="underline"
+        className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-[#526a60] hover:bg-[#edf4ed]"
       >
+        <IconoResena tipo="compartir" />
         Compartir
       </button>
       <div id={panel} hidden={!enlace} className="w-full">

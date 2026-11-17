@@ -2,6 +2,7 @@
 
 import { obtenerActivacion, retomarActivacion } from "@/features/accesos/activacion-pendiente";
 
+import { regresoEscribirResena } from "@/features/resenas/enlaces";
 import { regresoQrVisita } from "@/features/visitas/enlace-qr";
 
 import { destinoSesion } from "./destino-sesion";
@@ -183,7 +184,9 @@ export async function ingresar(
   if (activacionCompletada) redirect("/administracion");
 
   const volver = leerCampo(datos, "volver");
-  const verificacion = destino === "/destinos" ? regresoQrVisita(volver) : null;
+  const verificacion = destino === "/destinos"
+    ? regresoQrVisita(volver) ?? regresoEscribirResena(volver)
+    : null;
   if (verificacion) redirect(verificacion);
   redirect(
     destino !== "/superadmin" &&

@@ -1,3 +1,4 @@
+import { ContenidoResena } from "@/features/resenas/contenido-resena";
 import { VisibilidadAtractivo } from "@/features/administracion/visibilidad-atractivo";
 import Image from "next/image";
 import Link from "next/link";
@@ -86,12 +87,9 @@ async function Actividad({ slug }: { slug: string }) {
             {estadisticas.datos.recientes.slice(0, 3).map((resena) => (
               <li
                 key={resena.id}
-                className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 py-2"
+                className="py-4"
               >
-                <span className="font-semibold">{resena.calificacion}/5</span>
-                <p className="line-clamp-2 wrap-anywhere text-[#4d665b]">
-                  {resena.comentario}
-                </p>
+                <ContenidoResena comentario={resena.comentario} calificacion={resena.calificacion} compacto />
               </li>
             ))}
           </ul>
