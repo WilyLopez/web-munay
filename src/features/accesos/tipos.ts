@@ -53,3 +53,11 @@ export const estados = {
   rechazada: "Rechazada",
   revocada: "Revocada",
 };
+
+
+export function mensajeInvitacionNoDisponible(detalle: DetalleInvitacion) {
+  if (detalle.estado === "aprobada") return "Esta invitación ya fue utilizada.";
+  if (detalle.estado === "revocada") return "Esta invitación fue revocada.";
+  if (detalle.vencida) return "El enlace de invitación ha vencido.";
+  return "Esta invitación ya no está activa.";
+}

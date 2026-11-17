@@ -24,6 +24,7 @@ import {
 } from "./acciones";
 import {
   campo,
+  mensajeInvitacionNoDisponible,
   principal,
   secundario,
   type AccesoEncargado,
@@ -628,13 +629,14 @@ export function AceptarInvitacion({
   );
   const tokenEfectivo = tokenInicial || tokenDelHash;
   const tokenLimpio = tokenEfectivo.split(".")[0];
-  const [detalle, cambiarDetalle] = useState<
-    DetalleInvitacion | null | undefined
-  >(detalleInicial);
-  const [consultado, cambiarConsultado] = useState(
-    Boolean(detalleInicial) || !tokenEfectivo,
-  );
-  const cargando = !consultado && Boolean(tokenEfectivo);
+  const [consulta, cambiarConsulta] = useState<{
+    token: string;
+    detalle?: DetalleInvitacion;
+    mensaje?: string;
+  }>();
+  const consultaActual = consulta?.token === tokenLimpio ? consulta : undefined;
+  const detalle = detalleInicial ?? consultaActual?.detalle;
+  const cargando = Boolean(tokenLimpio && !detalle && !consultaActual);
   const [modo, cambiarModo] = useState<"registro" | "ingreso">("registro");
   const [mostrarClave, cambiarMostrarClave] = useState(false);
   const [mostrarConfirmacion, cambiarMostrarConfirmacion] = useState(false);
@@ -651,15 +653,18 @@ export function AceptarInvitacion({
 
   useEffect(() => {
     if (!tokenLimpio || detalleInicial) return;
-    consultarDetalleInvitacion(tokenLimpio)
-      .then((res) => {
-        if (res.ok && res.detalle) {
-          cambiarDetalle(res.detalle);
-        }
+    let vigente = true;
+    void consultarDetalleInvitacion(tokenLimpio)
+      .then((resultado) => {
+        if (vigente) cambiarConsulta({ token: tokenLimpio, ...resultado });
       })
-      .finally(() => {
-        cambiarConsultado(true);
+      .catch(() => {
+        if (vigente) cambiarConsulta({
+          token: tokenLimpio,
+          mensaje: "No pudimos verificar la invitación. Recarga la página e inténtalo de nuevo.",
+        });
       });
+    return () => { vigente = false; };
   }, [tokenLimpio, detalleInicial]);
 
   const esNuevo = Boolean(detalle?.nuevo || tokenEfectivo.endsWith(".nuevo"));
@@ -846,26 +851,26 @@ export function AceptarInvitacion({
                 </Link>
               </div>
             </div>
-          ) : detalle && (!detalle.valida || detalle.vencida) ? (
-            <div className="space-y-4 rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-950">
-              <span className="text-xs font-semibold uppercase tracking-wider text-rose-700">
-                Invitación no disponible
-              </span>
+          ) : !detalle?.valida || detalle.vencida ? (
+            <div role="alert" className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-950">
               <h2 className="font-serif text-2xl font-semibold">
-                {detalle.vencida
-                  ? "El enlace de invitación ha vencido"
-                  : "Esta invitación ya no está activa"}
+                {detalle ? mensajeInvitacionNoDisponible(detalle) : "No pudimos abrir la invitación"}
               </h2>
-              <p className="text-sm text-rose-800">
-                {detalle.vencida
-                  ? "Los enlaces de invitación tienen una vigencia de 72 horas por seguridad. Solicita al administrador del sistema que te envíe una nueva invitación."
-                  : "La invitación fue aceptada previamente o revocada por el administrador."}
+              <p className="text-sm">
+                {detalle?.estado === "aprobada"
+                  ? "Puedes iniciar sesión con la cuenta que activaste para acceder a tu panel."
+                  : detalle
+                    ? "Si necesitas acceso, solicita un nuevo enlace al equipo de Munay."
+                    : consultaActual?.mensaje}
               </p>
-              <div className="pt-2">
-                <Link href="/" className={secundario}>
-                  Ir al inicio
-                </Link>
-              </div>
+              <Link href={detalle?.estado === "aprobada" && autenticado && coincideCorreo ? "/administracion" : "/ingresar"} className={secundario}>
+                {detalle?.estado === "aprobada" && autenticado && coincideCorreo ? "Ir a mi panel" : "Iniciar sesión"}
+              </Link>
+            </div>
+          ) : estadoActivar.ok ? (
+            <div className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+              <h2 className="font-serif text-2xl font-semibold text-[#173b32]">Confirma tu correo</h2>
+              <p role="status" className="text-sm text-emerald-950">{estadoActivar.mensaje}</p>
             </div>
           ) : autenticado ? (
             !coincideCorreo ? (
