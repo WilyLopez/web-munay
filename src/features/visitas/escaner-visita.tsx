@@ -1,8 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { IScannerControls } from "@zxing/browser";
 import { enlaceFicha } from "@/features/destinos/catalogo";
 import { prepararVisita, verificarVisita } from "./acciones";
@@ -14,26 +13,13 @@ import {
 } from "./enlace-qr";
 import {
   fechaVisita,
-  type Coordenadas,
   type PreparacionVisita,
   type Verificacion,
 } from "./tipos";
 import { obtenerUbicacion } from "./ubicacion-visita";
 
-const MapaGeocerca = dynamic(
-  () => import("./mapa-geocerca").then((m) => m.MapaGeocerca),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-48 items-center justify-center rounded-2xl border border-teal-200 bg-teal-100">
-        <p className="text-sm text-teal-800">Cargando mapa…</p>
-      </div>
-    ),
-  },
-);
-
 type ResultadoEscaneo =
-  | { modo: "real"; datos: Verificacion; ubicacion?: Coordenadas }
+  | { modo: "real"; datos: Verificacion }
   | { modo: "demo"; fecha: string };
 
 export function EscanerVisita({
@@ -59,8 +45,9 @@ export function EscanerVisita({
     | "comprobando"
     | "ubicando"
     | "registrando"
-  >("listo");
+  >(codigoInicial ? "comprobando" : "listo");
   const [mensaje, cambiarMensaje] = useState(avisoInicial ?? "");
+  const [requiereNuevoQr, cambiarRequiereNuevoQr] = useState(false);
   const [codigoPendiente, cambiarCodigoPendiente] = useState("");
   const [resultado, cambiarResultado] = useState<ResultadoEscaneo>();
   const [enlaceIngreso, cambiarEnlaceIngreso] = useState<string>();
@@ -97,7 +84,8 @@ export function EscanerVisita({
     if (visor.current) visor.current.srcObject = null;
   }
 
-  async function comprobarQr(valor: string) {
+  const comprobarQr = useCallback(async (valor: string) => {
+    cambiarRequiereNuevoQr(false);
     const codigo = leerCodigoQr(valor, window.location.origin);
     if (!codigo) {
       cambiarEstado("listo");
@@ -122,6 +110,7 @@ export function EscanerVisita({
         }
       } else {
         cambiarMensaje(respuesta.mensaje);
+        cambiarRequiereNuevoQr([409, 410].includes(respuesta.estado));
         if (respuesta.estado === 401)
           cambiarEnlaceIngreso(ingresoParaVisita(destino, codigo));
         if (respuesta.estado === 0 || respuesta.estado >= 500)
@@ -134,7 +123,13 @@ export function EscanerVisita({
     } finally {
       if (intento === generacion.current) cambiarEstado("listo");
     }
-  }
+  }, [destino]);
+
+  useEffect(() => {
+    if (!codigoInicial) return;
+    const espera = window.setTimeout(() => void comprobarQr(codigoInicial), 0);
+    return () => window.clearTimeout(espera);
+  }, [codigoInicial, comprobarQr]);
 
   async function validarUbicacion() {
     if (!preparacion || !codigoPendiente) return;
@@ -152,9 +147,10 @@ export function EscanerVisita({
       );
       if (intento !== generacion.current) return;
       if (respuesta.ok) {
-        cambiarResultado({ modo: "real", datos: respuesta.datos, ubicacion });
+        cambiarResultado({ modo: "real", datos: respuesta.datos });
       } else {
         cambiarMensaje(respuesta.mensaje);
+        cambiarRequiereNuevoQr([409, 410].includes(respuesta.estado));
         if ([401, 403, 409, 410].includes(respuesta.estado)) {
           if (respuesta.estado === 401)
             cambiarEnlaceIngreso(ingresoParaVisita(destino, codigoPendiente));
@@ -238,10 +234,13 @@ export function EscanerVisita({
   if (codigoInicial && !resultado && !preparacion) {
     return (
       <section className="space-y-4 rounded-3xl border border-teal-200 bg-teal-50 p-6">
-        <h2 className="font-serif text-2xl">Código de visita detectado</h2>
-        <p>
-          Comprueba el código para continuar con la verificación de tu
-          ubicación.
+        <h2 className="font-serif text-2xl">{requiereNuevoQr ? "Escanea el código actualizado" : "Código de visita detectado"}</h2>
+        <p role="status" className="text-sm">
+          {estado === "comprobando"
+            ? "Estamos comprobando el código del destino…"
+            : requiereNuevoQr
+              ? "Pide al encargado que te muestre el QR vigente."
+              : "Comprueba el código para continuar con la ubicación."}
         </p>
         {mensaje && (
           <p role="alert" className="text-sm text-rose-900">
@@ -256,16 +255,15 @@ export function EscanerVisita({
             >
               Iniciar sesión para continuar
             </Link>
-          ) : (
+          ) : !requiereNuevoQr && estado !== "comprobando" ? (
             <button
               type="button"
-              disabled={estado === "comprobando"}
               className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-950 px-5 py-2.5 font-semibold text-white active:scale-95 transition-transform disabled:opacity-60"
               onClick={() => void comprobarQr(codigoInicial)}
             >
-              {estado === "comprobando" ? "Comprobando…" : "Comprobar código"}
+              Reintentar comprobación
             </button>
-          )}
+          ) : null}
           <Link
             href={rutaEscanerVisita(destino)}
             className="inline-flex min-h-12 items-center font-semibold underline hover:text-[#0b6b52]"
@@ -313,43 +311,24 @@ export function EscanerVisita({
     return (
       <section
         className="space-y-4 rounded-3xl bg-teal-50 p-6"
-        aria-live="polite"
       >
-        <h2 className="text-2xl font-bold text-teal-950">
-          {datos.yaVerificada
-            ? "Tu visita ya estaba verificada"
-            : "¡Visita validada!"}
-        </h2>
-        <p>
-          {datos.destino.nombre} ·{" "}
-          {fechaVisita.format(new Date(datos.visita.verificadaEn))}
+        <div role="status" className="space-y-2">
+          <p className="text-sm font-semibold text-emerald-900">Visita verificada</p>
+          <h2 className="font-serif text-3xl text-teal-950">Tu visita quedó guardada</h2>
+          <p className="font-semibold text-teal-950">{datos.destino.nombre}</p>
+          <p className="text-sm text-stone-700">
+            {fechaVisita.format(new Date(datos.visita.verificadaEn))}
+          </p>
+        </div>
+        <p className="text-sm leading-relaxed text-stone-700">
+          Puedes escribir una reseña ahora o volver a la página del destino más tarde.
         </p>
-        <p className="text-sm">Identificador de visita: {datos.visita.id}</p>
-        {datos.geocerca && resultado.ubicacion && (
-          <>
-            <p className="text-sm">
-              Distancia aproximada: {datos.geocerca.distanciaMetros} m · Radio
-              permitido: {datos.geocerca.radioMetros} m.
-            </p>
-            <MapaGeocerca
-              destino={datos.destino}
-              ubicacion={resultado.ubicacion}
-              radio={datos.geocerca.radioMetros}
-            />
-          </>
-        )}
-        <div className="flex flex-col gap-2 pt-2">
-          <Link
-            href={`${enlaceFicha(datos.destino.slug)}#opiniones`}
-            className="inline-flex min-h-12 items-center font-semibold text-teal-900 underline hover:text-[#0b6b52]"
-          >
-            Escribir o consultar mi reseña
+        <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:gap-4">
+          <Link href={`${enlaceFicha(datos.destino.slug)}#opiniones`} className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-950 px-5 font-semibold text-white hover:bg-teal-800">
+            {datos.yaVerificada ? "Ver o escribir reseña" : "Escribir reseña"}
           </Link>
-          <Link
-            href="/mi-perfil"
-            className="inline-flex min-h-12 items-center text-sm font-semibold text-teal-900 underline underline-offset-4 hover:text-[#0b6b52]"
-          >
-            Ver mi perfil
+          <Link href={enlaceFicha(datos.destino.slug)} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-teal-200 bg-white px-5 font-semibold text-teal-950 hover:bg-teal-100">
+            Ahora no
           </Link>
         </div>
       </section>
@@ -360,16 +339,20 @@ export function EscanerVisita({
     const solicitando = estado === "ubicando";
     const registrando = estado === "registrando";
     return (
-      <section className="space-y-4 rounded-3xl border border-teal-200 bg-teal-50 p-6">
-        <h2 className="text-2xl font-bold text-teal-950">
-          {preparacion.destino.nombre}
-        </h2>
+      <section className="space-y-4 rounded-3xl border border-teal-200 bg-white p-5 sm:p-7">
+        <p className="text-sm font-semibold text-emerald-900">QR comprobado</p>
+        <h2 className="font-serif text-3xl text-teal-950">Confirma tu ubicación</h2>
+        <p className="font-semibold text-teal-950">{preparacion.destino.nombre}</p>
         <p role="status" className="text-sm font-semibold text-teal-950">
           {registrando
             ? "Ubicación obtenida. Comprobando el radio y registrando la visita…"
             : solicitando
               ? "Solicitando ubicación…"
-              : "QR comprobado. Falta validar tu ubicación."}
+              : "Permite el acceso a tu ubicación para guardar la visita."}
+        </p>
+        <p className="text-sm">
+          Tienes cinco minutos desde la lectura válida para confirmar tu
+          ubicación, aunque el QR de la pantalla cambie.
         </p>
         <p className="text-sm">
           Usaremos tu ubicación solo para confirmar que estás a{" "}
@@ -377,7 +360,7 @@ export function EscanerVisita({
           se guardan ni se comparten con proveedores de mapas.
         </p>
         {mensaje && (
-          <p role="alert" className="text-sm text-red-800">
+          <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-950">
             {mensaje}
           </p>
         )}
@@ -421,7 +404,11 @@ export function EscanerVisita({
   }
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-4 rounded-3xl border border-stone-200 bg-white p-4 sm:p-6">
+      <div>
+        <h2 className="font-serif text-2xl text-teal-950">Escanea el QR del destino</h2>
+        <p className="mt-1 text-sm text-stone-700">Centra el código en el visor. Después podrás confirmar dónde estás.</p>
+      </div>
       <div className="relative aspect-video overflow-hidden rounded-3xl bg-teal-950">
         <video
           ref={visor}
@@ -430,6 +417,11 @@ export function EscanerVisita({
           aria-label="Visor de cámara"
           className="h-full w-full object-contain"
         />
+        {estado === "activo" && (
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 grid place-items-center">
+            <div className="aspect-square w-[42%] rounded-2xl border-2 border-white shadow-[0_0_0_100vmax_rgba(0,0,0,0.35)]" />
+          </div>
+        )}
         {estado !== "activo" && (
           <p
             role="status"
