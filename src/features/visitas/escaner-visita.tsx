@@ -324,7 +324,7 @@ export function EscanerVisita({
           Puedes escribir una reseña ahora o volver a la página del destino más tarde.
         </p>
         <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:gap-4">
-          <Link href={`${enlaceFicha(datos.destino.slug)}#opiniones`} className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-950 px-5 font-semibold text-white hover:bg-teal-800">
+          <Link href={`${enlaceFicha(datos.destino.slug)}#escribir-resena`} className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-950 px-5 font-semibold text-white hover:bg-teal-800">
             {datos.yaVerificada ? "Ver o escribir reseña" : "Escribir reseña"}
           </Link>
           <Link href={enlaceFicha(datos.destino.slug)} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-teal-200 bg-white px-5 font-semibold text-teal-950 hover:bg-teal-100">

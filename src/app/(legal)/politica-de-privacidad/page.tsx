@@ -20,8 +20,25 @@ export default function PaginaPrivacidad() {
         <p>
           Los favoritos, las visitas verificadas y los votos de utilidad se
           asocian a tu cuenta. Al publicar una reseña, tu nombre, comentario,
-          calificación y fecha se muestran públicamente. Los encargados
+          calificación, fecha de publicación y fecha de visita verificada se
+          muestran públicamente. Las respuestas que publiques también muestran
+          tu nombre y la fecha de envío. Los encargados
           consultan información de los destinos que tienen asignados.
+        </p>
+      </section>
+      <section>
+        <h2>Fotos de las reseñas</h2>
+        <p>
+          Adjuntar una foto es opcional. Antes de subirla solicitamos tu
+          autorización para publicarla con la reseña. La foto se almacena en
+          Supabase Storage y puede verla cualquier visitante del sitio.
+          Adjunta únicamente fotos propias y con permiso de las personas que
+          aparezcan en ellas.
+        </p>
+        <p>
+          Si declaras que apareces en una selfie tomada durante la visita,
+          Munay puede acreditar puntos adicionales sujetos a revisión.
+          Esta declaración no utiliza reconocimiento facial.
         </p>
       </section>
       <section>

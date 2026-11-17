@@ -3,6 +3,9 @@ export type Resena = {
   comentario: string;
   calificacion: number;
   creadaEn: string;
+  fechaVisita?: string | null;
+  fotoUrl?: string | null;
+  totalRespuestas?: number;
   usuario: { nombreCompleto: string };
   destino: { nombre: string; slug: string };
   verificada: boolean;
@@ -12,6 +15,10 @@ export type Resena = {
 };
 
 export type ListadoResenas = {
+  fechaVisita?: string | null;
+  puntosResena?: number;
+  puntosSelfie?: number;
+  puedeResponder?: boolean;
   resenas: Resena[];
   destinos: Resena["destino"][];
   total: number;
@@ -21,4 +28,18 @@ export type ListadoResenas = {
   hayMas: boolean;
   estado: "visitante" | "habilitada" | "bloqueada" | "publicada" | "retirada";
   recompensa?: { puntos: number; creadoEn: string; destino: string } | null;
+};
+
+export type RespuestaResena = {
+  id: string;
+  comentario: string;
+  creadaEn: string;
+  usuario: { nombreCompleto: string };
+  propia: boolean;
+};
+
+export type ListadoRespuestas = {
+  respuestas: RespuestaResena[];
+  hayMas: boolean;
+  puedeResponder: boolean;
 };

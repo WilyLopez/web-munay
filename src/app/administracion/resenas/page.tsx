@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Form from "next/form";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -93,6 +94,19 @@ function TarjetaResena({ resena }: { resena: Resena }) {
       <p className="mt-3 wrap-anywhere whitespace-pre-line text-sm leading-relaxed text-stone-800 sm:text-base">
         {resena.comentario}
       </p>
+      {resena.fotoUrl && (
+        <a href={resena.fotoUrl} target="_blank" rel="noopener noreferrer" className="mt-3 block max-w-lg">
+          <Image
+            src={resena.fotoUrl}
+            alt={`Foto de visita compartida por ${resena.usuario.nombreCompleto}`}
+            width={640}
+            height={480}
+            unoptimized
+            className="max-h-72 w-full rounded-xl bg-stone-50 object-contain"
+          />
+          <span className="sr-only">Abrir foto en otra pestaña</span>
+        </a>
+      )}
       <ReportarResena id={resena.id} />
     </li>
   );
