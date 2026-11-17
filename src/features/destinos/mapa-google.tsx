@@ -1,12 +1,9 @@
 "use client";
 
-import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { Destino } from "./catalogo";
-
-const clave = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-let configurado = false;
+import { cargarGoogleMaps, googleMapsDisponible } from "./cargar-google-maps";
 
 export function MapaGoogle({
   destinos,
@@ -29,13 +26,9 @@ export function MapaGoogle({
   const [fallo, cambiarFallo] = useState(false);
 
   useEffect(() => {
-    if (!clave) return;
+    if (!googleMapsDisponible) return;
     let activo = true;
-    if (!configurado) {
-      setOptions({ key: clave, v: "weekly" });
-      configurado = true;
-    }
-    void Promise.all([importLibrary("maps"), importLibrary("marker")])
+    void cargarGoogleMaps()
       .then(([{ Map }, { AdvancedMarkerElement }]) => {
         if (!activo || !contenedor.current) return;
         cambiarMotor({
@@ -125,7 +118,7 @@ export function MapaGoogle({
 
   return (
     <div className="space-y-2">
-      {!clave || fallo ? (
+      {!googleMapsDisponible || fallo ? (
         <p role="status" className="rounded-xl border border-stone-300 p-4">
           Google Maps no está disponible. Puedes{" "}
           <Link href={volver} className="font-semibold underline">
