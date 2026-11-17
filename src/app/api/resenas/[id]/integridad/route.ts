@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { resolverUrlApi } from "@/lib/api-url";
 
 export async function GET(
   solicitud: NextRequest,
@@ -13,10 +14,7 @@ export async function GET(
     );
   }
   try {
-    const destino = new URL(
-      `/anclajes-resenas/${id}/verificar`,
-      process.env.NEXT_PUBLIC_API_URL,
-    );
+    const destino = resolverUrlApi(`/anclajes-resenas/${id}/verificar`);
     const respuesta = await fetch(destino, {
       cache: "no-store",
       signal: AbortSignal.any([solicitud.signal, AbortSignal.timeout(10000)]),

@@ -27,10 +27,10 @@ export function TarjetaDestino({
     destino.imagenUrl && imagenFallida !== destino.imagenUrl;
   const ficha = enlaceFicha(destino.slug, volver);
   const enlace =
-    "inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2";
+    "inline-flex min-h-12 items-center rounded-lg px-3.5 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95 transition-transform";
 
   return (
-    <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#dedacf] bg-[#fffdf6]">
+    <article className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-[#dedacf] bg-[#fffdf6] shadow-sm transition-transform duration-200 lg:hover:-translate-y-1 lg:hover:shadow-md">
       <div className="relative aspect-[16/9] bg-teal-950">
         {mostrarImagen && destino.imagenUrl ? (
           <Image

@@ -10,7 +10,7 @@ const formatoNota = new Intl.NumberFormat("es-PE", {
   maximumFractionDigits: 1,
 });
 const campo =
-  "min-h-11 w-full min-w-0 rounded-lg border border-[#b9c4b9] bg-white px-3 text-base font-normal text-[#193b33] focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm";
+  "min-h-12 w-full min-w-0 rounded-lg border border-[#b9c4b9] bg-white px-3 text-base font-normal text-[#193b33] focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm";
 
 export async function Opiniones({
   slug,
@@ -91,7 +91,7 @@ export async function Opiniones({
         </label>
         <button
           type="submit"
-          className="min-h-11 rounded-lg bg-[#174238] px-4 text-sm font-semibold text-white hover:bg-[#23574a] focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="min-h-12 rounded-lg bg-[#174238] px-4 text-sm font-semibold text-white hover:bg-[#23574a] focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95 transition-transform"
         >
           Aplicar filtros
         </button>
@@ -184,7 +184,7 @@ export async function Opiniones({
                 type="button"
                 disabled
                 aria-describedby="motivo-resena-bloqueada"
-                className="cursor-not-allowed rounded-full border border-teal-900/20 px-4 py-2 text-sm font-semibold text-stone-600"
+                className="inline-flex min-h-12 items-center justify-center cursor-not-allowed rounded-full border border-teal-900/20 px-4 py-2 text-sm font-semibold text-stone-600"
               >
                 Escribir una reseña
               </button>
@@ -193,7 +193,7 @@ export async function Opiniones({
               </p>
               <Link
                 href={`/verificar-visita?destino=${encodeURIComponent(destino)}`}
-                className="text-sm font-semibold underline underline-offset-4"
+                className="inline-flex min-h-12 items-center text-sm font-semibold underline underline-offset-4 hover:text-[#0b6b52]"
               >
                 Verificar mi visita
               </Link>
@@ -202,7 +202,7 @@ export async function Opiniones({
           {datos.estado === "visitante" && (
             <Link
               href="/ingresar?aviso=sesion"
-              className="font-semibold underline"
+              className="inline-flex min-h-12 items-center font-semibold underline hover:text-[#0b6b52]"
             >
               Escribir una reseña
             </Link>
@@ -230,7 +230,7 @@ export async function Opiniones({
           {!slug && (
             <Link
               href={filtro ? "/resenas#opiniones" : "/destinos"}
-              className="mt-2 inline-flex min-h-11 items-center rounded-sm text-sm font-semibold underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="mt-2 inline-flex min-h-12 items-center rounded-lg text-sm font-semibold underline underline-offset-4 hover:text-[#0b6b52] focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               {filtro
                 ? "Ver todos los destinos con reseñas"
@@ -247,7 +247,7 @@ export async function Opiniones({
           {pagina > 1 && (
             <Link
               href={parametrosPagina(pagina - 1)}
-              className="inline-flex min-h-11 items-center rounded-lg border border-[#dedacf] px-3 hover:bg-[#e8eee6] focus-visible:outline-2"
+              className="inline-flex min-h-12 items-center rounded-lg border border-[#dedacf] px-4 hover:bg-[#e8eee6] focus-visible:outline-2"
             >
               Página anterior
             </Link>
@@ -258,7 +258,7 @@ export async function Opiniones({
           {datos.hayMas && (
             <Link
               href={parametrosPagina(pagina + 1)}
-              className="inline-flex min-h-11 items-center rounded-lg border border-[#dedacf] px-3 hover:bg-[#e8eee6] focus-visible:outline-2"
+              className="inline-flex min-h-12 items-center rounded-lg border border-[#dedacf] px-4 hover:bg-[#e8eee6] focus-visible:outline-2"
             >
               Página siguiente
             </Link>

@@ -1,17 +1,13 @@
+import { resolverUrlApi } from "@/lib/api-url";
+
 export function solicitarDestinos(
   token?: string,
   ruta = "/destinos",
   metodo = "GET",
 ) {
-  const base = process.env.NEXT_PUBLIC_API_URL;
-
-  if (!base) {
-    throw new Error("Falta configurar la URL de la API.");
-  }
-
   const esLecturaPublica = !token && metodo === "GET";
 
-  return fetch(new URL(ruta, base), {
+  return fetch(resolverUrlApi(ruta), {
     method: metodo,
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     ...(esLecturaPublica

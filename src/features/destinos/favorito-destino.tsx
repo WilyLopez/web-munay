@@ -17,8 +17,8 @@ export function FavoritoDestino({
   const [error, cambiarError] = useState<string | null>(null);
   const [pendiente, iniciarCambio] = useTransition();
   const estilo = compacto
-    ? "absolute right-3 top-3 grid size-10 place-items-center rounded-full bg-white text-2xl text-teal-950 shadow"
-    : "inline-flex rounded-full border border-teal-900 px-5 py-3 font-semibold text-teal-950";
+    ? "absolute right-3 top-3 grid size-12 min-h-12 min-w-12 place-items-center rounded-full bg-white text-2xl text-teal-950 shadow-md transition-transform active:scale-95"
+    : "inline-flex min-h-12 items-center justify-center rounded-full border border-teal-900 px-5 py-3 font-semibold text-teal-950 transition-colors active:scale-95";
 
   return (
     <>

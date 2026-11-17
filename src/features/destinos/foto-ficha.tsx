@@ -21,6 +21,7 @@ export function FotoFicha({
   const fotos = Array.from(new Set(url ? [url, ...adicionales] : adicionales));
   const [seleccion, cambiarSeleccion] = useState<string>();
   const [fallidas, cambiarFallidas] = useState<string[]>([]);
+  const [touchInicio, cambiarTouchInicio] = useState<number | null>(null);
   const disponibles = fotos.filter((foto) => !fallidas.includes(foto));
   const principal =
     seleccion && disponibles.includes(seleccion) ? seleccion : disponibles[0];
@@ -34,9 +35,36 @@ export function FotoFicha({
         }
       : informacion?.galeria?.find((foto) => foto.url === principal);
 
+  function alIniciarTouch(evento: React.TouchEvent) {
+    cambiarTouchInicio(evento.touches[0].clientX);
+  }
+
+  function alTerminarTouch(evento: React.TouchEvent) {
+    if (touchInicio === null || disponibles.length <= 1 || !principal) return;
+    const touchFin = evento.changedTouches[0].clientX;
+    const diferencia = touchInicio - touchFin;
+    if (Math.abs(diferencia) > 40) {
+      const indiceActual = disponibles.indexOf(principal);
+      if (diferencia > 0) {
+        cambiarSeleccion(disponibles[(indiceActual + 1) % disponibles.length]);
+      } else {
+        cambiarSeleccion(
+          disponibles[
+            (indiceActual - 1 + disponibles.length) % disponibles.length
+          ],
+        );
+      }
+    }
+    cambiarTouchInicio(null);
+  }
+
   return (
     <figure className="min-w-0 space-y-2">
-      <div className="relative isolate aspect-[4/3] overflow-hidden rounded-2xl bg-[#193b33] text-white sm:aspect-[16/10]">
+      <div
+        className="relative isolate aspect-[4/3] overflow-hidden rounded-2xl bg-[#193b33] text-white sm:aspect-[16/10] touch-pan-y"
+        onTouchStart={alIniciarTouch}
+        onTouchEnd={alTerminarTouch}
+      >
         {principal ? (
           <Image
             key={principal}
@@ -63,19 +91,24 @@ export function FotoFicha({
             Destino verificado
           </span>
         )}
+        {disponibles.length > 1 && principal && (
+          <span className="absolute bottom-3 right-3 rounded-full bg-black/75 px-3 py-1 text-xs font-semibold text-white shadow-sm backdrop-blur-sm sm:hidden">
+            {disponibles.indexOf(principal) + 1} / {disponibles.length}
+          </span>
+        )}
       </div>
       {disponibles.length > 1 && (
         <ul
           aria-label="Fotos del destino"
-          className="flex max-w-full gap-2 overflow-x-auto p-1"
+          className="flex max-w-full gap-2 overflow-x-auto p-1 no-scrollbar snap-x snap-mandatory"
         >
           {disponibles.map((foto, indice) => (
-            <li key={foto}>
+            <li key={foto} className="shrink-0 snap-start">
               <button
                 type="button"
                 aria-label={`Mostrar foto ${indice + 1}`}
                 aria-pressed={foto === principal}
-                className="relative block h-13 w-19 overflow-hidden rounded-lg border-2 border-stone-300 focus-visible:outline-2 focus-visible:outline-offset-2 aria-pressed:border-teal-900 sm:h-16 sm:w-24"
+                className="relative block h-14 w-20 overflow-hidden rounded-lg border-2 border-stone-300 focus-visible:outline-2 focus-visible:outline-offset-2 aria-pressed:border-teal-900 active:scale-95 transition-transform sm:h-16 sm:w-24"
                 onClick={() => cambiarSeleccion(foto)}
               >
                 <Image

@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   compress: true,
+  devIndicators: false,
   images: {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 30,
@@ -19,7 +20,12 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    optimizePackageImports: ["@tanstack/react-query"],
+    optimizePackageImports: [
+      "@tanstack/react-query",
+      "@supabase/supabase-js",
+      "@supabase/ssr",
+      "qrcode",
+    ],
   },
 };
 

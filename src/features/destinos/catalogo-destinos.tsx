@@ -143,9 +143,9 @@ export function CatalogoDestinos({
   const filtrosAvanzados =
     Number(Boolean(provincia)) + Number(Boolean(calificacion));
   const campo =
-    "min-h-11 w-full min-w-0 rounded-lg border border-[#b9c4b9] bg-white px-3 text-base font-normal text-[#193b33] focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm";
+    "min-h-12 w-full min-w-0 rounded-lg border border-[#b9c4b9] bg-white px-3 text-base font-normal text-[#193b33] focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm";
   const pestana =
-    "inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-semibold hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 aria-[current=page]:bg-[#174238] aria-[current=page]:text-white";
+    "inline-flex min-h-12 items-center justify-center rounded-lg px-4 text-sm font-semibold hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 aria-[current=page]:bg-[#174238] aria-[current=page]:text-white";
 
   return (
     <section
@@ -198,7 +198,7 @@ export function CatalogoDestinos({
         </div>
 
         <div
-          className="flex flex-wrap items-center gap-2"
+          className="flex overflow-x-auto pb-1 gap-2 no-scrollbar -mx-1 px-1 sm:flex-wrap"
           role="group"
           aria-label="Tipo de experiencia"
         >
@@ -212,7 +212,7 @@ export function CatalogoDestinos({
               onClick={() =>
                 aplicarFiltro("categoria", opcion === "TODOS" ? "" : opcion)
               }
-              className="min-h-11 rounded-full border border-[#b9c4b9] px-4 text-sm font-semibold hover:bg-[#e8eee6] focus-visible:outline-2 focus-visible:outline-offset-2 aria-pressed:border-[#174238] aria-pressed:bg-[#174238] aria-pressed:text-white"
+              className="shrink-0 whitespace-nowrap min-h-12 rounded-full border border-[#b9c4b9] px-4.5 text-sm font-semibold hover:bg-[#e8eee6] focus-visible:outline-2 focus-visible:outline-offset-2 aria-pressed:border-[#174238] aria-pressed:bg-[#174238] aria-pressed:text-white active:scale-95 transition-all"
             >
               {opcion === "TODOS" ? "Todos" : categorias[opcion]}
             </button>
@@ -220,7 +220,7 @@ export function CatalogoDestinos({
         </div>
 
         <details className="group rounded-xl border border-[#dedacf] bg-[#fffdf6] px-4">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-md text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-md text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
             <span>
               Más filtros{filtrosAvanzados > 0 ? ` (${filtrosAvanzados})` : ""}
             </span>

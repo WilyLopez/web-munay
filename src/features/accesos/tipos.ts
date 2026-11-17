@@ -24,11 +24,11 @@ export type AccesoEncargado = {
 export type ListadoAccesos = { filas: AccesoEncargado[]; hayMas: boolean };
 export type OpcionDestino = { id: string; nombre: string };
 export const campo =
-  "min-w-0 w-full rounded-xl border border-[#bdcfc2] bg-white px-3 py-2.5 text-sm font-normal";
+  "min-w-0 w-full min-h-12 rounded-xl border border-[#bdcfc2] bg-white px-3 py-2.5 text-base sm:text-sm font-normal";
 export const principal =
-  "rounded-xl bg-[#174238] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#23574a] disabled:opacity-60";
+  "inline-flex min-h-12 items-center justify-center rounded-xl bg-[#174238] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#23574a] disabled:opacity-60";
 export const secundario =
-  "rounded-xl border border-[#bdcfc2] px-4 py-2.5 text-sm font-semibold hover:bg-[#edf4ed] disabled:opacity-60";
+  "inline-flex min-h-12 items-center justify-center rounded-xl border border-[#bdcfc2] px-4 py-2.5 text-sm font-semibold hover:bg-[#edf4ed] disabled:opacity-60";
 export const estados = {
   pendiente: "Pendiente",
   aprobada: "Aprobada",

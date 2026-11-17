@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { Navbar } from "@/features/navegacion/navbar";
+import { PiePagina } from "@/features/navegacion/pie-pagina";
 import { solicitarVisitas } from "@/features/visitas/api";
 import { EscanerVisita } from "@/features/visitas/escaner-visita";
 import {
@@ -64,14 +65,19 @@ export default function PaginaVerificarVisita({
   searchParams: Promise<Consulta>;
 }) {
   return (
-    <div className="-m-8 min-h-dvh">
+    <div className="flex min-h-dvh flex-col bg-[#fdfcf7] text-[#173b32]">
       <Navbar />
-      <main className="mx-auto max-w-2xl space-y-5 px-6 py-8">
-        <Link href="/destinos" className="font-semibold text-teal-900 underline">
+      <main className="mx-auto w-full max-w-2xl flex-1 space-y-5 px-4 py-8 sm:px-6">
+        <Link
+          href="/destinos"
+          className="inline-flex min-h-12 items-center font-semibold text-teal-900 underline hover:text-[#0b6b52]"
+        >
           Volver a destinos
         </Link>
-        <h1 className="text-3xl font-bold text-teal-950">Verificar visita</h1>
-        <p>
+        <h1 className="font-serif text-2xl font-bold text-teal-950 sm:text-3xl">
+          Verificar visita
+        </h1>
+        <p className="text-sm leading-relaxed text-[#314941] sm:text-base">
           Usa el código QR que muestra el encargado del destino para verificar tu
           visita.
         </p>
@@ -79,6 +85,7 @@ export default function PaginaVerificarVisita({
           <Escaneo consulta={searchParams} />
         </Suspense>
       </main>
+      <PiePagina />
     </div>
   );
 }

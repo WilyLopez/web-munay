@@ -73,7 +73,7 @@ export function FormularioResena({ slug }: { slug: string }) {
     return (
       <button
         type="button"
-        className="font-semibold underline"
+        className="inline-flex min-h-12 items-center font-semibold underline hover:text-[#0b6b52]"
         onClick={() => abrir(true)}
       >
         Escribir una reseña
@@ -89,25 +89,33 @@ export function FormularioResena({ slug }: { slug: string }) {
         disabled={publicando}
         aria-invalid={faltaNota}
         aria-describedby={faltaNota ? "error-publicacion-resena" : undefined}
-        className={faltaNota ? "rounded border border-red-600 p-2" : undefined}
+        className={faltaNota ? "rounded-xl border border-red-600 p-3" : undefined}
       >
-        <legend className="font-semibold">Calificación</legend>
-        <div className="flex flex-wrap gap-3">
+        <legend className="font-semibold text-[#174238]">Calificación</legend>
+        <div className="flex flex-wrap gap-2 pt-2">
           {[1, 2, 3, 4, 5].map((nota) => (
-            <label key={nota} className="flex items-center gap-1">
+            <label
+              key={nota}
+              className={`flex min-h-12 min-w-12 cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-semibold transition-all active:scale-95 ${
+                calificacion === nota
+                  ? "border-[#174238] bg-[#174238] text-white shadow-sm"
+                  : "border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
+              }`}
+            >
               <input
                 type="radio"
                 name="calificacion"
                 value={nota}
                 checked={calificacion === nota}
                 onChange={() => cambiarCalificacion(nota)}
+                className="sr-only"
               />
               <span>{nota} ★</span>
             </label>
           ))}
         </div>
       </fieldset>
-      <label className="block font-semibold">
+      <label className="block font-semibold text-[#174238]">
         Comentario
         <textarea
           disabled={publicando}
@@ -119,7 +127,7 @@ export function FormularioResena({ slug }: { slug: string }) {
             faltaComentario ? "error-publicacion-resena" : undefined
           }
           rows={4}
-          className="mt-2 block w-full rounded-lg border border-stone-300 p-3 font-normal aria-invalid:border-red-600"
+          className="mt-2 block w-full rounded-xl border border-stone-300 p-3 text-base font-normal sm:text-sm aria-invalid:border-red-600 focus-visible:outline-2 focus-visible:outline-teal-900"
         />
       </label>
       {error && (
@@ -129,7 +137,7 @@ export function FormularioResena({ slug }: { slug: string }) {
       )}
       <button
         disabled={publicando}
-        className="rounded-full bg-teal-950 px-5 py-2 font-semibold text-white disabled:opacity-60"
+        className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-950 px-6 py-2.5 font-semibold text-white transition-transform hover:bg-teal-900 active:scale-95 disabled:opacity-60"
       >
         {publicando
           ? "Publicando…"

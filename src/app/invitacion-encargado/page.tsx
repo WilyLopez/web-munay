@@ -12,12 +12,15 @@ async function Acceso() {
 
 export default function PaginaInvitacion() {
   return (
-    <main className="mx-auto grid min-h-[75vh] max-w-xl place-items-center px-1 py-8 text-[#173b32]">
+    <main className="mx-auto grid min-h-dvh max-w-xl place-items-center px-4 py-8 text-[#173b32] sm:px-6">
       <section className="w-full space-y-5 rounded-3xl border border-[#dce3da] bg-white p-6 sm:p-9">
-        <Link href="/" className="font-serif text-xl font-semibold">
+        <Link
+          href="/"
+          className="inline-flex min-h-12 items-center font-serif text-xl font-semibold hover:text-[#0b6b52]"
+        >
           Munay
         </Link>
-        <h1 className="font-serif text-4xl">
+        <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl">
           Invitación para gestionar un atractivo
         </h1>
         <p className="text-sm leading-relaxed text-[#4d665b]">

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { crearSupabaseServidor } from "@/features/autenticacion/supabase/servidor";
+import { resolverUrlApi } from "@/lib/api-url";
 
 const cabeceras = {
   "Cache-Control": "private, no-store",
@@ -16,10 +17,7 @@ export async function GET(solicitud: NextRequest) {
         { headers: cabeceras },
       );
 
-    const url = new URL(
-      "/anclajes-resenas/exportar",
-      process.env.NEXT_PUBLIC_API_URL,
-    );
+    const url = resolverUrlApi("/anclajes-resenas/exportar");
     for (const campo of ["estado", "buscar"]) {
       const valor = solicitud.nextUrl.searchParams.get(campo);
       if (valor) url.searchParams.set(campo, valor);

@@ -6,10 +6,10 @@ import { MenuMovilEncargado } from "./menu-movil-encargado";
 import { Sidebar } from "./sidebar";
 
 const marco =
-  "-m-8 min-h-dvh bg-[#f4f5ef] text-[#173b32] md:grid md:grid-cols-[15rem_minmax(0,1fr)]";
+  "min-h-dvh bg-[#f4f5ef] text-[#173b32] md:grid md:grid-cols-[15rem_minmax(0,1fr)]";
 const encabezado =
-  "flex flex-wrap items-center justify-between gap-3 border-b border-[#dce3da] bg-[#fbfcf8] px-5 py-4 sm:px-8";
-const contenido = "mx-auto max-w-7xl px-5 py-7 sm:px-8";
+  "flex flex-wrap items-center justify-between gap-3 border-b border-[#dce3da] bg-[#fbfcf8] px-4 py-3 sm:px-8 sm:py-4";
+const contenido = "mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-7";
 
 function EsqueletoPanel({ global }: { global: boolean }) {
   return (
@@ -94,7 +94,7 @@ async function Marco({
           <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
             <Link
               href="/"
-              className="shrink-0 rounded-lg border border-[#ccd9cf] px-3 py-2 text-xs font-semibold hover:bg-[#e6eee6]"
+              className="inline-flex min-h-11 items-center shrink-0 rounded-lg border border-[#ccd9cf] px-3 py-2 text-xs font-semibold hover:bg-[#e6eee6]"
             >
               Ver sitio público <span aria-hidden="true">↗</span>
             </Link>

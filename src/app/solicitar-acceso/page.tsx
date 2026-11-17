@@ -91,7 +91,7 @@ async function Solicitudes() {
                 {fila.estado === "aprobada" && (
                   <Link
                     href="/administracion"
-                    className="font-semibold underline underline-offset-4"
+                    className="inline-flex min-h-12 items-center font-semibold underline underline-offset-4 hover:text-[#0b6b52]"
                   >
                     Ir a Mis atractivos
                   </Link>
@@ -111,11 +111,11 @@ async function Solicitudes() {
 
 export default function PaginaSolicitarAcceso() {
   return (
-    <div className="-m-8 min-h-dvh bg-[#f8f4ea] text-[#173b32]">
+    <div className="flex min-h-dvh flex-col bg-[#f8f4ea] text-[#173b32]">
       <Navbar />
-      <main className="mx-auto max-w-6xl space-y-6 px-5 py-10 sm:px-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 py-8 sm:px-8 sm:py-10">
         <header className="space-y-3 rounded-3xl bg-[#174238] p-6 text-white sm:p-10">
-          <h1 className="font-serif text-4xl sm:text-5xl">
+          <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl">
             Gestiona tu atractivo en Munay
           </h1>
           <p className="max-w-2xl text-sm leading-relaxed text-[#dfebe3] sm:text-base">

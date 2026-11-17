@@ -31,15 +31,15 @@ export default function PaginaResenas({
   searchParams: Promise<Consulta>;
 }) {
   return (
-    <div className="-m-8 min-h-dvh bg-[#f8f4ea] text-[#193b33]">
+    <div className="min-h-dvh flex flex-col bg-[#f8f4ea] text-[#193b33]">
       <Navbar />
-      <main className="mx-auto max-w-[82rem] px-4 pb-12 sm:px-8 lg:px-12">
+      <main className="mx-auto w-full max-w-[82rem] flex-1 px-4 pb-12 sm:px-8 lg:px-12">
         <header className="border-b border-[#d9d2c2] py-7 sm:py-10">
           <Link
             href="/destinos"
-            className="inline-flex min-h-11 items-center rounded-sm text-sm font-semibold underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="inline-flex min-h-12 items-center rounded-sm text-sm font-semibold underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            Explorar destinos
+            ← Explorar destinos
           </Link>
           <h1 className="text-balance font-serif text-[clamp(2.4rem,6.5vw,5rem)] leading-none tracking-tight">
             Opiniones de visitantes
