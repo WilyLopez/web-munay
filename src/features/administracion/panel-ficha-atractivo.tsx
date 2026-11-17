@@ -5,6 +5,7 @@ import { useState } from "react";
 import { enlaceFicha } from "@/features/destinos/catalogo";
 import { estadosFicha } from "@/features/destinos/informacion";
 import { FormularioFicha, type FichaOperativa } from "./formulario-ficha";
+import { VisibilidadAtractivo } from "./visibilidad-atractivo";
 import { ResumenFicha } from "./resumen-ficha";
 
 const boton =
@@ -80,6 +81,9 @@ export function PanelFichaAtractivo({
           </div>
         )}
       </header>
+      {modo === "lectura" && (
+        <VisibilidadAtractivo slug={slug} nombre={ficha.nombre} estado={ficha.estadoEditorial} />
+      )}
       {mensaje && (
         <p
           role="status"

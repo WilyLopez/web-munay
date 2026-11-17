@@ -5,39 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { sincronizarPantalla } from "./acciones";
+import { consultarPantallaPublica } from "./acciones";
 import { generarEnlaceQr } from "./enlace-qr";
 import { useReintentoAlVencer } from "./usar-reintento-al-vencer";
 import { type DestinoVisita, type PantallaVisitas } from "./tipos";
 
-type EstadoPantalla = { datos: PantallaVisitas; venceLocal: number };
+type DatosPantalla = Omit<PantallaVisitas, "recientes" | "totalHoy">;
 
-type AlertaEscaneo = {
-  fecha: Date;
-};
-
-function reproducirSonidoEscaneo() {
-  try {
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const ganancia = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15);
-    ganancia.gain.setValueAtTime(0.2, ctx.currentTime);
-    ganancia.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-    osc.connect(ganancia);
-    ganancia.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.6);
-  } catch {
-  }
-}
+type EstadoPantalla = { datos: DatosPantalla; venceLocal: number };
 
 export function PantallaTransmision({
   destinos,
@@ -51,22 +26,18 @@ export function PantallaTransmision({
   const [ahora, setAhora] = useState(0);
   const [error, setError] = useState("");
   const [sincronizando, setSincronizando] = useState(false);
-  const [alerta, setAlerta] = useState<AlertaEscaneo | null>(null);
-  const [sonidoActivo, setSonidoActivo] = useState(true);
   const [estadoCopia, cambiarEstadoCopia] = useState("");
   const [pantallaCompleta, setPantallaCompleta] = useState(false);
 
   const lienzoRef = useRef<HTMLCanvasElement>(null);
   const solicitudRef = useRef(false);
   const versionConexion = useRef(0);
-  const ultimoTotalHoyRef = useRef<number | undefined>(undefined);
-  const ultimaVisitaIdRef = useRef<string | undefined>(undefined);
 
   const destinoSeleccionado =
     destinos.find((d) => d.slug === slugActual) ?? destinos[0];
 
   const sincronizar = useCallback(
-    async function consultar(codigoId?: string) {
+    async function consultar() {
       if (solicitudRef.current || !navigator.onLine) return;
       solicitudRef.current = true;
       const version = versionConexion.current;
@@ -74,7 +45,7 @@ export function PantallaTransmision({
       const inicio = performance.now();
 
       try {
-        const respuesta = await sincronizarPantalla(slugActual, codigoId);
+        const respuesta = await consultarPantallaPublica(slugActual);
         if (!navigator.onLine || version !== versionConexion.current) return;
         if (!respuesta.ok) {
           setPantalla(undefined);
@@ -94,28 +65,6 @@ export function PantallaTransmision({
         });
         setError("");
 
-        if (ultimoTotalHoyRef.current !== undefined) {
-          const nuevaVisitaRegistrada =
-            datos.totalHoy > (ultimoTotalHoyRef.current ?? 0) ||
-            (datos.recientes[0] &&
-              datos.recientes[0].id !== ultimaVisitaIdRef.current);
-
-          if (nuevaVisitaRegistrada) {
-            const nuevaAlerta: AlertaEscaneo = {
-              fecha: new Date(
-                datos.recientes[0]?.verificadaEn ?? datos.horaServidor,
-              ),
-            };
-            setAlerta(nuevaAlerta);
-
-            if (sonidoActivo) {
-              reproducirSonidoEscaneo();
-            }
-          }
-        }
-
-        ultimoTotalHoyRef.current = datos.totalHoy;
-        ultimaVisitaIdRef.current = datos.recientes[0]?.id;
       } catch {
         if (version !== versionConexion.current) return;
         setPantalla(undefined);
@@ -125,7 +74,7 @@ export function PantallaTransmision({
         setSincronizando(false);
       }
     },
-    [slugActual, sonidoActivo],
+    [slugActual],
   );
 
   function cambiarDestino(nuevoSlug: string) {
@@ -134,9 +83,6 @@ export function PantallaTransmision({
     setPantalla(undefined);
     setError("");
     setSlugActual(nuevoSlug);
-    ultimoTotalHoyRef.current = undefined;
-    ultimaVisitaIdRef.current = undefined;
-    setAlerta(null);
   }
 
   const codigo = pantalla?.datos.codigo;
@@ -199,12 +145,6 @@ export function PantallaTransmision({
     }, Math.ceil(demora));
     return () => window.clearTimeout(renovar);
   }, [venceLocal, sincronizar]);
-
-  useEffect(() => {
-    if (!alerta) return;
-    const timer = setTimeout(() => setAlerta(null), 10000);
-    return () => clearTimeout(timer);
-  }, [alerta]);
 
   useEffect(() => {
     function actualizarPantallaCompleta() {
@@ -299,14 +239,6 @@ export function PantallaTransmision({
             </button>
             <button
               type="button"
-              onClick={() => setSonidoActivo(!sonidoActivo)}
-              className="rounded-lg border border-[#b9c4b9] bg-white px-2.5 py-2 hover:bg-stone-50"
-              aria-pressed={sonidoActivo}
-            >
-              {sonidoActivo ? "Sonido activo" : "Sonido desactivado"}
-            </button>
-            <button
-              type="button"
               onClick={alternarPantallaCompleta}
               className="rounded-lg bg-[#174238] px-3 py-2 text-white hover:bg-[#23574a] active:scale-95 transition-transform"
             >
@@ -394,13 +326,6 @@ export function PantallaTransmision({
             )}
           </div>
 
-          <div role="status" className="grid min-h-10 place-items-center text-sm font-semibold text-teal-950">
-            {alerta && (
-              <p className="rounded-full bg-emerald-100 px-4 py-2">
-                Visita registrada a las {alerta.fecha.toLocaleTimeString("es-PE", { timeZone: "America/Lima" })}
-              </p>
-            )}
-          </div>
         </div>
       </main>
     </div>

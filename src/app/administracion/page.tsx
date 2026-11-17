@@ -1,3 +1,4 @@
+import { VisibilidadAtractivo } from "@/features/administracion/visibilidad-atractivo";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -202,6 +203,8 @@ async function Resumen() {
           </div>
         )}
       </section>
+
+      <VisibilidadAtractivo slug={destino.slug} nombre={destino.nombre} estado={destino.estadoEditorial} />
 
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {metricas.map(([etiqueta, valor]) => (

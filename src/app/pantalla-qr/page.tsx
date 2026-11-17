@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { solicitarVisitas } from "@/features/visitas/api";
+import { consultarPantallaPublica } from "@/features/visitas/acciones";
 import { PantallaTransmision } from "@/features/visitas/pantalla-transmision";
-import type { DestinoVisita } from "@/features/visitas/tipos";
 
 export const metadata: Metadata = {
   title: "Pantalla QR de Visitas · Munay",
@@ -18,53 +16,25 @@ async function ContenidoPantalla({
   searchParams: Promise<{ destino?: string }>;
 }) {
   await connection();
-  const [{ destino }, respuesta] = await Promise.all([
-    searchParams,
-    solicitarVisitas<DestinoVisita[]>("/visitas/administracion"),
-  ]);
+  const { destino } = await searchParams;
+  const respuesta = typeof destino === "string" && destino
+    ? await consultarPantallaPublica(destino)
+    : undefined;
 
-  if (!respuesta.ok) {
-    if (respuesta.estado === 401) {
-      const volver = destino
-        ? `/pantalla-qr?destino=${encodeURIComponent(destino)}`
-        : "/pantalla-qr";
-      redirect(`/ingresar?aviso=sesion&volver=${encodeURIComponent(volver)}`);
-    }
+  if (!respuesta?.ok) {
     return (
       <main className="grid min-h-dvh place-items-center bg-[#f8f4ea] p-6 text-center text-[#193b33]">
-        <div className="max-w-md rounded-2xl border border-[#dedacf] bg-white p-8 shadow-sm">
-          <h1 className="font-serif text-2xl font-bold text-red-900">
-            Acceso restringido
-          </h1>
-          <p className="mt-3 text-sm text-[#465a50]">
-            {respuesta.estado === 403
-              ? "Esta pantalla requiere una cuenta de encargado o administrador de destino."
-              : respuesta.mensaje}
+        <div className="max-w-md rounded-2xl border border-[#dedacf] bg-white p-8">
+          <h1 className="font-serif text-2xl font-bold">Pantalla no disponible</h1>
+          <p role="alert" className="mt-3 text-sm">
+            {respuesta && !respuesta.ok ? respuesta.mensaje : "Abre el enlace del QR del atractivo que deseas visitar."}
           </p>
         </div>
       </main>
     );
   }
-
-  const destinos = respuesta.datos;
-  if (!destinos.length) {
-    return (
-      <main className="grid min-h-dvh place-items-center bg-[#f8f4ea] p-6 text-center text-[#193b33]">
-        <div className="max-w-md rounded-2xl border border-[#dedacf] bg-white p-8 shadow-sm">
-          <h1 className="font-serif text-2xl font-bold">
-            Sin destinos asignados
-          </h1>
-          <p className="mt-3 text-sm text-[#465a50]">
-            Tu cuenta todavía no tiene destinos turísticos asignados para transmitir códigos QR.
-          </p>
-        </div>
-      </main>
-    );
-  }
-
-  const destinoInicial = destino
-    ? destinos.find((d) => d.slug === destino)?.slug ?? destinos[0].slug
-    : destinos[0].slug;
+  const destinos = [respuesta.datos.destino];
+  const destinoInicial = respuesta.datos.destino.slug;
 
   return (
     <PantallaTransmision

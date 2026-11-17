@@ -41,3 +41,12 @@ export async function consultarHistorial(slug: string, pagina: number) {
     `/visitas/administracion/${encodeURIComponent(slug)}/historial?${consulta}`,
   );
 }
+
+
+export async function consultarPantallaPublica(slug: string) {
+  return solicitarVisitas<Omit<PantallaVisitas, "recientes" | "totalHoy">>(
+    `/visitas/pantalla/${encodeURIComponent(slug)}`,
+    undefined,
+    { publica: true },
+  );
+}

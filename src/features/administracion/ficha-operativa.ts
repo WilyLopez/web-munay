@@ -124,3 +124,30 @@ export async function resolverFichaDestino(
   revalidatePath(`/superadmin/destinos/${encodeURIComponent(slug)}`);
   return { mensaje: "Estado actualizado.", error: false };
 }
+
+
+export async function cambiarVisibilidadAtractivo(
+  slug: string,
+  habilitar: boolean,
+) {
+  const resultado = await solicitarVisitas(
+    `/destinos/administracion/${encodeURIComponent(slug)}/visibilidad`,
+    { habilitar },
+    { metodo: "PUT" },
+  );
+  if (!resultado.ok) return { error: true, mensaje: resultado.mensaje };
+  updateTag("destinos");
+  revalidatePath("/administracion", "layout");
+  revalidatePath("/superadmin", "layout");
+  revalidatePath("/");
+  revalidatePath("/destinos", "layout");
+  revalidatePath("/mapas");
+  revalidatePath("/resenas");
+  revalidatePath("/pantalla-qr");
+  return {
+    error: false,
+    mensaje: habilitar
+      ? "Tu atractivo ya está habilitado en el sitio público."
+      : "Tu atractivo está deshabilitado. Puedes habilitarlo de nuevo desde aquí.",
+  };
+}
