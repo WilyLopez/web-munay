@@ -150,11 +150,17 @@ export async function Opiniones({
       {destino && (
         <div className="space-y-2 rounded-xl bg-teal-50 p-4">
           {datos.estado === "habilitada" && (
-            <FormularioResena key={destino} slug={destino} />
+            <FormularioResena
+              key={destino}
+              slug={destino}
+              fechaVisita={datos.fechaVisita}
+              puntosResena={datos.puntosResena}
+              puntosSelfie={datos.puntosSelfie}
+            />
           )}
           {datos.estado === "publicada" &&
             (datos.recompensa ? (
-              <div className="space-y-2 text-teal-950">
+              <div id="escribir-resena" className="scroll-mt-28 space-y-2 text-teal-950">
                 <p className="font-semibold">
                   +{datos.recompensa.puntos} puntos MUNAY
                 </p>
@@ -170,7 +176,7 @@ export async function Opiniones({
                 </Link>
               </div>
             ) : (
-              <p>
+              <p id="escribir-resena" className="scroll-mt-28">
                 Tu reseña está publicada. La acreditación de puntos está
                 pendiente.
               </p>
@@ -213,7 +219,11 @@ export async function Opiniones({
         <ul className="grid gap-4" aria-label="Reseñas publicadas">
           {datos.resenas.map((resena) => (
             <li key={resena.id} className="min-w-0">
-              <TarjetaResena resena={resena} mostrarDestino={!slug} />
+              <TarjetaResena
+                resena={resena}
+                mostrarDestino={!slug}
+                puedeResponder={datos.puedeResponder}
+              />
             </li>
           ))}
         </ul>

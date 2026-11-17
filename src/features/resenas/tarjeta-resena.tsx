@@ -1,3 +1,5 @@
+import Image from "next/image";
+import { RespuestasResena } from "./respuestas-resena";
 import Link from "next/link";
 import { fechaVisita } from "@/features/visitas/tipos";
 import { AccionesResena } from "./acciones-resena";
@@ -7,9 +9,11 @@ import { VerificarIntegridad } from "./verificar-integridad";
 export function TarjetaResena({
   resena,
   mostrarDestino,
+  puedeResponder,
 }: {
   resena: Resena;
   mostrarDestino?: boolean;
+  puedeResponder?: boolean;
 }) {
   return (
     <article
@@ -43,9 +47,35 @@ export function TarjetaResena({
       >
         {resena.verificada ? "Visita verificada" : "Visita sin verificar"}
       </p>
+      {resena.fechaVisita && (
+        <p className="text-xs text-[#465a50]">
+          Visita del{" "}
+          <time dateTime={resena.fechaVisita}>
+            {fechaVisita.format(new Date(resena.fechaVisita))}
+          </time>
+        </p>
+      )}
       <p className="wrap-anywhere whitespace-pre-wrap leading-relaxed">
         {resena.comentario}
       </p>
+      {resena.fotoUrl && (
+        <a
+          href={resena.fotoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block max-w-xl overflow-hidden rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          <Image
+            src={resena.fotoUrl}
+            alt={`Foto compartida por ${resena.usuario.nombreCompleto} durante su visita a ${resena.destino.nombre}`}
+            width={960}
+            height={720}
+            unoptimized
+            className="max-h-96 w-full bg-stone-100 object-contain"
+          />
+          <span className="sr-only">Abrir foto en otra pestaña</span>
+        </a>
+      )}
       {resena.verificada && (
         <VerificarIntegridad id={resena.id} registro={resena.integridad} />
       )}
@@ -53,6 +83,11 @@ export function TarjetaResena({
         id={resena.id}
         utiles={resena.utiles}
         votoPropio={resena.votoPropio}
+      />
+      <RespuestasResena
+        resenaId={resena.id}
+        total={resena.totalRespuestas}
+        puedeResponder={puedeResponder}
       />
     </article>
   );
