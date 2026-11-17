@@ -345,8 +345,14 @@ export function PantallaTransmision({
                 ✕
               </button>
             </div>
-            <div className="mt-3 border-t border-emerald-800/80 pt-3 text-xs text-emerald-100">
-              <p>
+            <div className="mt-3 border-t border-emerald-800/80 pt-3 text-xs text-emerald-100 space-y-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-emerald-300 font-medium">Identificador escaneado:</span>
+                <span className="font-mono text-xs font-bold text-white bg-emerald-900/90 px-2.5 py-1 rounded-md border border-emerald-700 select-all tracking-wider break-all">
+                  {alerta.codigoId}
+                </span>
+              </div>
+              <p className="text-emerald-200/90 text-[11px]">
                 El código anterior fue <strong className="text-white">descartado</strong> de inmediato. Se ha generado un nuevo QR activo para el siguiente visitante.
               </p>
             </div>
@@ -387,6 +393,16 @@ export function PantallaTransmision({
                       <span className="relative inline-flex size-3 rounded-full bg-teal-600" />
                     </span>
                   )}
+                </div>
+
+                {/* Identificador del QR visible abajo del código para cotejo */}
+                <div className="mt-2 w-full max-w-sm rounded-xl border border-stone-200 bg-stone-50/90 p-2.5 text-center">
+                  <span className="block text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+                    Identificador del QR activo
+                  </span>
+                  <span className="mt-0.5 block select-all font-mono text-xs sm:text-sm font-bold text-[#14312b] tracking-wider break-all bg-white rounded-lg px-2.5 py-1 border border-stone-200">
+                    {codigo.id}
+                  </span>
                 </div>
 
                 {/* Barra de progreso de tiempo restante */}
