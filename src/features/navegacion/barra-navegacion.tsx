@@ -3,7 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useDeferredValue,
+  type FormEvent,
+} from "react";
 import { cerrarSesion } from "@/features/autenticacion/acciones";
 import { AvisoExpiracion } from "@/features/autenticacion/aviso-expiracion";
 import {
@@ -134,7 +141,8 @@ export function BarraNavegacion({
   const disparador = useRef<HTMLButtonElement>(null);
   const menuMovil = useRef<HTMLDialogElement>(null);
   const campo = useRef<HTMLInputElement>(null);
-  const consulta = normalizarBusqueda(texto.trim());
+  const textoDiferido = useDeferredValue(texto);
+  const consulta = normalizarBusqueda(textoDiferido.trim());
   const resultados = consulta
     ? destinos
         .filter(({ nombre, ubicacion }) =>
@@ -155,7 +163,8 @@ export function BarraNavegacion({
 
   useEffect(() => {
     function actualizarSombra() {
-      cambiarSombra(window.scrollY > 8);
+      const proxima = window.scrollY > 8;
+      cambiarSombra((actual) => (actual !== proxima ? proxima : actual));
     }
     actualizarSombra();
     window.addEventListener("scroll", actualizarSombra, { passive: true });

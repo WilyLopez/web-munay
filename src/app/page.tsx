@@ -83,7 +83,6 @@ function ExplorarIntereses() {
           <li key={clave} className="min-w-0">
             <Link
               href={`/destinos?${new URLSearchParams({ categoria: clave })}`}
-              prefetch={false}
               className="flex h-full min-h-20 items-start justify-between gap-1 rounded-xl border border-[#dedacf] bg-[#fffdf6] p-3 hover:border-[#628171] hover:bg-[#edf0e8] focus-visible:outline-2 focus-visible:outline-offset-3 sm:p-4"
             >
               <span>
@@ -163,7 +162,7 @@ function PlaneaTuVisita() {
             Elige una provincia y ubica sus destinos en el mapa.
           </p>
         </div>
-        <Link href={enlaceMapa} prefetch={false} className="inline-flex min-h-12 items-center rounded-full bg-[#f8f4ea] px-5 py-3 text-base sm:text-sm font-semibold text-[#193b33] hover:bg-[#e9e6d9] focus-visible:outline-2 focus-visible:outline-offset-4 active:scale-95 transition-transform">
+        <Link href={enlaceMapa} className="inline-flex min-h-12 items-center rounded-full bg-[#f8f4ea] px-5 py-3 text-base sm:text-sm font-semibold text-[#193b33] hover:bg-[#e9e6d9] focus-visible:outline-2 focus-visible:outline-offset-4 active:scale-95 transition-transform">
           Abrir mapa interactivo
         </Link>
       </div>
@@ -172,7 +171,6 @@ function PlaneaTuVisita() {
           <li key={clave}>
             <Link
               href={`${enlaceMapa}&${new URLSearchParams({ provincia: clave })}`}
-              prefetch={false}
               className="inline-flex min-h-12 items-center rounded-full border border-white/40 px-4 text-sm font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-3 active:scale-95 transition-transform"
             >
               {nombre}
@@ -202,7 +200,7 @@ export default function Portada() {
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-2.5">
               <Link href="/destinos" className={botonPrincipal}>Explorar destinos</Link>
-              <Link href={enlaceMapa} prefetch={false} className="inline-flex min-h-12 items-center rounded-full border border-[#81938a] px-5 py-3 text-base sm:text-sm font-semibold hover:bg-[#e9e6d9] focus-visible:outline-2 focus-visible:outline-offset-4 active:scale-95 transition-transform">
+              <Link href={enlaceMapa} className="inline-flex min-h-12 items-center rounded-full border border-[#81938a] px-5 py-3 text-base sm:text-sm font-semibold hover:bg-[#e9e6d9] focus-visible:outline-2 focus-visible:outline-offset-4 active:scale-95 transition-transform">
                 Ver el mapa
               </Link>
             </div>

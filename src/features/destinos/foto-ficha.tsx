@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CreditoFoto } from "./credito-foto";
 import type { InformacionDestino } from "./informacion";
 
@@ -34,6 +34,14 @@ export function FotoFicha({
           descripcion: "",
         }
       : informacion?.galeria?.find((foto) => foto.url === principal);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    disponibles.slice(0, 6).forEach((foto) => {
+      const precarga = new window.Image();
+      precarga.src = foto;
+    });
+  }, [disponibles]);
 
   function alIniciarTouch(evento: React.TouchEvent) {
     cambiarTouchInicio(evento.touches[0].clientX);

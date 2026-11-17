@@ -92,7 +92,6 @@ export function TarjetaDestino({
           </Link>
           <Link
             href={enlaceMapa}
-            prefetch={false}
             aria-label={`Ver ${destino.nombre} en el mapa`}
             className={`${enlace} border border-[#b9c4b9] hover:bg-[#e8eee6]`}
           >

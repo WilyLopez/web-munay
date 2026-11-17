@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { actualizarFavorito } from "./acciones";
 import type { Destino } from "./catalogo";
 
@@ -16,6 +16,10 @@ export function FavoritoDestino({
 }) {
   const [error, cambiarError] = useState<string | null>(null);
   const [pendiente, iniciarCambio] = useTransition();
+  const [favoritoOptimista, setFavoritoOptimista] = useOptimistic(
+    destino.favorito,
+    (_actual, nuevo: boolean) => nuevo,
+  );
   const estilo = compacto
     ? "absolute right-3 top-3 grid size-12 min-h-12 min-w-12 place-items-center rounded-full bg-white text-2xl text-teal-950 shadow-md transition-transform active:scale-95"
     : "inline-flex min-h-12 items-center justify-center rounded-full border border-teal-900 px-5 py-3 font-semibold text-teal-950 transition-colors active:scale-95";
@@ -26,21 +30,22 @@ export function FavoritoDestino({
         <button
           type="button"
           aria-label={compacto ? `Favorito: ${destino.nombre}` : undefined}
-          aria-pressed={destino.favorito}
+          aria-pressed={favoritoOptimista}
           disabled={pendiente}
-          className={`${estilo} disabled:opacity-70 aria-pressed:text-rose-700`}
-          onClick={() =>
+          className={`${estilo} disabled:opacity-80 aria-pressed:text-rose-700`}
+          onClick={() => {
+            cambiarError(null);
             iniciarCambio(async () => {
-              cambiarError(null);
-              cambiarError(
-                await actualizarFavorito(destino.id, !destino.favorito),
-              );
-            })
-          }
+              const proximo = !favoritoOptimista;
+              setFavoritoOptimista(proximo);
+              const fallo = await actualizarFavorito(destino.id, proximo);
+              if (fallo) cambiarError(fallo);
+            });
+          }}
         >
           {compacto ? (
-            <span aria-hidden="true">{destino.favorito ? "♥" : "♡"}</span>
-          ) : destino.favorito ? (
+            <span aria-hidden="true">{favoritoOptimista ? "♥" : "♡"}</span>
+          ) : favoritoOptimista ? (
             "Quitar de guardados"
           ) : (
             "Guardar destino"
