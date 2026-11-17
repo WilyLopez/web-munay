@@ -16,7 +16,6 @@ type AlertaEscaneo = {
   id: string;
   codigoId: string;
   fecha: Date;
-  qrDataUrl?: string;
   totalHoy: number;
 };
 
@@ -58,7 +57,6 @@ export function PantallaTransmision({
   const [error, setError] = useState("");
   const [sincronizando, setSincronizando] = useState(false);
   const [alerta, setAlerta] = useState<AlertaEscaneo | null>(null);
-  const [autoDescargar, setAutoDescargar] = useState(true);
   const [sonidoActivo, setSonidoActivo] = useState(true);
   const [copiado, setCopiado] = useState(false);
   const [pantallaCompleta, setPantallaCompleta] = useState(false);
@@ -69,7 +67,6 @@ export function PantallaTransmision({
   const ultimoCodigoIdRef = useRef<string | undefined>(undefined);
   const ultimoTotalHoyRef = useRef<number | undefined>(undefined);
   const ultimaVisitaIdRef = useRef<string | undefined>(undefined);
-  const dataUrlActualRef = useRef<string | undefined>(undefined);
 
   const destinoSeleccionado =
     destinos.find((d) => d.slug === slugActual) ?? destinos[0];
@@ -112,31 +109,17 @@ export function PantallaTransmision({
 
           if (nuevaVisitaRegistrada) {
             const codigoEscaneado = ultimoCodigoIdRef.current;
-            const dataUrlEscaneado = dataUrlActualRef.current;
 
             const nuevaAlerta: AlertaEscaneo = {
               id: crypto.randomUUID(),
               codigoId: codigoEscaneado,
               fecha: new Date(),
-              qrDataUrl: dataUrlEscaneado,
               totalHoy: datos.totalHoy,
             };
             setAlerta(nuevaAlerta);
 
             if (sonidoActivo) {
               reproducirSonidoEscaneo();
-            }
-
-            // Descarga automática del QR escaneado si la opción está activada
-            if (autoDescargar && dataUrlEscaneado) {
-              try {
-                const enlace = document.createElement("a");
-                enlace.download = `munay-qr-escaneado-${slugActual}-${codigoEscaneado.slice(0, 8)}.png`;
-                enlace.href = dataUrlEscaneado;
-                enlace.click();
-              } catch {
-                // Manejar si el navegador bloquea descargas no provocadas por clic directo
-              }
             }
           }
         }
@@ -154,7 +137,7 @@ export function PantallaTransmision({
         setSincronizando(false);
       }
     },
-    [slugActual, autoDescargar, sonidoActivo],
+    [slugActual, sonidoActivo],
   );
 
   function cambiarDestino(nuevoSlug: string) {
@@ -162,7 +145,6 @@ export function PantallaTransmision({
     ultimoCodigoIdRef.current = undefined;
     ultimoTotalHoyRef.current = undefined;
     ultimaVisitaIdRef.current = undefined;
-    dataUrlActualRef.current = undefined;
     setAlerta(null);
   }
 
@@ -181,13 +163,9 @@ export function PantallaTransmision({
         dark: "#14312b",
         light: "#ffffff",
       },
-    })
-      .then(() => {
-        dataUrlActualRef.current = canvas.toDataURL("image/png");
-      })
-      .catch(() => {
-        setError("Error al renderizar el código QR.");
-      });
+    }).catch(() => {
+      setError("Error al renderizar el código QR.");
+    });
   }, [codigo]);
 
   // Polling cada 2 segundos para detección rápida de escaneos
@@ -234,28 +212,12 @@ export function PantallaTransmision({
     return () => window.clearTimeout(renovar);
   }, [venceLocal, sincronizar]);
 
-  // Auto-ocultar alerta después de 12 segundos
+  // Auto-ocultar alerta después de 10 segundos
   useEffect(() => {
     if (!alerta) return;
-    const timer = setTimeout(() => setAlerta(null), 12000);
+    const timer = setTimeout(() => setAlerta(null), 10000);
     return () => clearTimeout(timer);
   }, [alerta]);
-
-  function descargarQrActual() {
-    if (!lienzoRef.current || !codigo) return;
-    const enlace = document.createElement("a");
-    enlace.download = `munay-qr-${slugActual}-${codigo.id.slice(0, 8)}.png`;
-    enlace.href = lienzoRef.current.toDataURL("image/png");
-    enlace.click();
-  }
-
-  function descargarQrEscaneado(alertaObj: AlertaEscaneo) {
-    if (!alertaObj.qrDataUrl) return;
-    const enlace = document.createElement("a");
-    enlace.download = `munay-qr-escaneado-${slugActual}-${alertaObj.codigoId.slice(0, 8)}.png`;
-    enlace.href = alertaObj.qrDataUrl;
-    enlace.click();
-  }
 
   function alternarPantallaCompleta() {
     if (!document.fullscreenElement) {
@@ -342,18 +304,6 @@ export function PantallaTransmision({
           </button>
           <button
             type="button"
-            onClick={() => setAutoDescargar(!autoDescargar)}
-            className={`rounded-lg border px-2.5 py-2 transition-colors ${
-              autoDescargar
-                ? "border-teal-800 bg-teal-50 text-teal-900"
-                : "border-stone-300 bg-white text-stone-600"
-            }`}
-            title="Descargar automáticamente la imagen del QR al ser escaneado"
-          >
-            {autoDescargar ? "⬇ Auto-descarga ON" : "⬇ Auto-descarga OFF"}
-          </button>
-          <button
-            type="button"
             onClick={alternarPantallaCompleta}
             className="hidden sm:inline-flex rounded-lg bg-[#174238] px-3 py-2 text-white hover:bg-[#23574a] active:scale-95 transition-transform"
           >
@@ -395,20 +345,10 @@ export function PantallaTransmision({
                 ✕
               </button>
             </div>
-            <div className="mt-3 border-t border-emerald-800/80 pt-3 text-xs text-emerald-100 flex flex-wrap items-center justify-between gap-2">
+            <div className="mt-3 border-t border-emerald-800/80 pt-3 text-xs text-emerald-100">
               <p>
-                El QR anterior fue <strong className="text-white">descartado</strong> y se generó uno nuevo.
-                {autoDescargar && " Se descargó la imagen del QR escaneado."}
+                El código anterior fue <strong className="text-white">descartado</strong> de inmediato. Se ha generado un nuevo QR activo para el siguiente visitante.
               </p>
-              {alerta.qrDataUrl && (
-                <button
-                  type="button"
-                  onClick={() => descargarQrEscaneado(alerta)}
-                  className="rounded-lg bg-emerald-600 px-3 py-1.5 font-semibold text-white hover:bg-emerald-500 active:scale-95 transition-transform"
-                >
-                  Descargar copia (PNG)
-                </button>
-              )}
             </div>
           </div>
         )}
@@ -464,24 +404,17 @@ export function PantallaTransmision({
                     />
                   </div>
                   <p className="text-[11px] text-stone-400">
-                    El QR es de un solo uso: al ser escaneado se invalida y se genera uno nuevo.
+                    El QR es de un solo uso: al ser escaneado se descarta y se renueva automáticamente.
                   </p>
                 </div>
 
-                {/* Botones de acción rápida sobre el QR */}
-                <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={descargarQrActual}
-                    className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-stone-300 bg-stone-100 px-4 text-xs font-semibold text-stone-800 hover:bg-stone-200 active:scale-95 transition-transform"
-                  >
-                    ⬇ Descargar QR actual (PNG)
-                  </button>
+                {/* Botón para forzar nuevo código si se necesita */}
+                <div className="mt-5 flex items-center justify-center">
                   <button
                     type="button"
                     disabled={sincronizando}
                     onClick={() => codigo && void sincronizar(codigo.id)}
-                    className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-teal-800 bg-white px-4 text-xs font-semibold text-teal-900 hover:bg-teal-50 active:scale-95 transition-transform disabled:opacity-50"
+                    className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-teal-800 bg-white px-5 py-2 text-xs font-semibold text-teal-900 hover:bg-teal-50 active:scale-95 transition-transform disabled:opacity-50"
                   >
                     🔄 Forzar nuevo código
                   </button>
@@ -522,7 +455,7 @@ export function PantallaTransmision({
       {/* Pie con instrucciones para guías turísticos */}
       <footer className="border-t border-[#dedacf] bg-[#fffdf7] px-4 py-3 text-center text-xs text-[#465a50]">
         <p>
-          Munay Verificación en Vivo · Diseñado para transmitir en tablets, pantallas de ingreso o puntos de control con guías turísticos.
+          Munay Verificación en Vivo · Diseñado para proyectar en tablets, pantallas de ingreso o puntos de control con guías turísticos.
         </p>
       </footer>
     </div>

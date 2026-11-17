@@ -320,30 +320,14 @@ export function PantallaQr({ slug }: { slug: string }) {
             Iniciar sesión
           </Link>
         )}
-        <div className="flex flex-wrap gap-2.5">
-          <button
-            type="button"
-            disabled={!vigente || sincronizando}
-            onClick={() => vigente && void sincronizar(codigo.id)}
-            className="rounded-full bg-teal-950 px-5 py-3 font-semibold text-white disabled:opacity-50 active:scale-95 transition-transform"
-          >
-            {renovando ? "Generando nuevo QR…" : "Generar nuevo QR"}
-          </button>
-          <button
-            type="button"
-            disabled={!vigente}
-            onClick={() => {
-              if (!lienzoRef.current || !codigo) return;
-              const enlace = document.createElement("a");
-              enlace.download = `munay-qr-${slug}-${codigo.id.slice(0, 8)}.png`;
-              enlace.href = lienzoRef.current.toDataURL("image/png");
-              enlace.click();
-            }}
-            className="rounded-full border border-teal-900 bg-white px-5 py-3 font-semibold text-teal-950 hover:bg-teal-50 disabled:opacity-50 active:scale-95 transition-transform"
-          >
-            Descargar QR (PNG)
-          </button>
-        </div>
+        <button
+          type="button"
+          disabled={!vigente || sincronizando}
+          onClick={() => vigente && void sincronizar(codigo.id)}
+          className="rounded-full bg-teal-950 px-5 py-3 font-semibold text-white disabled:opacity-50 active:scale-95 transition-transform"
+        >
+          {renovando ? "Generando nuevo QR…" : "Generar nuevo QR"}
+        </button>
         {error && !bloqueada && (
           <button
             type="button"
