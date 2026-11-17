@@ -19,7 +19,7 @@ export default function LayoutAcceso({ children }: { children: ReactNode }) {
             className="h-10 w-auto"
           />
         </Link>
-        <Link href="/destinos" prefetch={false} className="volver-acceso">
+        <Link href="/destinos" className="volver-acceso">
           <span aria-hidden="true">←</span> Explorar destinos
         </Link>
       </header>

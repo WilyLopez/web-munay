@@ -102,10 +102,10 @@ async function ContenidoFicha({ params, searchParams }: Props) {
   rutaDesdeChiclayo.set("origin", "Chiclayo, Perú");
 
   return (
-    <main className="mx-auto max-w-[82rem] space-y-5 px-4 pb-12 pt-4 sm:space-y-7 sm:px-8 lg:px-12">
+    <main className="mx-auto max-w-[82rem] space-y-5 px-4 pb-28 pt-4 sm:space-y-7 sm:px-8 lg:px-12 lg:pb-12">
       <Link
         href={regreso}
-        className="inline-flex min-h-11 items-center gap-2 rounded-sm text-sm font-semibold underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="inline-flex min-h-12 items-center gap-2 rounded-sm text-sm font-semibold underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         <span aria-hidden="true">←</span> Volver a explorar
       </Link>
@@ -162,7 +162,7 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           <a
             key={href}
             href={href}
-            className="inline-flex min-h-11 items-center rounded-full border border-[#b9c4b9] px-4 hover:bg-[#e8eee6] focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="inline-flex min-h-12 items-center rounded-full border border-[#b9c4b9] px-4 hover:bg-[#e8eee6] focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95 transition-transform"
           >
             {texto}
           </a>
@@ -171,7 +171,7 @@ async function ContenidoFicha({ params, searchParams }: Props) {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <section
           id="planifica"
-          className="scroll-mt-24 min-w-0 space-y-5 self-start rounded-2xl border border-[#dedacf] bg-[#fffdf6] p-4 sm:p-6 lg:col-start-2 lg:row-start-1"
+          className="scroll-mt-24 min-w-0 space-y-5 self-start rounded-2xl border border-[#dedacf] bg-[#fffdf6] p-4 shadow-sm sm:p-6 lg:col-start-2 lg:row-start-1 lg:sticky lg:top-24"
         >
           <h2 className="font-serif text-3xl tracking-tight">
             Planea tu visita
@@ -218,9 +218,9 @@ async function ContenidoFicha({ params, searchParams }: Props) {
               .
             </p>
           )}
-          <div className="flex flex-wrap items-center gap-4 border-t border-stone-200 pt-4">
+          <div className="flex flex-wrap items-center gap-3 border-t border-stone-200 pt-4">
             <a
-              className="rounded-full bg-teal-950 px-5 py-3 font-semibold text-white"
+              className="inline-flex min-h-12 items-center justify-center rounded-full bg-teal-950 px-5 py-3 font-semibold text-white shadow-sm hover:bg-teal-900 active:scale-95 transition-transform"
               href="#como-llegar"
             >
               Cómo llegar
@@ -228,7 +228,7 @@ async function ContenidoFicha({ params, searchParams }: Props) {
             <FavoritoDestino destino={destino} tieneSesion={tieneSesion} />
             <Link
               href={`/verificar-visita?destino=${encodeURIComponent(destino.slug)}`}
-              className="font-semibold text-teal-900 underline"
+              className="inline-flex min-h-12 items-center font-semibold text-teal-900 underline underline-offset-4"
             >
               Registrar visita
             </Link>
@@ -352,20 +352,52 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           />
         </Suspense>
       </div>
-      <Link href="/resenas" className="font-semibold underline">
+      <Link href="/resenas" className="inline-flex min-h-12 items-center font-semibold underline underline-offset-4">
         Ver reseñas de todos los atractivos
       </Link>
+
+      {/* Barra de acción rápida fija en móvil (Regla de arquitectura responsiva #4) */}
+      <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-stone-200 bg-[#fffdf7]/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur-md lg:hidden">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+            Tarifa general
+          </p>
+          <p className="truncate text-base font-bold text-teal-950">
+            {destino.tarifaGeneral === null
+              ? "Ingreso libre"
+              : moneda.format(destino.tarifaGeneral)}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <a
+            className="inline-flex min-h-12 items-center justify-center rounded-full bg-teal-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm active:scale-95 transition-transform"
+            href={`https://www.google.com/maps/dir/?${rutaDesdeUbicacion}`}
+          >
+            Cómo llegar
+          </a>
+          <Link
+            href={`/verificar-visita?destino=${encodeURIComponent(destino.slug)}`}
+            className="inline-flex min-h-12 items-center justify-center rounded-full border border-teal-900 bg-white px-3.5 py-2.5 text-xs font-semibold text-teal-950 shadow-sm active:scale-95 transition-transform"
+          >
+            Registrar visita
+          </Link>
+        </div>
+      </div>
     </main>
   );
 }
 
 export default function PaginaFicha(props: Props) {
   return (
-    <div className="-m-8 min-h-dvh bg-[#f8f4ea] text-[#193b33]">
-      <Navbar />
-      <Suspense fallback={<EsqueletoFicha />}>
-        <ContenidoFicha {...props} />
-      </Suspense>
+    <div className="min-h-dvh flex flex-col bg-[#f8f4ea] text-[#193b33]">
+      <div className="sticky top-0 z-40">
+        <Navbar />
+      </div>
+      <div className="flex-1">
+        <Suspense fallback={<EsqueletoFicha />}>
+          <ContenidoFicha {...props} />
+        </Suspense>
+      </div>
       <PiePagina />
     </div>
   );

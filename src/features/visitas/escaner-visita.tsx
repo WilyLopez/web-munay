@@ -248,11 +248,11 @@ export function EscanerVisita({
             {mensaje}
           </p>
         )}
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           {enlaceIngreso ? (
             <Link
               href={enlaceIngreso}
-              className="rounded-lg bg-teal-950 px-4 py-2 font-semibold text-white"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-950 px-5 py-2.5 font-semibold text-white"
             >
               Iniciar sesión para continuar
             </Link>
@@ -260,7 +260,7 @@ export function EscanerVisita({
             <button
               type="button"
               disabled={estado === "comprobando"}
-              className="rounded-lg bg-teal-950 px-4 py-2 text-white disabled:opacity-60"
+              className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-950 px-5 py-2.5 font-semibold text-white active:scale-95 transition-transform disabled:opacity-60"
               onClick={() => void comprobarQr(codigoInicial)}
             >
               {estado === "comprobando" ? "Comprobando…" : "Comprobar código"}
@@ -268,7 +268,7 @@ export function EscanerVisita({
           )}
           <Link
             href={rutaEscanerVisita(destino)}
-            className="self-center font-semibold underline"
+            className="inline-flex min-h-12 items-center font-semibold underline hover:text-[#0b6b52]"
           >
             Escanear otro QR
           </Link>
@@ -299,7 +299,7 @@ export function EscanerVisita({
         </div>
         <button
           type="button"
-          className="rounded-lg border border-amber-300 px-3 py-2 text-sm font-semibold hover:bg-amber-100"
+          className="inline-flex min-h-12 items-center justify-center rounded-xl border border-amber-300 px-4 py-2.5 text-sm font-semibold hover:bg-amber-100 active:scale-95 transition-transform"
           onClick={() => cambiarResultado(undefined)}
         >
           Volver al escáner
@@ -312,7 +312,7 @@ export function EscanerVisita({
     const { datos } = resultado;
     return (
       <section
-        className="space-y-3 rounded-3xl bg-teal-50 p-6"
+        className="space-y-4 rounded-3xl bg-teal-50 p-6"
         aria-live="polite"
       >
         <h2 className="text-2xl font-bold text-teal-950">
@@ -338,18 +338,20 @@ export function EscanerVisita({
             />
           </>
         )}
-        <Link
-          href={`${enlaceFicha(datos.destino.slug)}#opiniones`}
-          className="font-semibold text-teal-900 underline"
-        >
-          Escribir o consultar mi reseña
-        </Link>
-        <Link
-          href="/mi-perfil"
-          className="block w-fit text-sm font-semibold text-teal-900 underline underline-offset-4"
-        >
-          Ver mi perfil
-        </Link>
+        <div className="flex flex-col gap-2 pt-2">
+          <Link
+            href={`${enlaceFicha(datos.destino.slug)}#opiniones`}
+            className="inline-flex min-h-12 items-center font-semibold text-teal-900 underline hover:text-[#0b6b52]"
+          >
+            Escribir o consultar mi reseña
+          </Link>
+          <Link
+            href="/mi-perfil"
+            className="inline-flex min-h-12 items-center text-sm font-semibold text-teal-900 underline underline-offset-4 hover:text-[#0b6b52]"
+          >
+            Ver mi perfil
+          </Link>
+        </div>
       </section>
     );
   }
@@ -384,14 +386,14 @@ export function EscanerVisita({
             type="button"
             disabled={solicitando || registrando}
             onClick={() => void validarUbicacion()}
-            className="rounded-full bg-teal-950 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-950 px-5 py-2.5 text-sm font-semibold text-white active:scale-95 transition-transform disabled:opacity-50"
           >
             {mensaje ? "Intentar de nuevo" : "Permitir ubicación"}
           </button>
           {!registrando && (
             <button
               type="button"
-              className="text-sm font-semibold underline"
+              className="inline-flex min-h-12 items-center text-sm font-semibold underline hover:text-[#0b6b52]"
               onClick={cancelarUbicacion}
             >
               Cancelar
@@ -401,11 +403,14 @@ export function EscanerVisita({
             <>
               <Link
                 href={`${enlaceFicha(preparacion.destino.slug)}#como-llegar`}
-                className="text-sm font-semibold underline"
+                className="inline-flex min-h-12 items-center text-sm font-semibold underline hover:text-[#0b6b52]"
               >
                 Cómo llegar
               </Link>
-              <Link href="/" className="text-sm font-semibold underline">
+              <Link
+                href="/"
+                className="inline-flex min-h-12 items-center text-sm font-semibold underline hover:text-[#0b6b52]"
+              >
                 Volver al inicio
               </Link>
             </>
@@ -443,7 +448,7 @@ export function EscanerVisita({
       {estado === "comprobando" ? (
         <button
           type="button"
-          className="font-semibold underline"
+          className="inline-flex min-h-12 items-center font-semibold underline hover:text-[#0b6b52]"
           onClick={cancelarUbicacion}
         >
           Cancelar
@@ -453,7 +458,7 @@ export function EscanerVisita({
         estado === "solicitando-camara" ? (
         <button
           type="button"
-          className="font-semibold underline"
+          className="inline-flex min-h-12 items-center font-semibold underline hover:text-[#0b6b52]"
           onClick={() => {
             detener();
             cambiarEstado("listo");
@@ -468,7 +473,7 @@ export function EscanerVisita({
           type="button"
           disabled={Boolean(enlaceIngreso)}
           onClick={() => void activar()}
-          className="rounded-full bg-teal-950 px-5 py-3 font-semibold text-white disabled:opacity-50"
+          className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-950 px-6 py-3 font-semibold text-white shadow-md transition-transform active:scale-95 disabled:opacity-50"
         >
           Activar cámara
         </button>
@@ -479,14 +484,17 @@ export function EscanerVisita({
         </p>
       )}
       {enlaceIngreso && (
-        <Link href={enlaceIngreso} className="font-semibold underline">
+        <Link
+          href={enlaceIngreso}
+          className="inline-flex min-h-12 items-center font-semibold underline hover:text-[#0b6b52]"
+        >
           Iniciar sesión para continuar
         </Link>
       )}
       {codigoPendiente && (
         <button
           type="button"
-          className="block font-semibold underline"
+          className="inline-flex min-h-12 items-center font-semibold underline hover:text-[#0b6b52]"
           onClick={() => void comprobarQr(codigoPendiente)}
         >
           Reintentar validación
@@ -500,7 +508,7 @@ export function EscanerVisita({
           <button
             type="button"
             disabled={estado === "comprobando"}
-            className="rounded-lg border border-amber-300 px-3 py-2 text-sm font-semibold hover:bg-amber-100 disabled:opacity-50"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl border border-amber-300 px-4 py-2.5 text-sm font-semibold hover:bg-amber-100 active:scale-95 transition-transform disabled:opacity-50"
             onClick={() => {
               detener();
               cambiarEstado("listo");

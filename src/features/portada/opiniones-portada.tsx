@@ -1,11 +1,13 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { enlaceFicha } from "@/features/destinos/catalogo";
+import { resolverUrlApi } from "@/lib/api-url";
 import type { ListadoResenas } from "@/features/resenas/tipos";
 
 async function obtenerOpiniones() {
   try {
     const respuesta = await fetch(
-      new URL("/resenas?orden=fecha&pagina=1", process.env.NEXT_PUBLIC_API_URL),
+      resolverUrlApi("/resenas?orden=fecha&pagina=1"),
       { next: { revalidate: 120 }, signal: AbortSignal.timeout(3500) },
     );
     if (!respuesta.ok) return [];
@@ -19,6 +21,7 @@ async function obtenerOpiniones() {
 }
 
 export async function OpinionesPortada() {
+  await connection();
   const opiniones = await obtenerOpiniones();
   if (opiniones.length < 2) return null;
 
@@ -28,13 +31,16 @@ export async function OpinionesPortada() {
         <h2 id="titulo-opiniones-portada" className="font-serif text-3xl tracking-tight sm:text-4xl">
           Opiniones de visitantes
         </h2>
-        <Link href="/resenas" className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4">
+        <Link href="/resenas" className="inline-flex min-h-12 items-center font-semibold underline underline-offset-4 hover:text-[#0b6b52]">
           Ver todas las reseñas
         </Link>
       </div>
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 no-scrollbar sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3">
         {opiniones.map(({ id, comentario, calificacion, destino, verificada }) => (
-          <li key={id} className="min-w-0 space-y-3 rounded-xl border border-[#dedacf] bg-[#fffdf6] p-5">
+          <li
+            key={id}
+            className="w-[82vw] shrink-0 snap-start sm:w-auto sm:shrink min-w-0 space-y-3 rounded-2xl border border-[#dedacf] bg-[#fffdf6] p-5 shadow-xs"
+          >
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               <span className="font-semibold text-[#8d402d]">
                 <span aria-hidden="true">★ </span>{calificacion} de 5
@@ -44,7 +50,10 @@ export async function OpinionesPortada() {
             <blockquote className="wrap-anywhere text-sm leading-relaxed text-[#465a50]">
               {comentario.length > 170 ? `${comentario.slice(0, 169).trimEnd()}…` : comentario}
             </blockquote>
-            <Link href={`${enlaceFicha(destino.slug)}#opiniones`} className="inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-4">
+            <Link
+              href={`${enlaceFicha(destino.slug)}#opiniones`}
+              className="inline-flex min-h-12 items-center text-sm font-semibold underline underline-offset-4 hover:text-[#0b6b52]"
+            >
               {destino.nombre}
             </Link>
           </li>

@@ -24,7 +24,7 @@ const redes = [
 ] as const;
 
 const estiloEnlace =
-  "inline-flex min-h-11 items-center rounded-sm text-[#e5eee7] underline-offset-4 transition-colors hover:text-white hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f8f4ea] motion-reduce:transition-none";
+  "inline-flex min-h-12 items-center rounded-sm text-[#e5eee7] underline-offset-4 transition-colors hover:text-white hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#f8f4ea] motion-reduce:transition-none";
 
 export function PiePagina({ className = "" }: { className?: string }) {
   return (
@@ -75,7 +75,7 @@ export function PiePagina({ className = "" }: { className?: string }) {
               {redes.map(([nombre, forma]) => (
                 <li
                   key={nombre}
-                  className="grid size-11 place-items-center rounded-full border border-[#638379] text-[#e5eee7]"
+                  className="grid size-12 min-h-12 min-w-12 place-items-center rounded-full border border-[#638379] text-[#e5eee7]"
                 >
                   <span className="sr-only">{nombre}</span>
                   <svg

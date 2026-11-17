@@ -1,14 +1,10 @@
+import { resolverUrlApi } from "@/lib/api-url";
+
 export async function solicitarSesion(
   token: string,
   metodo: "GET" | "POST" | "DELETE",
 ) {
-  const base = process.env.NEXT_PUBLIC_API_URL;
-
-  if (!base) {
-    throw new Error("Falta configurar la URL de la API.");
-  }
-
-  return fetch(new URL("/autenticacion/sesion", base), {
+  return fetch(resolverUrlApi("/autenticacion/sesion"), {
     method: metodo,
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",

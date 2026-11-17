@@ -7,7 +7,7 @@ import {
 import { VideoDestino } from "./video-destino";
 
 const claseEnlace =
-  "inline-flex min-h-11 items-center rounded-full border border-[#b9c4b9] px-3 py-1 font-semibold text-teal-950 hover:bg-teal-100 focus-visible:outline-2 focus-visible:outline-offset-2";
+  "inline-flex min-h-12 items-center rounded-full border border-[#b9c4b9] px-4 py-2 text-sm font-semibold text-teal-950 transition-transform hover:bg-teal-100 focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95";
 const sociales = [
   ["facebook", "Facebook"],
   ["instagram", "Instagram"],
@@ -29,7 +29,7 @@ export function SeccionDestino({
       id={id}
       className="scroll-mt-24 space-y-4 rounded-2xl border border-[#dedacf] bg-[#fffdf6] p-4 sm:p-6"
     >
-      <h2 className="font-serif text-3xl tracking-tight text-teal-950">
+      <h2 className="font-serif text-2xl sm:text-3xl tracking-tight text-teal-950">
         {titulo}
       </h2>
       {children}

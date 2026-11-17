@@ -3,7 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useDeferredValue,
+  type FormEvent,
+} from "react";
 import { cerrarSesion } from "@/features/autenticacion/acciones";
 import { AvisoExpiracion } from "@/features/autenticacion/aviso-expiracion";
 import {
@@ -26,9 +33,9 @@ const enlaces = [
 ] as const;
 
 const boton =
-  "flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition-colors hover:bg-[#eae5d8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174238] motion-reduce:transition-none";
+  "flex min-h-12 items-center gap-2 rounded-lg px-3.5 text-sm font-semibold transition-colors hover:bg-[#eae5d8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#174238] motion-reduce:transition-none";
 const opcion =
-  "block w-full rounded-lg px-3 py-3 text-left text-sm font-semibold hover:bg-[#f1eee5] focus-visible:outline-2 focus-visible:outline-[#174238]";
+  "block w-full min-h-12 rounded-lg px-3.5 py-3 text-left text-sm font-semibold hover:bg-[#f1eee5] focus-visible:outline-2 focus-visible:outline-[#174238]";
 
 function Lupa() {
   return (
@@ -134,7 +141,8 @@ export function BarraNavegacion({
   const disparador = useRef<HTMLButtonElement>(null);
   const menuMovil = useRef<HTMLDialogElement>(null);
   const campo = useRef<HTMLInputElement>(null);
-  const consulta = normalizarBusqueda(texto.trim());
+  const textoDiferido = useDeferredValue(texto);
+  const consulta = normalizarBusqueda(textoDiferido.trim());
   const resultados = consulta
     ? destinos
         .filter(({ nombre, ubicacion }) =>
@@ -155,7 +163,8 @@ export function BarraNavegacion({
 
   useEffect(() => {
     function actualizarSombra() {
-      cambiarSombra(window.scrollY > 8);
+      const proxima = window.scrollY > 8;
+      cambiarSombra((actual) => (actual !== proxima ? proxima : actual));
     }
     actualizarSombra();
     window.addEventListener("scroll", actualizarSombra, { passive: true });
@@ -255,7 +264,7 @@ export function BarraNavegacion({
             aria-controls={idMenu}
             aria-haspopup="dialog"
             onClick={(evento) => abrir("menu", evento.currentTarget)}
-            className={`${boton} size-11 shrink-0 touch-manipulation justify-center border border-[#dedacf] lg:hidden`}
+            className={`${boton} size-12 min-h-12 min-w-12 shrink-0 touch-manipulation justify-center border border-[#dedacf] lg:hidden`}
           >
             <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
@@ -357,14 +366,14 @@ export function BarraNavegacion({
                     aria-label="Buscar por nombre o ubicación"
                     placeholder="Nombre o ubicación…"
                     autoComplete="off"
-                    className="min-h-11 min-w-0 flex-1 outline-none"
+                    className="min-h-12 min-w-0 flex-1 outline-none text-base sm:text-sm"
                     value={texto}
                     onChange={(e) => cambiarTexto(e.target.value)}
                   />
                   <button
                     type="submit"
                     disabled={!consulta}
-                    className="text-sm font-semibold underline disabled:opacity-40"
+                    className="min-h-12 px-2.5 text-sm font-semibold underline disabled:opacity-40"
                   >
                     Buscar
                   </button>
@@ -422,7 +431,7 @@ export function BarraNavegacion({
                 type="button"
                 aria-label="Cerrar menú"
                 onClick={() => cambiarPanel(undefined)}
-                className={`${boton} size-11 shrink-0 touch-manipulation justify-center`}
+                className={`${boton} size-12 min-h-12 min-w-12 shrink-0 touch-manipulation justify-center`}
               >
                 <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="m6 6 12 12M18 6 6 18" strokeLinecap="round" />

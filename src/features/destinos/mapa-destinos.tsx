@@ -83,7 +83,7 @@ export function MapaDestinos({
             type="button"
             disabled={buscandoUbicacion}
             onClick={mostrarPosicion}
-            className="min-h-11 rounded-lg border border-teal-900 bg-white px-3 text-sm font-semibold disabled:opacity-50"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl border border-teal-900 bg-white px-4 text-sm font-semibold disabled:opacity-50 active:scale-95 transition-transform"
           >
             Mi posición
           </button>
@@ -94,13 +94,13 @@ export function MapaDestinos({
               cambiarAviso("");
               limpiarFiltros();
             }}
-            className="min-h-11 rounded-lg border border-teal-900 bg-white px-3 text-sm font-semibold"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl border border-teal-900 bg-white px-4 text-sm font-semibold active:scale-95 transition-transform"
           >
             Ver todos
           </button>
           <Link
             href={volver}
-            className="inline-flex min-h-11 items-center px-3 text-sm font-semibold text-teal-800 underline"
+            className="inline-flex min-h-12 items-center px-3.5 text-sm font-semibold text-teal-800 underline underline-offset-4"
           >
             Volver al catálogo
           </Link>

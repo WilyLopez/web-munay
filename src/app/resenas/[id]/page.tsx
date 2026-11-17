@@ -36,19 +36,19 @@ async function ContenidoResena({ params }: Props) {
 
 export default function PaginaResena(props: Props) {
   return (
-    <>
-      <div className="sticky top-0 z-40 -mx-8 -mt-8">
+    <div className="flex min-h-dvh flex-col bg-[#fdfcf7] text-[#173b32]">
+      <div className="sticky top-0 z-40">
         <Navbar />
       </div>
-      <main className="mx-auto max-w-3xl space-y-5 py-8">
+      <main className="mx-auto w-full max-w-3xl flex-1 space-y-5 px-4 py-8 sm:px-6">
         <Link
           href="/resenas"
-          className="font-semibold underline underline-offset-4"
+          className="inline-flex min-h-12 items-center font-semibold underline underline-offset-4 hover:text-[#0b6b52]"
         >
           Volver a las reseñas
         </Link>
         <section className="space-y-3 rounded-3xl border border-stone-200 bg-white p-5 sm:p-8">
-          <h1 className="font-serif text-3xl font-semibold text-teal-950">
+          <h1 className="font-serif text-2xl font-semibold text-teal-950 sm:text-3xl">
             Reseña de visitante
           </h1>
           <Suspense fallback={<p role="status">Cargando reseña…</p>}>
@@ -56,7 +56,7 @@ export default function PaginaResena(props: Props) {
           </Suspense>
         </section>
       </main>
-      <PiePagina className="-mx-8 -mb-8" />
-    </>
+      <PiePagina />
+    </div>
   );
 }

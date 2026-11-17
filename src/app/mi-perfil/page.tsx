@@ -63,7 +63,7 @@ async function ContenidoPerfil({ searchParams }: Props) {
 
   return (
     <>
-      <h1 className="font-serif text-4xl">Mi perfil</h1>
+      <h1 className="font-serif text-3xl sm:text-4xl">Mi perfil</h1>
       <section className="space-y-4 rounded-3xl border border-teal-200 bg-teal-50 p-5 sm:p-8">
         <h2 className="text-xl font-semibold">{nombre}</h2>
         {rol === "TURISTA" && (
@@ -126,7 +126,7 @@ async function ContenidoPerfil({ searchParams }: Props) {
         )}
         <Link
           href="/destinos"
-          className="inline-block text-sm font-semibold underline underline-offset-4"
+          className="inline-flex min-h-12 items-center text-sm font-semibold underline underline-offset-4 hover:text-[#0b6b52]"
         >
           Explorar destinos
         </Link>
@@ -137,9 +137,9 @@ async function ContenidoPerfil({ searchParams }: Props) {
 
 export default function PaginaMiPerfil(props: Props) {
   return (
-    <div className="-m-8 min-h-dvh bg-[#f8f4ea] text-[#173b32]">
+    <div className="flex min-h-dvh flex-col bg-[#f8f4ea] text-[#173b32]">
       <Navbar />
-      <main className="mx-auto max-w-4xl space-y-5 px-5 py-8 sm:px-8">
+      <main className="mx-auto w-full max-w-4xl flex-1 space-y-5 px-4 py-8 sm:px-8">
         <Suspense
           fallback={
             <div

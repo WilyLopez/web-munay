@@ -1,5 +1,6 @@
 import "server-only";
 import { crearSupabaseServidor } from "@/features/autenticacion/supabase/servidor";
+import { resolverUrlApi } from "@/lib/api-url";
 import type { Resultado } from "./tipos";
 
 export async function solicitarVisitas<T>(
@@ -18,29 +19,23 @@ export async function solicitarVisitas<T>(
       };
     }
 
-    const respuesta = await fetch(
-      new URL(ruta, process.env.NEXT_PUBLIC_API_URL),
-      {
-        method: opciones?.metodo ?? (datos ? "POST" : "GET"),
-        headers: {
-          ...(data.session && {
-            Authorization: `Bearer ${data.session.access_token}`,
-          }),
-          ...(datos && { "Content-Type": "application/json" }),
-        },
-        body: datos ? JSON.stringify(datos) : undefined,
+    const respuesta = await fetch(resolverUrlApi(ruta), {
+      method: opciones?.metodo ?? (datos ? "POST" : "GET"),
+      headers: {
+        ...(data.session && {
+          Authorization: `Bearer ${data.session.access_token}`,
+        }),
+        ...(datos && { "Content-Type": "application/json" }),
+      },
+      body: datos ? JSON.stringify(datos) : undefined,
+      cache: "no-store",
+      signal: AbortSignal.timeout(10000),
+    });
+    if (respuesta.status === 401 && opciones?.publica && data.session) {
+      const publica = await fetch(resolverUrlApi(ruta), {
         cache: "no-store",
         signal: AbortSignal.timeout(10000),
-      },
-    );
-    if (respuesta.status === 401 && opciones?.publica && data.session) {
-      const publica = await fetch(
-        new URL(ruta, process.env.NEXT_PUBLIC_API_URL),
-        {
-          cache: "no-store",
-          signal: AbortSignal.timeout(10000),
-        },
-      );
+      });
       if (publica.ok) return { ok: true, datos: (await publica.json()) as T };
     }
     if (respuesta.ok)

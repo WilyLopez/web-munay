@@ -3,7 +3,15 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import {
   categorias,
   normalizarBusqueda,
@@ -35,14 +43,6 @@ function rutaCatalogo(consulta: URLSearchParams) {
   return consulta.size ? `/destinos?${consulta}` : "/destinos";
 }
 
-function aplicarFiltro(campo: string, valor: string) {
-  const consulta = new URLSearchParams(window.location.search);
-  if (valor) consulta.set(campo, valor);
-  else consulta.delete(campo);
-  consulta.delete("destino");
-  window.history.replaceState(null, "", rutaCatalogo(consulta));
-}
-
 export function CatalogoDestinos({
   destinos,
   tieneSesion,
@@ -51,23 +51,60 @@ export function CatalogoDestinos({
   tieneSesion: boolean;
 }) {
   const parametros = useSearchParams();
-  const vistaMapa = parametros.get("vista") === "mapa";
-  const destinoId = parametros.get("destino");
-  const busqueda = parametros.get("buscar") ?? "";
-  const categoriaUrl = parametros.get("categoria") ?? "";
-  const provinciaUrl = parametros.get("provincia") ?? "";
-  const calificacionUrl = parametros.get("calificacion") ?? "";
-  const categoria = Object.hasOwn(categorias, categoriaUrl)
-    ? categoriaUrl
-    : "TODOS";
-  const provincia = Object.hasOwn(provincias, provinciaUrl) ? provinciaUrl : "";
-  const calificacion = calificaciones.includes(calificacionUrl)
-    ? calificacionUrl
-    : "";
+
+  // Estados locales independientes para respuesta de interacción instantánea (0ms)
+  const [esVistaMapa, setEsVistaMapa] = useState(
+    parametros.get("vista") === "mapa",
+  );
+  const [destinoSeleccionadoId, setDestinoSeleccionadoId] = useState(
+    parametros.get("destino") ?? "",
+  );
+  const [busqueda, setBusqueda] = useState(parametros.get("buscar") ?? "");
+  const [categoria, setCategoria] = useState(
+    Object.hasOwn(categorias, parametros.get("categoria") ?? "")
+      ? (parametros.get("categoria") as string)
+      : "TODOS",
+  );
+  const [provincia, setProvincia] = useState(
+    Object.hasOwn(provincias, parametros.get("provincia") ?? "")
+      ? (parametros.get("provincia") as string)
+      : "",
+  );
+  const [calificacion, setCalificacion] = useState(
+    calificaciones.includes(parametros.get("calificacion") ?? "")
+      ? (parametros.get("calificacion") as string)
+      : "",
+  );
+  const [orden, setOrden] = useState(
+    parametros.get("orden") === "nombre" ? "nombre" : "recomendados",
+  );
+
+  const [, iniciarTransicion] = useTransition();
+
+  // useDeferredValue asegura que el tipeo en el campo de búsqueda se mantenga a 60/120fps sin trabas
+  const busquedaDiferida = useDeferredValue(busqueda);
+  const consulta = normalizarBusqueda(busquedaDiferida.trim());
+
+  const queryActual = parametros.toString();
+  const [queryPrevia, setQueryPrevia] = useState(queryActual);
+
+  // Sincronizar durante render si los parámetros de la URL cambian externamente (ej. navegación del navegador)
+  if (queryActual !== queryPrevia) {
+    setQueryPrevia(queryActual);
+    setEsVistaMapa(parametros.get("vista") === "mapa");
+    setDestinoSeleccionadoId(parametros.get("destino") ?? "");
+    setBusqueda(parametros.get("buscar") ?? "");
+    const cUrl = parametros.get("categoria") ?? "";
+    setCategoria(Object.hasOwn(categorias, cUrl) ? cUrl : "TODOS");
+    const pUrl = parametros.get("provincia") ?? "";
+    setProvincia(Object.hasOwn(provincias, pUrl) ? pUrl : "");
+    const calUrl = parametros.get("calificacion") ?? "";
+    setCalificacion(calificaciones.includes(calUrl) ? calUrl : "");
+    const oUrl = parametros.get("orden") ?? "recomendados";
+    setOrden(oUrl === "nombre" ? "nombre" : "recomendados");
+  }
+
   const minima = calificacion ? Number(calificacion) : null;
-  const orden =
-    parametros.get("orden") === "nombre" ? "nombre" : "recomendados";
-  const consulta = normalizarBusqueda(busqueda.trim());
   const tieneFiltros = Boolean(
     consulta ||
     categoria !== "TODOS" ||
@@ -75,6 +112,7 @@ export function CatalogoDestinos({
     calificacion ||
     orden === "nombre",
   );
+
   const resultados = useMemo(
     () =>
       destinos
@@ -121,31 +159,133 @@ export function CatalogoDestinos({
     },
     [busqueda, categoria, provincia, calificacion, orden],
   );
+
+  const actualizarUrlRef = useRef<NodeJS.Timeout>(null);
+  const actualizarUrl = useCallback(
+    (nuevos: {
+      vista?: boolean;
+      buscar?: string;
+      categoria?: string;
+      provincia?: string;
+      calificacion?: string;
+      orden?: string;
+      destino?: string;
+    }) => {
+      const vMapa = nuevos.vista !== undefined ? nuevos.vista : esVistaMapa;
+      const b = nuevos.buscar !== undefined ? nuevos.buscar : busqueda;
+      const c = nuevos.categoria !== undefined ? nuevos.categoria : categoria;
+      const p = nuevos.provincia !== undefined ? nuevos.provincia : provincia;
+      const cal =
+        nuevos.calificacion !== undefined ? nuevos.calificacion : calificacion;
+      const o = nuevos.orden !== undefined ? nuevos.orden : orden;
+      const d =
+        nuevos.destino !== undefined ? nuevos.destino : destinoSeleccionadoId;
+
+      const q = new URLSearchParams();
+      if (vMapa) q.set("vista", "mapa");
+      if (b.trim()) q.set("buscar", b.trim());
+      if (c !== "TODOS") q.set("categoria", c);
+      if (p) q.set("provincia", p);
+      if (cal) q.set("calificacion", cal);
+      if (o === "nombre") q.set("orden", o);
+      if (d) q.set("destino", d);
+
+      window.history.replaceState(null, "", rutaCatalogo(q));
+    },
+    [
+      esVistaMapa,
+      busqueda,
+      categoria,
+      provincia,
+      calificacion,
+      orden,
+      destinoSeleccionadoId,
+    ],
+  );
+
+  // Debounced URL sync para el campo de búsqueda
+  useEffect(() => {
+    if (actualizarUrlRef.current) clearTimeout(actualizarUrlRef.current);
+    actualizarUrlRef.current = setTimeout(() => {
+      actualizarUrl({ buscar: busqueda });
+    }, 250);
+    return () => {
+      if (actualizarUrlRef.current) clearTimeout(actualizarUrlRef.current);
+    };
+  }, [busqueda, actualizarUrl]);
+
+  function alternarVista(mapa: boolean) {
+    iniciarTransicion(() => {
+      setEsVistaMapa(mapa);
+    });
+    actualizarUrl({ vista: mapa });
+  }
+
+  function cambiarCategoria(nueva: string) {
+    iniciarTransicion(() => {
+      setCategoria(nueva);
+      setDestinoSeleccionadoId("");
+    });
+    actualizarUrl({ categoria: nueva, destino: "" });
+  }
+
+  function cambiarProvincia(nueva: string) {
+    iniciarTransicion(() => {
+      setProvincia(nueva);
+      setDestinoSeleccionadoId("");
+    });
+    actualizarUrl({ provincia: nueva, destino: "" });
+  }
+
+  function cambiarCalificacion(nueva: string) {
+    iniciarTransicion(() => {
+      setCalificacion(nueva);
+      setDestinoSeleccionadoId("");
+    });
+    actualizarUrl({ calificacion: nueva, destino: "" });
+  }
+
+  function cambiarOrden(nuevo: string) {
+    iniciarTransicion(() => {
+      setOrden(nuevo);
+    });
+    actualizarUrl({ orden: nuevo });
+  }
+
   const seleccionar = useCallback(
     (id: string) => {
-      window.history.replaceState(null, "", enlace(true, id));
+      setDestinoSeleccionadoId(id);
+      actualizarUrl({ destino: id });
     },
-    [enlace],
+    [actualizarUrl],
   );
 
   function limpiarFiltros() {
+    iniciarTransicion(() => {
+      setBusqueda("");
+      setCategoria("TODOS");
+      setProvincia("");
+      setCalificacion("");
+      setOrden("recomendados");
+      setDestinoSeleccionadoId("");
+    });
     window.history.replaceState(
       null,
       "",
-      vistaMapa ? "/destinos?vista=mapa" : "/destinos",
+      esVistaMapa ? "/destinos?vista=mapa" : "/destinos",
     );
   }
 
   const seleccionado =
-    resultados.find(({ id }) => id === destinoId) ??
+    resultados.find(({ id }) => id === destinoSeleccionadoId) ??
     (consulta && resultados.length === 1 ? resultados[0] : undefined);
 
   const filtrosAvanzados =
     Number(Boolean(provincia)) + Number(Boolean(calificacion));
   const campo =
-    "min-h-11 w-full min-w-0 rounded-lg border border-[#b9c4b9] bg-white px-3 text-base font-normal text-[#193b33] focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm";
+    "min-h-12 w-full min-w-0 rounded-lg border border-[#b9c4b9] bg-white px-3 text-base font-normal text-[#193b33] focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm";
   const pestana =
-    "inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-semibold hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 aria-[current=page]:bg-[#174238] aria-[current=page]:text-white";
+    "inline-flex min-h-12 items-center justify-center rounded-lg px-4 text-sm font-semibold hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 aria-[current=page]:bg-[#174238] aria-[current=page]:text-white cursor-pointer";
 
   return (
     <section
@@ -165,9 +305,7 @@ export function CatalogoDestinos({
               type="search"
               autoComplete="off"
               value={busqueda}
-              onChange={(evento) =>
-                aplicarFiltro("buscar", evento.target.value)
-              }
+              onChange={(evento) => setBusqueda(evento.target.value)}
               placeholder="Nombre o ubicación…"
               className={campo}
             />
@@ -179,8 +317,11 @@ export function CatalogoDestinos({
             <Link
               href={enlace(false)}
               scroll={false}
-              prefetch={false}
-              aria-current={!vistaMapa ? "page" : undefined}
+              onClick={(evento) => {
+                evento.preventDefault();
+                alternarVista(false);
+              }}
+              aria-current={!esVistaMapa ? "page" : undefined}
               className={pestana}
             >
               Lista
@@ -188,8 +329,11 @@ export function CatalogoDestinos({
             <Link
               href={enlace(true)}
               scroll={false}
-              prefetch={false}
-              aria-current={vistaMapa ? "page" : undefined}
+              onClick={(evento) => {
+                evento.preventDefault();
+                alternarVista(true);
+              }}
+              aria-current={esVistaMapa ? "page" : undefined}
               className={pestana}
             >
               Mapa
@@ -198,7 +342,7 @@ export function CatalogoDestinos({
         </div>
 
         <div
-          className="flex flex-wrap items-center gap-2"
+          className="flex overflow-x-auto pb-1 gap-2 no-scrollbar -mx-1 px-1 sm:flex-wrap"
           role="group"
           aria-label="Tipo de experiencia"
         >
@@ -209,10 +353,8 @@ export function CatalogoDestinos({
               key={opcion}
               type="button"
               aria-pressed={categoria === opcion}
-              onClick={() =>
-                aplicarFiltro("categoria", opcion === "TODOS" ? "" : opcion)
-              }
-              className="min-h-11 rounded-full border border-[#b9c4b9] px-4 text-sm font-semibold hover:bg-[#e8eee6] focus-visible:outline-2 focus-visible:outline-offset-2 aria-pressed:border-[#174238] aria-pressed:bg-[#174238] aria-pressed:text-white"
+              onClick={() => cambiarCategoria(opcion)}
+              className="shrink-0 whitespace-nowrap min-h-12 rounded-full border border-[#b9c4b9] px-4.5 text-sm font-semibold hover:bg-[#e8eee6] focus-visible:outline-2 focus-visible:outline-offset-2 aria-pressed:border-[#174238] aria-pressed:bg-[#174238] aria-pressed:text-white active:scale-95 transition-all cursor-pointer"
             >
               {opcion === "TODOS" ? "Todos" : categorias[opcion]}
             </button>
@@ -220,7 +362,7 @@ export function CatalogoDestinos({
         </div>
 
         <details className="group rounded-xl border border-[#dedacf] bg-[#fffdf6] px-4">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-md text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-md text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 [&::-webkit-details-marker]:hidden">
             <span>
               Más filtros{filtrosAvanzados > 0 ? ` (${filtrosAvanzados})` : ""}
             </span>
@@ -234,9 +376,7 @@ export function CatalogoDestinos({
               <select
                 name="provincia"
                 value={provincia}
-                onChange={(evento) =>
-                  aplicarFiltro("provincia", evento.target.value)
-                }
+                onChange={(evento) => cambiarProvincia(evento.target.value)}
                 className={campo}
               >
                 <option value="">Todas las provincias</option>
@@ -252,9 +392,7 @@ export function CatalogoDestinos({
               <select
                 name="calificacion"
                 value={calificacion}
-                onChange={(evento) =>
-                  aplicarFiltro("calificacion", evento.target.value)
-                }
+                onChange={(evento) => cambiarCalificacion(evento.target.value)}
                 className={campo}
               >
                 <option value="">Cualquier calificación</option>
@@ -270,12 +408,7 @@ export function CatalogoDestinos({
               <select
                 name="orden"
                 value={orden}
-                onChange={(evento) =>
-                  aplicarFiltro(
-                    "orden",
-                    evento.target.value === "nombre" ? "nombre" : "",
-                  )
-                }
+                onChange={(evento) => cambiarOrden(evento.target.value)}
                 className={campo}
               >
                 <option value="recomendados">Recomendados</option>
@@ -295,13 +428,13 @@ export function CatalogoDestinos({
           <button
             type="button"
             onClick={limpiarFiltros}
-            className="min-h-11 rounded-sm text-sm font-semibold text-teal-800 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="min-h-11 rounded-sm text-sm font-semibold text-teal-800 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer"
           >
             Limpiar filtros
           </button>
         )}
       </div>
-      {vistaMapa ? (
+      {esVistaMapa ? (
         <MapaDestinos
           destinos={resultados}
           seleccionado={seleccionado}
