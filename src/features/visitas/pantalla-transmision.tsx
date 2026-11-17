@@ -156,7 +156,7 @@ export function PantallaTransmision({
     const urlVisita = generarEnlaceQr(codigo.valor, window.location.origin);
 
     void QRCode.toCanvas(canvas, urlVisita, {
-      width: 380,
+      width: 360,
       margin: 3,
       errorCorrectionLevel: "H",
       color: {

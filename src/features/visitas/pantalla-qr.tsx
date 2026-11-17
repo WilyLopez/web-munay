@@ -29,9 +29,13 @@ function CodigoQr({
         lienzo.current,
         generarEnlaceQr(valor, window.location.origin),
         {
-          width: 320,
-          margin: 4,
-          errorCorrectionLevel: "M",
+          width: 360,
+          margin: 3,
+          errorCorrectionLevel: "H",
+          color: {
+            dark: "#14312b",
+            light: "#ffffff",
+          },
         },
       ).catch(() => cambiarFallo(true));
     }
@@ -40,12 +44,14 @@ function CodigoQr({
   return fallo ? (
     <p role="alert">No se pudo dibujar el QR.</p>
   ) : (
-    <canvas
-      ref={lienzo}
-      role="img"
-      aria-label="QR de verificación de visita"
-      className="mx-auto h-auto max-w-full"
-    />
+    <div className="relative isolate mx-auto flex items-center justify-center rounded-2xl bg-white p-2">
+      <canvas
+        ref={lienzo}
+        role="img"
+        aria-label="QR de verificación de visita"
+        className="mx-auto h-auto max-w-[280px] sm:max-w-[340px]"
+      />
+    </div>
   );
 }
 
@@ -289,23 +295,30 @@ export function PantallaQr({ slug }: { slug: string }) {
         )}
         {vigente ? (
           <>
-            <p className="font-semibold text-teal-900">Sesión activa</p>
+            <div className="flex items-center justify-between">
+              <p className="font-semibold text-teal-900">Sesión activa</p>
+              <span className="text-xs text-stone-400">
+                Generado: {fechaVisita.format(new Date(codigo.creadoEn))}
+              </span>
+            </div>
             <CodigoQr key={codigo.id} valor={codigo.valor} lienzoRef={lienzoRef} />
-            <p className="text-center font-mono text-xs text-stone-400 select-all break-all">
-              ID: <span className="text-stone-600 font-medium">{codigo.id}</span>
+            <p className="mt-2 text-center font-mono text-[11px] text-stone-400 select-all break-all tracking-wide">
+              ID: <span className="font-medium text-stone-500">{codigo.id}</span>
             </p>
-            <p className="text-sm">
-              Generado: {fechaVisita.format(new Date(codigo.creadoEn))}
-            </p>
-            <p className="text-sm">
-              Renovación en {Math.ceil(restante / 1000)} s
-            </p>
-            <progress
-              aria-label="Tiempo restante del QR"
-              className="w-full accent-teal-800"
-              max={duracion}
-              value={restante}
-            />
+            <div className="w-full space-y-1.5 pt-1">
+              <div className="flex justify-between text-xs font-medium text-stone-500">
+                <span>Código dinámico activo</span>
+                <span className="font-semibold text-teal-900">
+                  Renovación en {Math.ceil(restante / 1000)}s
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-stone-200">
+                <div
+                  className="h-full bg-[#174238] transition-all duration-200 ease-linear rounded-full"
+                  style={{ width: `${Math.min(100, Math.max(0, (restante / duracion) * 100))}%` }}
+                />
+              </div>
+            </div>
           </>
         ) : (
           <p role="status" className="text-stone-700">
