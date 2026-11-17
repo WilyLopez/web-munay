@@ -6,6 +6,7 @@ import {
   startTransition,
   useActionState,
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
   type FormEvent,
@@ -135,22 +136,13 @@ function SelectorDestino({ destinos }: { destinos: OpcionDestino[] }) {
   );
 }
 
-function DatosNuevoDestino({
+function DatosBasicosDestino({
   incluirDistrito = false,
 }: {
   incluirDistrito?: boolean;
 }) {
   return (
-    <div className="grid gap-3 rounded-2xl border border-[#dce3da] bg-[#fbfcfb] p-4 sm:grid-cols-2">
-      <div className="sm:col-span-2">
-        <span className="block text-sm font-semibold text-[#173b32]">
-          Información inicial del nuevo atractivo
-        </span>
-        <p className="text-xs text-[#526a60]">
-          Estos datos se registrarán como borrador inicial para la revisión
-          institucional.
-        </p>
-      </div>
+    <div className="grid min-w-0 gap-3 sm:grid-cols-2">
       <Campo etiqueta="Nombre del atractivo">
         <input
           name="nombre"
@@ -207,21 +199,173 @@ function DatosNuevoDestino({
           ))}
         </select>
       </Campo>
-      <SelectorUbicacion />
-      <div className="sm:col-span-2">
-        <Campo etiqueta="Descripción pública inicial">
-          <textarea
-            name="descripcion"
-            rows={3}
-            minLength={20}
-            maxLength={1000}
-            placeholder="Describe brevemente la experiencia cultural, horarios o acceso del lugar..."
-            className={campo}
-            required
-          />
-        </Campo>
-      </div>
     </div>
+  );
+}
+
+function DescripcionDestino() {
+  return (
+    <Campo etiqueta="Descripción pública inicial">
+      <textarea
+        name="descripcion"
+        rows={4}
+        minLength={20}
+        maxLength={1000}
+        placeholder="Cuenta qué puede descubrir el visitante…"
+        className={campo}
+        required
+      />
+    </Campo>
+  );
+}
+
+function DatosNuevoDestino() {
+  return (
+    <div className="space-y-4 rounded-2xl border border-[#dce3da] bg-[#fbfcfb] p-4">
+      <DatosBasicosDestino />
+      <SelectorUbicacion />
+      <DescripcionDestino />
+    </div>
+  );
+}
+
+function FormularioPorPasos({
+  nuevo,
+  cuenta,
+  pendiente,
+  etiqueta,
+  enviar,
+  children,
+}: {
+  nuevo: boolean;
+  cuenta?: ReactNode;
+  pendiente: boolean;
+  etiqueta: string;
+  enviar: (evento: FormEvent<HTMLFormElement>) => void;
+  children?: ReactNode;
+}) {
+  const [paso, cambiarPaso] = useState(0);
+  const formulario = useRef<HTMLFormElement>(null);
+  const encabezado = useRef<HTMLHeadingElement>(null);
+  const nombres = [
+    ...(cuenta ? ["Cuenta"] : []),
+    ...(nuevo ? ["Datos del atractivo", "Ubicación", "Descripción"] : []),
+  ];
+  const ultimo = paso >= nombres.length - 1;
+
+  function irA(indice: number) {
+    cambiarPaso(indice);
+    requestAnimationFrame(() => encabezado.current?.focus());
+  }
+
+  function continuar(evento: FormEvent<HTMLFormElement>) {
+    const actual = formulario.current?.querySelector<HTMLFieldSetElement>(
+      `fieldset[data-paso="${paso}"]`,
+    );
+    const campos = actual?.querySelectorAll<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >("input, select, textarea");
+    const clave = actual?.querySelector<HTMLInputElement>('[name="contrasena"]');
+    const confirmacion = actual?.querySelector<HTMLInputElement>(
+      '[name="confirmarContrasena"]',
+    );
+    if (confirmacion) {
+      confirmacion.setCustomValidity(
+        confirmacion.value && confirmacion.value !== clave?.value
+          ? "Las contraseñas no coinciden."
+          : "",
+      );
+    }
+    for (const control of campos ?? []) {
+      if (!control.reportValidity()) {
+        evento.preventDefault();
+        return;
+      }
+    }
+    if (ultimo) {
+      enviar(evento);
+    } else {
+      evento.preventDefault();
+      irA(paso + 1);
+    }
+  }
+
+  const inicioDestino = cuenta ? 1 : 0;
+
+  return (
+    <form
+      ref={formulario}
+      noValidate
+      onSubmit={continuar}
+      className="min-w-0 space-y-4"
+      aria-busy={pendiente}
+    >
+      {nombres.length > 1 && (
+        <div className="space-y-3 border-b border-[#dce3da] pb-4">
+          <ol aria-label="Progreso de la invitación" className="flex gap-1.5">
+            {nombres.map((nombre, indice) => (
+              <li
+                key={nombre}
+                aria-current={paso === indice ? "step" : undefined}
+                className={`h-1.5 flex-1 rounded-full ${indice <= paso ? "bg-[#174238]" : "bg-[#dce3da]"}`}
+              >
+                <span className="sr-only">{nombre}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="text-xs font-semibold text-[#465a50]">
+            Paso {paso + 1} de {nombres.length}
+          </p>
+          <h3
+            ref={encabezado}
+            tabIndex={-1}
+            className="scroll-mt-4 font-serif text-xl font-semibold text-[#173b32] focus-visible:outline-2 focus-visible:outline-offset-4"
+          >
+            {nombres[paso]}
+          </h3>
+        </div>
+      )}
+      {cuenta && (
+        <fieldset data-paso={0} hidden={paso !== 0}>
+          <div className="space-y-4">{cuenta}</div>
+        </fieldset>
+      )}
+      {nuevo && (
+        <>
+          <fieldset data-paso={inicioDestino} hidden={paso !== inicioDestino}>
+            <DatosBasicosDestino incluirDistrito />
+          </fieldset>
+          <fieldset
+            data-paso={inicioDestino + 1}
+            hidden={paso !== inicioDestino + 1}
+          >
+            <SelectorUbicacion mapaActivo={paso === inicioDestino + 1} />
+          </fieldset>
+          <fieldset
+            data-paso={inicioDestino + 2}
+            hidden={paso !== inicioDestino + 2}
+          >
+            <DescripcionDestino />
+          </fieldset>
+        </>
+      )}
+      {children}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap">
+        {paso > 0 && (
+          <button
+            type="button"
+            disabled={pendiente}
+            className={secundario}
+            onClick={() => irA(paso - 1)}
+          >
+            Atrás
+          </button>
+        )}
+        <button type="submit" disabled={pendiente} className={principal}>
+          {ultimo ? etiqueta : "Continuar"}
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -557,7 +701,7 @@ export function AceptarInvitacion({
   };
 
   return (
-    <div className="grid gap-8 lg:grid-cols-12 items-start">
+    <div className="grid min-w-0 items-start gap-5 lg:grid-cols-12 lg:gap-8">
       <section className="space-y-6 lg:col-span-5">
         <div className="space-y-2">
           <Link
@@ -629,8 +773,8 @@ export function AceptarInvitacion({
               Gestión institucional de atractivo
             </h1>
             <p className="text-sm leading-relaxed text-[#465a50]">
-              Acceso autorizado para coordinar y administrar la presencia oficial
-              de un atractivo en la plataforma turística de Lambayeque.
+              Acceso autorizado para coordinar y administrar la presencia
+              oficial de un atractivo en la plataforma turística de Lambayeque.
             </p>
           </div>
         )}
@@ -657,8 +801,8 @@ export function AceptarInvitacion({
             <li className="flex items-start gap-2.5">
               <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#174238]" />
               <span>
-                Acceso a analíticas de visitantes, afluencia mensual y atención a
-                reseñas de la comunidad.
+                Acceso a analíticas de visitantes, afluencia mensual y atención
+                a reseñas de la comunidad.
               </span>
             </li>
             <li className="flex items-start gap-2.5">
@@ -680,8 +824,8 @@ export function AceptarInvitacion({
         )}
       </section>
 
-      <section className="lg:col-span-7">
-        <div className="space-y-6 rounded-3xl border border-[#dce3da] bg-white p-6 sm:p-9 shadow-sm">
+      <section className="min-w-0 lg:col-span-7">
+        <div className="space-y-6 rounded-3xl border border-[#dce3da] bg-white p-4 shadow-sm sm:p-7">
           {cargando ? (
             <div className="py-12 text-center text-sm text-[#465a50]">
               Verificando datos de la invitación…
@@ -738,8 +882,8 @@ export function AceptarInvitacion({
                   <strong>{correoInvitado}</strong>.
                 </p>
                 <p className="text-xs text-amber-900">
-                  Para vincular la titularidad del atractivo correctamente, debes
-                  cambiar a la cuenta correspondiente.
+                  Para vincular la titularidad del atractivo correctamente,
+                  debes cambiar a la cuenta correspondiente.
                 </p>
                 <div className="pt-2">
                   <Link
@@ -751,7 +895,7 @@ export function AceptarInvitacion({
                 </div>
               </div>
             ) : (
-              <form onSubmit={manejarEnvioAceptar} className="space-y-5">
+              <div className="space-y-5">
                 <div className="space-y-1">
                   <span className="rounded-full bg-[#e8efe9] px-3 py-1 text-xs font-semibold text-[#174238]">
                     Cuenta verificada
@@ -764,19 +908,21 @@ export function AceptarInvitacion({
                     aceptar recibirás el rol de Administrador.
                   </p>
                 </div>
-                {esNuevo && <DatosNuevoDestino incluirDistrito />}
-                <button
-                  className={principal}
-                  disabled={pendienteAceptar}
+                <FormularioPorPasos
+                  nuevo={esNuevo}
+                  pendiente={pendienteAceptar}
+                  enviar={manejarEnvioAceptar}
+                  etiqueta={
+                    pendienteAceptar
+                      ? "Activando acceso…"
+                      : esNuevo
+                        ? "Aceptar y crear borrador"
+                        : "Aceptar invitación y entrar al panel"
+                  }
                 >
-                  {pendienteAceptar
-                    ? "Activando acceso…"
-                    : esNuevo
-                      ? "Aceptar y crear borrador"
-                      : "Aceptar invitación y entrar al panel"}
-                </button>
-                <Mensaje estado={estadoAceptar} />
-              </form>
+                  <Mensaje estado={estadoAceptar} />
+                </FormularioPorPasos>
+              </div>
             )
           ) : (
             <div className="space-y-5">
@@ -790,112 +936,136 @@ export function AceptarInvitacion({
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[#f4f5ef] p-1.5 text-xs font-semibold text-[#173b32]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    cambiarModo("registro");
-                    cambiarErrorLocal("");
-                  }}
-                  className={`rounded-xl py-2 transition-colors ${modo === "registro" ? "bg-white text-[#174238] shadow-sm font-bold" : "text-[#526a60] hover:text-[#174238]"}`}
-                >
-                  Crear contraseña
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    cambiarModo("ingreso");
-                    cambiarErrorLocal("");
-                  }}
-                  className={`rounded-xl py-2 transition-colors ${modo === "ingreso" ? "bg-white text-[#174238] shadow-sm font-bold" : "text-[#526a60] hover:text-[#174238]"}`}
-                >
-                  Ya tengo cuenta
-                </button>
-              </div>
-
-              <form onSubmit={manejarEnvioActivar} className="space-y-4">
-                <Campo etiqueta="Correo autorizado">
-                  <input
-                    name="correo"
-                    type="email"
-                    value={correoInvitado}
-                    readOnly
-                    className={`${campo} cursor-not-allowed bg-[#f4f5ef] text-[#526a60]`}
-                  />
-                </Campo>
-
-                {modo === "registro" && (
-                  <Campo etiqueta="Nombre y apellidos del responsable">
-                    <input
-                      name="nombreCompleto"
-                      type="text"
-                      required
-                      minLength={3}
-                      maxLength={100}
-                      placeholder="Ej. Ana Lucía Delgado"
-                      className={campo}
-                    />
-                  </Campo>
-                )}
-
-                <Campo
-                  etiqueta={
-                    modo === "registro"
-                      ? "Crear contraseña"
-                      : "Contraseña actual"
-                  }
-                >
-                  <div className="relative">
-                    <input
-                      name="contrasena"
-                      type={mostrarClave ? "text" : "password"}
-                      required
-                      minLength={8}
-                      placeholder={
-                        modo === "registro"
-                          ? "Mínimo 8 caracteres"
-                          : "Tu contraseña de Munay"
-                      }
-                      className={campo}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => cambiarMostrarClave((previo) => !previo)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#768a80] hover:text-[#174238]"
-                      aria-label="Alternar visibilidad de contraseña"
-                    >
-                      <IconoOjo tachado={mostrarClave} />
-                    </button>
-                  </div>
-                </Campo>
-
-                {modo === "registro" && (
-                  <Campo etiqueta="Confirmar contraseña">
-                    <div className="relative">
-                      <input
-                        name="confirmarContrasena"
-                        type={mostrarConfirmacion ? "text" : "password"}
-                        required
-                        minLength={8}
-                        placeholder="Repite la contraseña"
-                        className={campo}
-                      />
+              <FormularioPorPasos
+                nuevo={esNuevo}
+                pendiente={pendienteActivar}
+                enviar={manejarEnvioActivar}
+                etiqueta={
+                  pendienteActivar
+                    ? "Activando acceso…"
+                    : modo === "registro"
+                      ? "Crear cuenta y activar gestión"
+                      : "Iniciar sesión y activar gestión"
+                }
+                cuenta={
+                  <>
+                    <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[#f4f5ef] p-1.5 text-xs font-semibold text-[#173b32]">
                       <button
                         type="button"
-                        onClick={() =>
-                          cambiarMostrarConfirmacion((previo) => !previo)
-                        }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#768a80] hover:text-[#174238]"
-                        aria-label="Alternar visibilidad de confirmación de contraseña"
+                        onClick={() => {
+                          cambiarModo("registro");
+                          cambiarErrorLocal("");
+                        }}
+                        className={`rounded-xl py-2 transition-colors ${modo === "registro" ? "bg-white text-[#174238] shadow-sm font-bold" : "text-[#526a60] hover:text-[#174238]"}`}
                       >
-                        <IconoOjo tachado={mostrarConfirmacion} />
+                        Crear contraseña
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          cambiarModo("ingreso");
+                          cambiarErrorLocal("");
+                        }}
+                        className={`rounded-xl py-2 transition-colors ${modo === "ingreso" ? "bg-white text-[#174238] shadow-sm font-bold" : "text-[#526a60] hover:text-[#174238]"}`}
+                      >
+                        Ya tengo cuenta
                       </button>
                     </div>
-                  </Campo>
-                )}
+                    <Campo etiqueta="Correo autorizado">
+                      <input
+                        name="correo"
+                        type="email"
+                        value={correoInvitado}
+                        readOnly
+                        className={`${campo} cursor-not-allowed bg-[#f4f5ef] text-[#526a60]`}
+                      />
+                    </Campo>
 
-                {esNuevo && <DatosNuevoDestino incluirDistrito />}
+                    {modo === "registro" && (
+                      <Campo etiqueta="Nombre y apellidos del responsable">
+                        <input
+                          name="nombreCompleto"
+                          type="text"
+                          required
+                          minLength={3}
+                          maxLength={100}
+                          placeholder="Ej. Ana Lucía Delgado"
+                          className={campo}
+                        />
+                      </Campo>
+                    )}
 
+                    <Campo
+                      etiqueta={
+                        modo === "registro"
+                          ? "Crear contraseña"
+                          : "Contraseña actual"
+                      }
+                    >
+                      <div className="relative">
+                        <input
+                          name="contrasena"
+                          type={mostrarClave ? "text" : "password"}
+                          required
+                          minLength={8}
+                          placeholder={
+                            modo === "registro"
+                              ? "Mínimo 8 caracteres"
+                              : "Tu contraseña de Munay"
+                          }
+                          className={campo}
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            cambiarMostrarClave((previo) => !previo)
+                          }
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#768a80] hover:text-[#174238]"
+                          aria-label="Alternar visibilidad de contraseña"
+                        >
+                          <IconoOjo tachado={mostrarClave} />
+                        </button>
+                      </div>
+                    </Campo>
+
+                    {modo === "registro" && (
+                      <Campo etiqueta="Confirmar contraseña">
+                        <div className="relative">
+                          <input
+                            name="confirmarContrasena"
+                            type={mostrarConfirmacion ? "text" : "password"}
+                            required
+                            minLength={8}
+                            placeholder="Repite la contraseña"
+                            className={campo}
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              cambiarMostrarConfirmacion((previo) => !previo)
+                            }
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#768a80] hover:text-[#174238]"
+                            aria-label="Alternar visibilidad de confirmación de contraseña"
+                          >
+                            <IconoOjo tachado={mostrarConfirmacion} />
+                          </button>
+                        </div>
+                      </Campo>
+                    )}
+
+                    {modo === "ingreso" && (
+                      <div className="text-right">
+                        <Link
+                          href="/recuperar"
+                          className="text-xs font-semibold text-[#174238] underline hover:text-[#23574a]"
+                        >
+                          ¿Olvidaste tu contraseña?
+                        </Link>
+                      </div>
+                    )}
+                  </>
+                }
+              >
                 {errorLocal && (
                   <p
                     role="alert"
@@ -906,28 +1076,7 @@ export function AceptarInvitacion({
                 )}
 
                 <Mensaje estado={estadoActivar} />
-
-                <button className={principal} disabled={pendienteActivar}>
-                  {pendienteActivar
-                    ? modo === "registro"
-                      ? "Creando cuenta y activando acceso…"
-                      : "Iniciando sesión y activando acceso…"
-                    : modo === "registro"
-                      ? "Crear cuenta y activar gestión"
-                      : "Iniciar sesión y activar gestión"}
-                </button>
-
-                {modo === "ingreso" && (
-                  <div className="text-right">
-                    <Link
-                      href="/recuperar"
-                      className="text-xs font-semibold text-[#174238] underline hover:text-[#23574a]"
-                    >
-                      ¿Olvidaste tu contraseña?
-                    </Link>
-                  </div>
-                )}
-              </form>
+              </FormularioPorPasos>
             </div>
           )}
         </div>

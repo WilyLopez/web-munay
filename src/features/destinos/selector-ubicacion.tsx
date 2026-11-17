@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CircleMarker, LatLngTuple, Map } from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { cargarGoogleMaps, googleMapsDisponible } from "./cargar-google-maps";
 
-const centroLambayeque: LatLngTuple = [-6.77137, -79.84088];
+const centroLambayeque = { lat: -6.77137, lng: -79.84088 };
 
-function extraerCoordenadas(texto: string): { lat: string; lng: string } | null {
+function extraerCoordenadas(
+  texto: string,
+): { lat: string; lng: string } | null {
   const normalizado = texto.trim();
   if (!normalizado) return null;
   const urlArroba = /@(-?\d+\.\d+),(-?\d+\.\d+)/.exec(normalizado);
@@ -44,159 +45,115 @@ function extraerCoordenadas(texto: string): { lat: string; lng: string } | null 
   return null;
 }
 
-export function MapaUbicacion({
-  inicial,
+function MapaUbicacion({
   latitud,
   longitud,
   elegir,
 }: {
-  inicial?: LatLngTuple;
   latitud?: number;
   longitud?: number;
   elegir?: (latitud: string, longitud: string) => void;
 }) {
   const lienzo = useRef<HTMLDivElement>(null);
-  const mapaInstancia = useRef<Map | null>(null);
-  const marcadorInstancia = useRef<CircleMarker | null>(null);
+  const [motor, cambiarMotor] = useState<{
+    mapa: google.maps.Map;
+    Marcador: typeof google.maps.marker.AdvancedMarkerElement;
+  }>();
   const [fallo, cambiarFallo] = useState(false);
 
   useEffect(() => {
+    if (!googleMapsDisponible) return;
+    const elemento = lienzo.current;
+    if (!elemento) return;
     let vigente = true;
-    void import("leaflet")
-      .then((modulo) => {
-        if (!vigente || !lienzo.current || mapaInstancia.current) return;
-        const biblioteca = modulo.default ?? modulo;
-        const latValida =
-          latitud !== undefined && !isNaN(latitud) ? latitud : inicial?.[0];
-        const lngValida =
-          longitud !== undefined && !isNaN(longitud) ? longitud : inicial?.[1];
-        const tieneCoordenadas =
-          latValida !== undefined && lngValida !== undefined;
-        const centro: LatLngTuple = tieneCoordenadas
-          ? [latValida, lngValida]
-          : centroLambayeque;
-
-        const mapa = biblioteca
-          .map(lienzo.current, { scrollWheelZoom: false })
-          .setView(centro, tieneCoordenadas ? 14 : 11);
-
-        biblioteca
-          .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            attribution:
-              '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-            maxZoom: 19,
-          })
-          .addTo(mapa);
-
-        let punto: CircleMarker | undefined;
-        if (tieneCoordenadas) {
-          punto = biblioteca
-            .circleMarker(centro, {
-              radius: 9,
-              color: "#ffffff",
-              weight: 3,
-              fillColor: "#174238",
-              fillOpacity: 1,
-            })
-            .addTo(mapa);
-        }
-
-        if (elegir) {
-          mapa.on("click", ({ latlng }) => {
-            if (!punto) {
-              punto = biblioteca
-                .circleMarker(latlng, {
-                  radius: 9,
-                  color: "#ffffff",
-                  weight: 3,
-                  fillColor: "#174238",
-                  fillOpacity: 1,
-                })
-                .addTo(mapa);
-              marcadorInstancia.current = punto;
-            } else {
-              punto.setLatLng(latlng);
-            }
-            elegir(latlng.lat.toFixed(6), latlng.lng.toFixed(6));
-          });
-        }
-
-        mapaInstancia.current = mapa;
-        marcadorInstancia.current = punto ?? null;
+    void cargarGoogleMaps()
+      .then(([{ Map }, { AdvancedMarkerElement }]) => {
+        if (!vigente) return;
+        cambiarMotor({
+          mapa: new Map(elemento, {
+            center: centroLambayeque,
+            zoom: 11,
+            mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID",
+            mapTypeControl: false,
+            streetViewControl: false,
+            gestureHandling: "cooperative",
+          }),
+          Marcador: AdvancedMarkerElement,
+        });
       })
       .catch(() => {
         if (vigente) cambiarFallo(true);
       });
-
     return () => {
       vigente = false;
-      if (mapaInstancia.current) {
-        mapaInstancia.current.remove();
-        mapaInstancia.current = null;
-        marcadorInstancia.current = null;
-      }
     };
-  }, [elegir, inicial, latitud, longitud]);
+  }, []);
 
   useEffect(() => {
-    if (
-      !mapaInstancia.current ||
-      latitud === undefined ||
-      longitud === undefined ||
-      isNaN(latitud) ||
-      isNaN(longitud)
-    ) {
-      return;
-    }
-    const destino: LatLngTuple = [latitud, longitud];
-    mapaInstancia.current.setView(
-      destino,
-      Math.max(mapaInstancia.current.getZoom(), 14),
+    if (!motor || !elegir) return;
+    const evento = motor.mapa.addListener(
+      "click",
+      (clic: google.maps.MapMouseEvent) => {
+        if (clic.latLng)
+          elegir(clic.latLng.lat().toFixed(6), clic.latLng.lng().toFixed(6));
+      },
     );
-    if (marcadorInstancia.current) {
-      marcadorInstancia.current.setLatLng(destino);
-    } else {
-      void import("leaflet").then((modulo) => {
-        if (!mapaInstancia.current) return;
-        const biblioteca = modulo.default ?? modulo;
-        const punto = biblioteca
-          .circleMarker(destino, {
-            radius: 9,
-            color: "#ffffff",
-            weight: 3,
-            fillColor: "#174238",
-            fillOpacity: 1,
-          })
-          .addTo(mapaInstancia.current);
-        marcadorInstancia.current = punto;
-      });
-    }
-  }, [latitud, longitud]);
+    return () => evento.remove();
+  }, [motor, elegir]);
 
-  return fallo ? (
-    <p role="alert" className="rounded-xl bg-rose-50 p-3 text-xs text-rose-800">
-      No pudimos cargar el mapa interactivo. Puedes escribir las coordenadas
-      manualmente o pegar el enlace de Google Maps.
-    </p>
-  ) : (
-    <div
-      ref={lienzo}
-      aria-label={
-        elegir
-          ? "Mapa interactivo para seleccionar la ubicación"
-          : "Mapa con el punto de llegada"
-      }
-      className="relative isolate h-72 w-full rounded-2xl border border-[#dce3da] shadow-inner"
-    />
+  useEffect(() => {
+    if (!motor || latitud === undefined || longitud === undefined) return;
+    const position = { lat: latitud, lng: longitud };
+    motor.mapa.panTo(position);
+    const marcador = new motor.Marcador({
+      map: motor.mapa,
+      position,
+      title: "Ubicación del atractivo",
+    });
+    return () => {
+      marcador.map = null;
+    };
+  }, [motor, latitud, longitud]);
+
+  if (!googleMapsDisponible || fallo) {
+    return (
+      <p
+        role="status"
+        className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950"
+      >
+        Google Maps no está disponible. Puedes pegar las coordenadas o
+        ingresarlas manualmente.
+      </p>
+    );
+  }
+
+  return (
+    <div className="relative isolate min-w-0 overflow-hidden rounded-xl border border-[#dce3da] bg-[#edf4ed]">
+      {!motor && (
+        <p
+          role="status"
+          className="pointer-events-none absolute inset-0 z-10 grid place-items-center p-3 text-center text-sm"
+        >
+          Cargando Google Maps…
+        </p>
+      )}
+      <div
+        ref={lienzo}
+        role="region"
+        aria-label="Google Maps para seleccionar el atractivo"
+        className="h-[clamp(16rem,45dvh,24rem)] w-full"
+      />
+    </div>
   );
 }
-
 export function SelectorUbicacion({
   coordenadas,
   soloLectura = false,
+  mapaActivo = true,
 }: {
   coordenadas?: { latitud: number; longitud: number };
   soloLectura?: boolean;
+  mapaActivo?: boolean;
 }) {
   const [latitud, cambiarLatitud] = useState(
     coordenadas?.latitud !== undefined ? coordenadas.latitud.toString() : "",
@@ -218,20 +175,17 @@ export function SelectorUbicacion({
     [],
   );
 
-  const procesarPegadoGoogle = useCallback(
-    (valor: string) => {
-      cambiarEntradaGoogle(valor);
-      const extraido = extraerCoordenadas(valor);
-      if (extraido) {
-        cambiarLatitud(extraido.lat);
-        cambiarLongitud(extraido.lng);
-        cambiarMensajeEstado(
-          "Coordenadas importadas correctamente desde Google Maps.",
-        );
-      }
-    },
-    [],
-  );
+  const procesarPegadoGoogle = useCallback((valor: string) => {
+    cambiarEntradaGoogle(valor);
+    const extraido = extraerCoordenadas(valor);
+    if (extraido) {
+      cambiarLatitud(extraido.lat);
+      cambiarLongitud(extraido.lng);
+      cambiarMensajeEstado(
+        "Coordenadas importadas correctamente desde Google Maps.",
+      );
+    }
+  }, []);
 
   const obtenerUbicacionGps = useCallback(() => {
     if (!navigator.geolocation) {
@@ -276,11 +230,11 @@ export function SelectorUbicacion({
     : null;
 
   return (
-    <div className="space-y-4 rounded-2xl border border-[#dce3da] bg-[#fbfcfb] p-4 sm:col-span-2">
+    <div className="min-w-0 space-y-4 rounded-2xl border border-[#dce3da] bg-[#fbfcfb] p-3 sm:col-span-2 sm:p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <span className="block text-sm font-semibold text-[#173b32]">
-            Coordenadas geográficas
+            Punto de ingreso al atractivo
           </span>
           <p className="text-xs text-[#526a60]">
             Punto de referencia para el mapa y la verificación de visitas en el
@@ -310,35 +264,43 @@ export function SelectorUbicacion({
 
       {!soloLectura && (
         <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-[#3b5449]">
+          <label className="block text-xs font-semibold text-[#3b5449]">
             Pegar enlace o coordenadas de Google Maps
-          </label>
-          <div className="flex gap-2">
             <input
               type="text"
               value={entradaGoogle}
-              onChange={(evento) => procesarPegadoGoogle(evento.target.value)}
-              placeholder="https://maps.google.com/... o -6.771234, -79.841234"
-              className="min-w-0 flex-1 rounded-xl border border-[#bdcfc2] bg-white px-3 py-2 text-xs text-[#173b32]"
+              onChange={(evento) => cambiarEntradaGoogle(evento.target.value)}
+              placeholder="Ej. -6.771234, -79.841234…"
+              className="mt-1 min-h-11 w-full rounded-xl border border-[#bdcfc2] bg-white px-3 py-2 text-base font-normal text-[#173b32]"
             />
-            <button
-              type="button"
-              onClick={() => procesarPegadoGoogle(entradaGoogle)}
-              className="rounded-xl bg-[#174238] px-3 py-2 text-xs font-semibold text-white hover:bg-[#23574a]"
-            >
-              Aplicar
-            </button>
-          </div>
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              if (extraerCoordenadas(entradaGoogle))
+                procesarPegadoGoogle(entradaGoogle);
+              else
+                cambiarMensajeEstado(
+                  "Pega un enlace que contenga las coordenadas o escribe la latitud y la longitud.",
+                );
+            }}
+            className="min-h-11 rounded-xl border border-[#bdcfc2] bg-white px-3 text-sm font-semibold hover:bg-[#edf4ed]"
+          >
+            Aplicar
+          </button>
         </div>
       )}
 
       {mensajeEstado && (
-        <p className="rounded-xl bg-[#eef4ee] px-3 py-2 text-xs text-[#1e483d]">
+        <p
+          role="status"
+          className="rounded-xl bg-[#eef4ee] px-3 py-2 text-xs text-[#1e483d]"
+        >
           {mensajeEstado}
         </p>
       )}
 
-      {mostrarMapa && (
+      {mostrarMapa && mapaActivo && (
         <div className="space-y-2">
           <MapaUbicacion
             latitud={coordenadasValidas ? numLat : undefined}
@@ -354,7 +316,7 @@ export function SelectorUbicacion({
         </div>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <label className="grid gap-1 text-xs font-semibold text-[#173b32]">
           Latitud
           <input
@@ -367,7 +329,7 @@ export function SelectorUbicacion({
             min={-90}
             max={90}
             onChange={(evento) => cambiarLatitud(evento.target.value)}
-            className="rounded-xl border border-[#bdcfc2] bg-white px-3 py-2 text-sm font-normal text-[#173b32] read-only:bg-[#f4f5ef]"
+            className="min-h-11 w-full min-w-0 rounded-xl border border-[#bdcfc2] bg-white px-2 py-2 text-base font-normal text-[#173b32] read-only:bg-[#f4f5ef]"
           />
         </label>
         <label className="grid gap-1 text-xs font-semibold text-[#173b32]">
@@ -382,14 +344,16 @@ export function SelectorUbicacion({
             min={-180}
             max={180}
             onChange={(evento) => cambiarLongitud(evento.target.value)}
-            className="rounded-xl border border-[#bdcfc2] bg-white px-3 py-2 text-sm font-normal text-[#173b32] read-only:bg-[#f4f5ef]"
+            className="min-h-11 w-full min-w-0 rounded-xl border border-[#bdcfc2] bg-white px-2 py-2 text-base font-normal text-[#173b32] read-only:bg-[#f4f5ef]"
           />
         </label>
       </div>
 
       {enlaceGoogleMaps && (
-        <div className="flex items-center justify-between text-xs text-[#3b5449]">
-          <span>Punto fijado: {latitud}, {longitud}</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#3b5449]">
+          <span>
+            Punto fijado: {latitud}, {longitud}
+          </span>
           <a
             href={enlaceGoogleMaps}
             target="_blank"
