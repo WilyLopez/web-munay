@@ -1,9 +1,12 @@
 "use server";
 
+import { obtenerActivacion, retomarActivacion } from "@/features/accesos/activacion-pendiente";
+
 import { regresoQrVisita } from "@/features/visitas/enlace-qr";
 
 import { destinoSesion } from "./destino-sesion";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { solicitarSesion } from "./sesion";
 import {
@@ -113,6 +116,7 @@ export async function ingresar(
   }
 
   let destino: string | null = null;
+  let activacionCompletada = false;
   try {
     const supabase = await crearSupabaseServidor();
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -158,6 +162,12 @@ export async function ingresar(
       }
       const sesion = (await respuesta.json()) as { perfil?: { rol?: unknown } };
       destino = destinoSesion(sesion.perfil?.rol);
+      const activacion = await retomarActivacion(data.session.access_token, data.user?.email);
+      if (activacion?.ok) {
+        revalidatePath("/", "layout");
+        destino = "/administracion";
+        activacionCompletada = true;
+      }
       if (!destino) {
         await borrarCookiesSesion();
         return { mensaje: ERROR_SERVICIO };
@@ -169,6 +179,8 @@ export async function ingresar(
   } catch {
     return { mensaje: ERROR_SERVICIO };
   }
+
+  if (activacionCompletada) redirect("/administracion");
 
   const volver = leerCampo(datos, "volver");
   const verificacion = destino === "/destinos" ? regresoQrVisita(volver) : null;
@@ -184,23 +196,42 @@ export async function ingresar(
 export async function confirmarCorreo(datos: FormData): Promise<void> {
   const tokenHash = leerCampo(datos, "tokenHash");
   let confirmado = false;
+  let destinoInvitado: string | undefined;
 
   if (tokenHash && tokenHash.length <= 256) {
     try {
       const supabase = await crearSupabaseServidor();
-      const { error } = await supabase.auth.verifyOtp({
+      const { data, error } = await supabase.auth.verifyOtp({
         token_hash: tokenHash,
         type: "email",
       });
       confirmado = !error;
 
       if (confirmado) {
-        await supabase.auth.signOut({ scope: "local" });
-        await borrarCookiesSesion();
+        const activacion = await obtenerActivacion(data.user?.email);
+        if (activacion && data.session) {
+          const sesion = await solicitarSesion(data.session.access_token, "POST").catch(() => null);
+          if (sesion?.ok) {
+            const resultado = await retomarActivacion(data.session.access_token, data.user?.email);
+            const perfil = (await sesion.json().catch(() => null)) as { perfil?: { rol?: string } } | null;
+            destinoInvitado = resultado?.ok || (resultado?.estado === 410 && perfil?.perfil?.rol === "ADMIN_DESTINO")
+              ? "/administracion"
+              : `/invitacion-encargado#${activacion.token}`;
+          }
+        }
+        if (!destinoInvitado) {
+          await supabase.auth.signOut({ scope: "local" });
+          await borrarCookiesSesion();
+        }
       }
     } catch {
       confirmado = false;
     }
+  }
+
+  if (destinoInvitado) {
+    revalidatePath("/", "layout");
+    redirect(destinoInvitado);
   }
 
   redirect(

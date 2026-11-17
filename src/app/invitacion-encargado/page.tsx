@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { AceptarInvitacion } from "@/features/accesos/formularios";
+import { crearSupabaseServidor } from "@/features/autenticacion/supabase/servidor";
 import { solicitarVisitas } from "@/features/visitas/api";
 import type { DetalleInvitacion } from "@/features/accesos/tipos";
 
@@ -33,11 +34,13 @@ async function ContenidoInvitacion({
   }
 
   const respuestaSesion = await solicitarVisitas<{
-    perfil: { id: string; correo: string; rol: string };
+    perfil: { id: string; rol: string };
   }>("/autenticacion/sesion");
 
   const sesionOk = respuestaSesion.ok;
-  const correoSesion = sesionOk ? respuestaSesion.datos.perfil.correo : null;
+  const supabase = sesionOk ? await crearSupabaseServidor() : null;
+  const identidad = await supabase?.auth.getUser().catch(() => null);
+  const correoSesion = identidad?.data.user?.email ?? null;
 
   return (
     <AceptarInvitacion

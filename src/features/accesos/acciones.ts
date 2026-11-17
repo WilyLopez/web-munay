@@ -8,7 +8,14 @@ import {
   borrarCookiesSesion,
   crearSupabaseServidor,
 } from "@/features/autenticacion/supabase/servidor";
-import type { DetalleInvitacion } from "./tipos";
+import { mensajeInvitacionNoDisponible, type DetalleInvitacion } from "./tipos";
+import {
+  aceptarAsignacion,
+  borrarActivacion,
+  codificarActivacion,
+  guardarActivacion,
+  obtenerActivacion,
+} from "./activacion-pendiente";
 
 type Estado = { mensaje: string; ok: boolean; enlace?: string };
 const leer = (datos: FormData, campo: string) =>
@@ -99,10 +106,10 @@ export async function aceptarInvitacion(
   _estado: Estado,
   datos: FormData,
 ): Promise<Estado> {
-  const resultado = await solicitarVisitas("/gestion-accesos/aceptar", {
-    token: leer(datos, "token"),
-    ...(datos.has("nombre") && { propuesta: leerPropuesta(datos) }),
-  });
+  const resultado = await aceptarAsignacion(
+    leer(datos, "token"),
+    datos.has("nombre") ? leerPropuesta(datos) : undefined,
+  );
   if (!resultado.ok) return { mensaje: resultado.mensaje, ok: false };
   revalidatePath("/", "layout");
   redirect("/administracion");
@@ -113,16 +120,28 @@ export async function activarCuentaInvitada(
   datos: FormData,
 ): Promise<Estado> {
   const token = leer(datos, "token");
-  const correo = leer(datos, "correo");
+  const correo = leer(datos, "correo").toLowerCase();
   const contrasena = leer(datos, "contrasena");
   const modo = leer(datos, "modo");
   const nombreCompleto = leer(datos, "nombreCompleto");
 
-  if (!token || !correo || !contrasena) {
+  if (!token || !correo || !contrasena || !["registro", "ingreso"].includes(modo)) {
     return { mensaje: "Completa todos los campos requeridos.", ok: false };
   }
 
+  const consulta = await consultarDetalleInvitacion(token);
+  if (!consulta.detalle?.valida || consulta.detalle.vencida) {
+    return {
+      ok: false,
+      mensaje: consulta.detalle ? mensajeInvitacionNoDisponible(consulta.detalle) : consulta.mensaje ?? "La invitación no está disponible.",
+    };
+  }
+  if (consulta.detalle.correo.toLowerCase() !== correo) {
+    return { ok: false, mensaje: "Usa el correo al que se envió la invitación." };
+  }
+  const propuesta = datos.has("nombre") ? leerPropuesta(datos) : undefined;
   const supabase = await crearSupabaseServidor();
+  let sesion;
 
   if (modo === "registro") {
     const confirmarContrasena = leer(datos, "confirmarContrasena");
@@ -136,6 +155,10 @@ export async function activarCuentaInvitada(
       return { mensaje: "Las contraseñas no coinciden.", ok: false };
     }
 
+    const activacion = codificarActivacion({ correo, token, propuesta });
+    if (activacion.length > 3800) {
+      return { ok: false, mensaje: "Acorta la descripción del atractivo para continuar." };
+    }
     const { data: registroData, error: registroError } =
       await supabase.auth.signUp({
         email: correo,
@@ -168,25 +191,30 @@ export async function activarCuentaInvitada(
         ok: false,
       };
     }
-  }
-
-  const { data: accesoData, error: accesoError } =
-    await supabase.auth.signInWithPassword({
-      email: correo,
-      password: contrasena,
-    });
-
-  if (accesoError || !accesoData.session) {
-    return {
-      mensaje:
-        "No se pudo iniciar sesión. Verifica tu contraseña o confirma tu correo si te acabas de registrar.",
-      ok: false,
-    };
+    sesion = registroData.session;
+    if (!sesion) {
+      await guardarActivacion(activacion);
+      return {
+        mensaje: "Revisa tu correo y abre el enlace de confirmación en este navegador. Al confirmar, activaremos tu acceso y te llevaremos al panel.",
+        ok: true,
+      };
+    }
+  } else {
+    const acceso = await supabase.auth.signInWithPassword({ email: correo, password: contrasena });
+    if (acceso.error || !acceso.data.session) {
+      return {
+        mensaje: acceso.error?.code === "email_not_confirmed"
+          ? "Confirma tu correo antes de continuar con la invitación."
+          : "No se pudo iniciar sesión. Revisa tu contraseña e inténtalo de nuevo.",
+        ok: false,
+      };
+    }
+    sesion = acceso.data.session;
   }
 
   try {
     const respuestaSesion = await solicitarSesion(
-      accesoData.session.access_token,
+      sesion.access_token,
       "POST",
     );
     if (!respuestaSesion.ok) {
@@ -201,18 +229,11 @@ export async function activarCuentaInvitada(
     return { mensaje: "Error de conexión al sincronizar la sesión.", ok: false };
   }
 
-  const resultadoAceptar = await solicitarVisitas(
-    "/gestion-accesos/aceptar",
-    {
-      token,
-      ...(datos.has("nombre") && { propuesta: leerPropuesta(datos) }),
-    },
-    { token: accesoData.session.access_token },
-  );
-
+  const resultadoAceptar = await aceptarAsignacion(token, propuesta, sesion.access_token);
   if (!resultadoAceptar.ok) {
     return { mensaje: resultadoAceptar.mensaje, ok: false };
   }
+  if ((await obtenerActivacion(correo))?.token === token) await borrarActivacion();
 
   revalidatePath("/", "layout");
   redirect("/administracion");
