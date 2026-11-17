@@ -2,11 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { accesoPanel } from "@/features/administracion/acceso";
-import {
-  FormularioFicha,
-  type FichaOperativa,
-} from "@/features/administracion/formulario-ficha";
-import { enlaceFicha } from "@/features/destinos/catalogo";
+import type { FichaOperativa } from "@/features/administracion/formulario-ficha";
+import { PanelFichaAtractivo } from "@/features/administracion/panel-ficha-atractivo";
 import { solicitarVisitas } from "@/features/visitas/api";
 
 async function Editar({
@@ -21,36 +18,19 @@ async function Editar({
   );
   if (!respuesta.ok) return <p role="alert">{respuesta.mensaje}</p>;
 
-  return (
-    <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="font-serif text-4xl tracking-tight">
-          {respuesta.datos.nombre}
-        </h1>
-        {respuesta.datos.estadoEditorial === "publicada" && (
-          <Link
-            href={enlaceFicha(slug)}
-            className="text-sm font-semibold underline underline-offset-4"
-          >
-            Ver detalles públicos
-          </Link>
-        )}
-      </div>
-      <FormularioFicha key={slug} ficha={respuesta.datos} slug={slug} />
-    </>
-  );
+  return <PanelFichaAtractivo key={slug} ficha={respuesta.datos} slug={slug} />;
 }
 
 export default function PaginaEditarFicha({
   params,
 }: PageProps<"/administracion/atractivos/[slug]">) {
   return (
-    <main className="max-w-3xl space-y-5">
+    <main className="w-full min-w-0 space-y-4">
       <Link
         href="/administracion"
         className="text-sm font-semibold underline underline-offset-4"
       >
-        Volver a Mis atractivos
+        Volver al Dashboard
       </Link>
       <Suspense
         fallback={

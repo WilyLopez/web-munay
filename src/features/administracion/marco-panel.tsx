@@ -9,7 +9,7 @@ const marco =
   "min-h-dvh bg-[#f4f5ef] text-[#173b32] md:grid md:grid-cols-[15rem_minmax(0,1fr)]";
 const encabezado =
   "flex flex-wrap items-center justify-between gap-3 border-b border-[#dce3da] bg-[#fbfcf8] px-4 py-3 sm:px-8 sm:py-4";
-const contenido = "mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-7";
+const contenido = "mx-auto w-full px-4 py-6 sm:px-8 sm:py-7";
 
 function EsqueletoPanel({ global }: { global: boolean }) {
   return (
@@ -89,7 +89,7 @@ async function Marco({
           <p className="text-sm font-semibold">
             {esSuperAdmin
               ? "Administración de plataforma"
-              : "Administración de atractivos"}
+              : "Panel del encargado"}
           </p>
           <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
             <Link
@@ -102,7 +102,7 @@ async function Marco({
           </div>
         </header>
         <div
-          className={`${contenido} ${esSuperAdmin ? "" : "max-md:pb-[calc(4.5rem+env(safe-area-inset-bottom))]"}`}
+          className={`${contenido} ${esSuperAdmin ? "max-w-7xl" : "max-md:pb-[calc(4.5rem+env(safe-area-inset-bottom))]"}`}
         >
           {children}
         </div>
