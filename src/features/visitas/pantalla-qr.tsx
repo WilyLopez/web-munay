@@ -291,14 +291,9 @@ export function PantallaQr({ slug }: { slug: string }) {
           <>
             <p className="font-semibold text-teal-900">Sesión activa</p>
             <CodigoQr key={codigo.id} valor={codigo.valor} lienzoRef={lienzoRef} />
-            <div className="rounded-xl border border-stone-200 bg-stone-50 p-2.5 text-center">
-              <span className="block text-xs font-semibold text-stone-500 uppercase tracking-wider">
-                Identificador del QR activo
-              </span>
-              <span className="mt-0.5 block font-mono text-sm font-bold text-teal-950 break-all select-all">
-                {codigo.id}
-              </span>
-            </div>
+            <p className="text-center font-mono text-xs text-stone-400 select-all break-all">
+              ID: <span className="text-stone-600 font-medium">{codigo.id}</span>
+            </p>
             <p className="text-sm">
               Generado: {fechaVisita.format(new Date(codigo.creadoEn))}
             </p>

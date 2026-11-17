@@ -395,15 +395,10 @@ export function PantallaTransmision({
                   )}
                 </div>
 
-                {/* Identificador del QR visible abajo del código para cotejo */}
-                <div className="mt-2 w-full max-w-sm rounded-xl border border-stone-200 bg-stone-50/90 p-2.5 text-center">
-                  <span className="block text-[11px] font-semibold uppercase tracking-wider text-stone-500">
-                    Identificador del QR activo
-                  </span>
-                  <span className="mt-0.5 block select-all font-mono text-xs sm:text-sm font-bold text-[#14312b] tracking-wider break-all bg-white rounded-lg px-2.5 py-1 border border-stone-200">
-                    {codigo.id}
-                  </span>
-                </div>
+                {/* Identificador discreto para cotejo */}
+                <p className="mt-2 select-all font-mono text-[11px] text-stone-400 text-center tracking-wide break-all">
+                  ID: <span className="text-stone-500 font-medium">{codigo.id}</span>
+                </p>
 
                 {/* Barra de progreso de tiempo restante */}
                 <div className="w-full max-w-sm mt-4 space-y-1.5">
