@@ -6,12 +6,17 @@ import type { Resultado } from "./tipos";
 export async function solicitarVisitas<T>(
   ruta: string,
   datos?: Record<string, unknown>,
-  opciones?: { publica?: boolean; metodo?: "PUT" | "DELETE" | "PATCH" },
+  opciones?: {
+    publica?: boolean;
+    metodo?: "PUT" | "DELETE" | "PATCH";
+    token?: string;
+  },
 ): Promise<Resultado<T>> {
   try {
     const supabase = await crearSupabaseServidor();
     const { data } = await supabase.auth.getSession();
-    if (!data.session && !opciones?.publica) {
+    const tokenActivo = opciones?.token ?? data.session?.access_token;
+    if (!tokenActivo && !opciones?.publica) {
       return {
         ok: false,
         estado: 401,
@@ -22,8 +27,8 @@ export async function solicitarVisitas<T>(
     const respuesta = await fetch(resolverUrlApi(ruta), {
       method: opciones?.metodo ?? (datos ? "POST" : "GET"),
       headers: {
-        ...(data.session && {
-          Authorization: `Bearer ${data.session.access_token}`,
+        ...(tokenActivo && {
+          Authorization: `Bearer ${tokenActivo}`,
         }),
         ...(datos && { "Content-Type": "application/json" }),
       },
@@ -31,7 +36,7 @@ export async function solicitarVisitas<T>(
       cache: "no-store",
       signal: AbortSignal.timeout(10000),
     });
-    if (respuesta.status === 401 && opciones?.publica && data.session) {
+    if (respuesta.status === 401 && opciones?.publica && tokenActivo) {
       const publica = await fetch(resolverUrlApi(ruta), {
         cache: "no-store",
         signal: AbortSignal.timeout(10000),

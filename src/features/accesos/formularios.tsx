@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   startTransition,
   useActionState,
+  useEffect,
   useState,
   useSyncExternalStore,
   type FormEvent,
@@ -13,6 +15,8 @@ import { SelectorUbicacion } from "@/features/destinos/selector-ubicacion";
 import { categorias, provincias } from "@/features/destinos/catalogo";
 import {
   aceptarInvitacion,
+  activarCuentaInvitada,
+  consultarDetalleInvitacion,
   enviarInvitacion,
   enviarSolicitud,
   resolverAcceso,
@@ -22,16 +26,20 @@ import {
   principal,
   secundario,
   type AccesoEncargado,
+  type DetalleInvitacion,
   type OpcionDestino,
 } from "./tipos";
 
 const inicial = { mensaje: "", ok: false };
-const loginInvitacion = "/ingresar?volver=/invitacion-encargado";
 const claveInvitacion = "munay-invitacion-encargado";
 
 function leerInvitacion() {
+  if (typeof window === "undefined") return "";
   const fragmento = window.location.hash.slice(1);
   try {
+    if (fragmento) {
+      sessionStorage.setItem(claveInvitacion, fragmento);
+    }
     return fragmento || sessionStorage.getItem(claveInvitacion) || "";
   } catch {
     return fragmento;
@@ -60,7 +68,7 @@ function Campo({
   children: ReactNode;
 }) {
   return (
-    <label className="grid min-w-0 gap-1.5 text-sm font-semibold">
+    <label className="grid min-w-0 gap-1.5 text-sm font-semibold text-[#173b32]">
       {etiqueta}
       {children}
     </label>
@@ -71,11 +79,43 @@ function Mensaje({ estado }: { estado: typeof inicial }) {
   return estado.mensaje ? (
     <p
       role={estado.ok ? "status" : "alert"}
-      className={`rounded-xl p-3 text-sm ${estado.ok ? "bg-green-50 text-green-900" : "bg-rose-50 text-rose-900"}`}
+      className={`rounded-xl border p-3 text-sm ${estado.ok ? "border-green-200 bg-green-50 text-green-900" : "border-rose-200 bg-rose-50 text-rose-900"}`}
     >
       {estado.mensaje}
     </p>
   ) : null;
+}
+
+function IconoOjo({ tachado }: { tachado?: boolean }) {
+  return tachado ? (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+    >
+      <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+      <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+      <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+      <line x1="2" y1="2" x2="22" y2="22" />
+    </svg>
+  ) : (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+    >
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
 }
 
 function SelectorDestino({ destinos }: { destinos: OpcionDestino[] }) {
@@ -101,13 +141,23 @@ function DatosNuevoDestino({
   incluirDistrito?: boolean;
 }) {
   return (
-    <div className="grid gap-3 rounded-xl bg-[#f4f5ef] p-4 sm:grid-cols-2">
+    <div className="grid gap-3 rounded-2xl border border-[#dce3da] bg-[#fbfcfb] p-4 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <span className="block text-sm font-semibold text-[#173b32]">
+          Información inicial del nuevo atractivo
+        </span>
+        <p className="text-xs text-[#526a60]">
+          Estos datos se registrarán como borrador inicial para la revisión
+          institucional.
+        </p>
+      </div>
       <Campo etiqueta="Nombre del atractivo">
         <input
           name="nombre"
           className={campo}
           minLength={3}
           maxLength={120}
+          placeholder="Ej. Huaca Ventarrón"
           required
         />
       </Campo>
@@ -117,6 +167,7 @@ function DatosNuevoDestino({
           className={campo}
           minLength={4}
           maxLength={180}
+          placeholder="Ej. A 4 km al sureste de Pomalca"
           required
         />
       </Campo>
@@ -127,6 +178,7 @@ function DatosNuevoDestino({
             className={campo}
             minLength={2}
             maxLength={100}
+            placeholder="Ej. Pomalca"
             required
           />
         </Campo>
@@ -156,17 +208,14 @@ function DatosNuevoDestino({
         </select>
       </Campo>
       <SelectorUbicacion />
-      <p className="text-xs text-[#4d665b] sm:col-span-2">
-        Usa las coordenadas del punto donde se recibirá a los visitantes. Munay
-        las utilizará en el mapa y en la verificación de visitas.
-      </p>
       <div className="sm:col-span-2">
-        <Campo etiqueta="Descripción pública">
+        <Campo etiqueta="Descripción pública inicial">
           <textarea
             name="descripcion"
             rows={3}
             minLength={20}
             maxLength={1000}
+            placeholder="Describe brevemente la experiencia cultural, horarios o acceso del lugar..."
             className={campo}
             required
           />
@@ -190,7 +239,9 @@ export function FormularioSolicitud({
       className="space-y-5"
     >
       <fieldset className="space-y-2">
-        <legend className="font-semibold">¿Qué quieres gestionar?</legend>
+        <legend className="font-semibold text-[#173b32]">
+          ¿Qué quieres gestionar?
+        </legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {[
             ["existente", "Un atractivo del catálogo"],
@@ -289,7 +340,7 @@ export function FormularioInvitacion({
         </select>
       </Campo>
       {nuevo ? (
-        <p className="text-sm">
+        <p className="text-sm text-[#465a50]">
           El encargado completará los datos iniciales y recibirá el destino como
           borrador.
         </p>
@@ -415,58 +466,472 @@ export function DecisionAcceso({ fila }: { fila: AccesoEncargado }) {
   );
 }
 
-export function AceptarInvitacion({ autenticado }: { autenticado: boolean }) {
-  const [estado, accion, pendiente] = useActionState(
+export function AceptarInvitacion({
+  autenticado,
+  tokenInicial,
+  detalleInicial,
+  correoSesion,
+}: {
+  autenticado: boolean;
+  tokenInicial?: string;
+  detalleInicial?: DetalleInvitacion | null;
+  correoSesion?: string | null;
+}) {
+  const tokenDelHash = useSyncExternalStore(
+    observarInvitacion,
+    leerInvitacion,
+    () => tokenInicial ?? "",
+  );
+  const tokenEfectivo = tokenInicial || tokenDelHash;
+  const tokenLimpio = tokenEfectivo.split(".")[0];
+  const [detalle, cambiarDetalle] = useState<
+    DetalleInvitacion | null | undefined
+  >(detalleInicial);
+  const [consultado, cambiarConsultado] = useState(
+    Boolean(detalleInicial) || !tokenEfectivo,
+  );
+  const cargando = !consultado && Boolean(tokenEfectivo);
+  const [modo, cambiarModo] = useState<"registro" | "ingreso">("registro");
+  const [mostrarClave, cambiarMostrarClave] = useState(false);
+  const [mostrarConfirmacion, cambiarMostrarConfirmacion] = useState(false);
+  const [errorLocal, cambiarErrorLocal] = useState("");
+
+  const [estadoAceptar, accionAceptar, pendienteAceptar] = useActionState(
     aceptarInvitacion,
     inicial,
   );
-  const invitacion = useSyncExternalStore(
-    observarInvitacion,
-    leerInvitacion,
-    () => "",
+  const [estadoActivar, accionActivar, pendienteActivar] = useActionState(
+    activarCuentaInvitada,
+    inicial,
   );
-  const nuevo = invitacion.endsWith(".nuevo");
-  const token = () => {
-    const fragmento = window.location.hash.slice(1);
-    try {
-      if (fragmento) sessionStorage.setItem(claveInvitacion, fragmento);
-      return fragmento || sessionStorage.getItem(claveInvitacion) || "";
-    } catch {
-      return fragmento;
-    }
+
+  useEffect(() => {
+    if (!tokenLimpio || detalleInicial) return;
+    consultarDetalleInvitacion(tokenLimpio)
+      .then((res) => {
+        if (res.ok && res.detalle) {
+          cambiarDetalle(res.detalle);
+        }
+      })
+      .finally(() => {
+        cambiarConsultado(true);
+      });
+  }, [tokenLimpio, detalleInicial]);
+
+  const esNuevo = Boolean(detalle?.nuevo || tokenEfectivo.endsWith(".nuevo"));
+  const correoInvitado = detalle?.correo ?? "";
+  const coincideCorreo =
+    !correoSesion ||
+    !correoInvitado ||
+    correoSesion.trim().toLowerCase() === correoInvitado.trim().toLowerCase();
+
+  const manejarEnvioAceptar = (evento: FormEvent<HTMLFormElement>) => {
+    evento.preventDefault();
+    const datos = new FormData(evento.currentTarget);
+    datos.set("token", tokenLimpio);
+    startTransition(() => accionAceptar(datos));
   };
-  if (!autenticado)
-    return (
-      <div className="flex flex-wrap gap-3">
-        <Link
-          href={loginInvitacion}
-          className={principal}
-          onClick={() => token()}
-        >
-          Iniciar sesión
-        </Link>
-        <Link href="/registro" className={secundario} onClick={() => token()}>
-          Crear cuenta
-        </Link>
-      </div>
-    );
+
+  const manejarEnvioActivar = (evento: FormEvent<HTMLFormElement>) => {
+    evento.preventDefault();
+    cambiarErrorLocal("");
+    const datos = new FormData(evento.currentTarget);
+    if (modo === "registro") {
+      const p1 = String(datos.get("contrasena") ?? "");
+      const p2 = String(datos.get("confirmarContrasena") ?? "");
+      if (p1.length < 8) {
+        cambiarErrorLocal("La contraseña debe tener al menos 8 caracteres.");
+        return;
+      }
+      if (p1 !== p2) {
+        cambiarErrorLocal("Las contraseñas no coinciden.");
+        return;
+      }
+    }
+    datos.set("token", tokenLimpio);
+    datos.set("modo", modo);
+    if (correoInvitado) {
+      datos.set("correo", correoInvitado);
+    }
+    startTransition(() => accionActivar(datos));
+  };
+
   return (
-    <form
-      action={(datos) => {
-        datos.set("token", token().split(".")[0]);
-        accion(datos);
-      }}
-      className="space-y-4"
-    >
-      {nuevo && <DatosNuevoDestino incluirDistrito />}
-      <button className={principal} disabled={pendiente || !invitacion}>
-        {pendiente
-          ? "Activando acceso…"
-          : nuevo
-            ? "Aceptar y crear borrador"
-            : "Aceptar invitación"}
-      </button>
-      <Mensaje estado={estado} />
-    </form>
+    <div className="grid gap-8 lg:grid-cols-12 items-start">
+      <section className="space-y-6 lg:col-span-5">
+        <div className="space-y-2">
+          <Link
+            href="/"
+            className="inline-block font-serif text-2xl font-bold tracking-tight text-[#174238]"
+          >
+            munay<span className="text-[#c86a52]">.</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-[#174238] px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white">
+              Invitación de gestión
+            </span>
+            <span className="rounded-full border border-[#dce3da] bg-white px-3 py-1 text-xs font-medium text-[#465a50]">
+              Lambayeque
+            </span>
+          </div>
+        </div>
+
+        {detalle?.destino ? (
+          <div className="overflow-hidden rounded-3xl border border-[#dce3da] bg-white shadow-sm">
+            {detalle.destino.imagenUrl && (
+              <Image
+                src={detalle.destino.imagenUrl}
+                alt={detalle.destino.nombre}
+                width={800}
+                height={208}
+                unoptimized
+                className="h-52 w-full object-cover"
+              />
+            )}
+            <div className="space-y-3 p-6">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-[#e8efe9] px-2.5 py-0.5 text-xs font-semibold text-[#174238]">
+                  {detalle.destino.provincia}
+                </span>
+                <span className="rounded-full bg-[#f4f5ef] px-2.5 py-0.5 text-xs font-medium text-[#465a50]">
+                  {detalle.destino.categoria}
+                </span>
+              </div>
+              <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-[#173b32]">
+                {detalle.destino.nombre}
+              </h1>
+              <p className="text-xs text-[#526a60]">
+                {detalle.destino.ubicacion}
+              </p>
+              {detalle.destino.descripcion && (
+                <p className="text-sm leading-relaxed text-[#465a50] line-clamp-3">
+                  {detalle.destino.descripcion}
+                </p>
+              )}
+            </div>
+          </div>
+        ) : esNuevo ? (
+          <div className="space-y-3 rounded-3xl border border-[#dce3da] bg-white p-6 shadow-sm">
+            <span className="rounded-full bg-[#e8efe9] px-3 py-1 text-xs font-semibold text-[#174238]">
+              Nuevo atractivo
+            </span>
+            <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-[#173b32]">
+              Registro y administración de atractivo
+            </h1>
+            <p className="text-sm leading-relaxed text-[#465a50]">
+              Has sido invitado por el equipo de Munay para incorporar un nuevo
+              atractivo turístico o cultural al catálogo oficial de la región.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3 rounded-3xl border border-[#dce3da] bg-white p-6 shadow-sm">
+            <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-[#173b32]">
+              Gestión institucional de atractivo
+            </h1>
+            <p className="text-sm leading-relaxed text-[#465a50]">
+              Acceso autorizado para coordinar y administrar la presencia oficial
+              de un atractivo en la plataforma turística de Lambayeque.
+            </p>
+          </div>
+        )}
+
+        <div className="space-y-4 rounded-3xl border border-[#dce3da] bg-white p-6 shadow-sm">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[#174238]">
+            Facultades oficiales de gestión
+          </h2>
+          <ul className="space-y-3 text-xs sm:text-sm text-[#465a50]">
+            <li className="flex items-start gap-2.5">
+              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#174238]" />
+              <span>
+                Generación y validación de visitas mediante códigos QR
+                verificados con geolocalización.
+              </span>
+            </li>
+            <li className="flex items-start gap-2.5">
+              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#174238]" />
+              <span>
+                Administración directa de información: horarios de atención,
+                rutas, accesibilidad y tarifas.
+              </span>
+            </li>
+            <li className="flex items-start gap-2.5">
+              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#174238]" />
+              <span>
+                Acceso a analíticas de visitantes, afluencia mensual y atención a
+                reseñas de la comunidad.
+              </span>
+            </li>
+            <li className="flex items-start gap-2.5">
+              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#174238]" />
+              <span>
+                Canal directo con el equipo de turismo y patrimonio regional de
+                Lambayeque.
+              </span>
+            </li>
+          </ul>
+        </div>
+
+        {correoInvitado && (
+          <p className="text-xs text-[#768a80]">
+            Invitación reservada para{" "}
+            <strong className="text-[#173b32]">{correoInvitado}</strong>. Válida
+            por 72 horas desde su emisión.
+          </p>
+        )}
+      </section>
+
+      <section className="lg:col-span-7">
+        <div className="space-y-6 rounded-3xl border border-[#dce3da] bg-white p-6 sm:p-9 shadow-sm">
+          {cargando ? (
+            <div className="py-12 text-center text-sm text-[#465a50]">
+              Verificando datos de la invitación…
+            </div>
+          ) : !tokenLimpio ? (
+            <div className="space-y-4 text-center">
+              <h2 className="font-serif text-2xl font-semibold text-[#173b32]">
+                Enlace de invitación no encontrado
+              </h2>
+              <p className="text-sm text-[#465a50]">
+                No encontramos el código de invitación en este enlace. Revisa el
+                correo electrónico oficial que recibiste y haz clic en el botón
+                para ingresar.
+              </p>
+              <div className="pt-2">
+                <Link href="/" className={secundario}>
+                  Volver al inicio
+                </Link>
+              </div>
+            </div>
+          ) : detalle && (!detalle.valida || detalle.vencida) ? (
+            <div className="space-y-4 rounded-2xl border border-rose-200 bg-rose-50 p-6 text-rose-950">
+              <span className="text-xs font-semibold uppercase tracking-wider text-rose-700">
+                Invitación no disponible
+              </span>
+              <h2 className="font-serif text-2xl font-semibold">
+                {detalle.vencida
+                  ? "El enlace de invitación ha vencido"
+                  : "Esta invitación ya no está activa"}
+              </h2>
+              <p className="text-sm text-rose-800">
+                {detalle.vencida
+                  ? "Los enlaces de invitación tienen una vigencia de 72 horas por seguridad. Solicita al administrador del sistema que te envíe una nueva invitación."
+                  : "La invitación fue aceptada previamente o revocada por el administrador."}
+              </p>
+              <div className="pt-2">
+                <Link href="/" className={secundario}>
+                  Ir al inicio
+                </Link>
+              </div>
+            </div>
+          ) : autenticado ? (
+            !coincideCorreo ? (
+              <div className="space-y-4 rounded-2xl border border-amber-300 bg-amber-50 p-6 text-[#432c0d]">
+                <span className="text-xs font-semibold uppercase tracking-wider text-amber-800">
+                  Conflicto de cuenta
+                </span>
+                <h2 className="font-serif text-xl font-semibold">
+                  Cuenta diferente a la invitación
+                </h2>
+                <p className="text-sm leading-relaxed">
+                  Has iniciado sesión como <strong>{correoSesion}</strong>, pero
+                  esta invitación está asignada a{" "}
+                  <strong>{correoInvitado}</strong>.
+                </p>
+                <p className="text-xs text-amber-900">
+                  Para vincular la titularidad del atractivo correctamente, debes
+                  cambiar a la cuenta correspondiente.
+                </p>
+                <div className="pt-2">
+                  <Link
+                    href={`/salir?volver=${encodeURIComponent(`/invitacion-encargado?token=${tokenLimpio}`)}`}
+                    className="inline-block rounded-xl bg-[#174238] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#23574a]"
+                  >
+                    Cerrar sesión actual y cambiar de cuenta
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={manejarEnvioAceptar} className="space-y-5">
+                <div className="space-y-1">
+                  <span className="rounded-full bg-[#e8efe9] px-3 py-1 text-xs font-semibold text-[#174238]">
+                    Cuenta verificada
+                  </span>
+                  <h2 className="font-serif text-2xl font-semibold text-[#173b32] pt-2">
+                    Confirmar asignación de gestión
+                  </h2>
+                  <p className="text-sm text-[#465a50]">
+                    Sesión iniciada con <strong>{correoSesion}</strong>. Al
+                    aceptar recibirás el rol de Administrador.
+                  </p>
+                </div>
+                {esNuevo && <DatosNuevoDestino incluirDistrito />}
+                <button
+                  className={principal}
+                  disabled={pendienteAceptar}
+                >
+                  {pendienteAceptar
+                    ? "Activando acceso…"
+                    : esNuevo
+                      ? "Aceptar y crear borrador"
+                      : "Aceptar invitación y entrar al panel"}
+                </button>
+                <Mensaje estado={estadoAceptar} />
+              </form>
+            )
+          ) : (
+            <div className="space-y-5">
+              <div className="space-y-1">
+                <h2 className="font-serif text-2xl font-semibold text-[#173b32]">
+                  Activa tu cuenta de Administrador
+                </h2>
+                <p className="text-sm text-[#465a50]">
+                  Tu correo ya fue autorizado institucionalmente. Configura tu
+                  clave de acceso para ingresar.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-[#f4f5ef] p-1.5 text-xs font-semibold text-[#173b32]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    cambiarModo("registro");
+                    cambiarErrorLocal("");
+                  }}
+                  className={`rounded-xl py-2 transition-colors ${modo === "registro" ? "bg-white text-[#174238] shadow-sm font-bold" : "text-[#526a60] hover:text-[#174238]"}`}
+                >
+                  Crear contraseña
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    cambiarModo("ingreso");
+                    cambiarErrorLocal("");
+                  }}
+                  className={`rounded-xl py-2 transition-colors ${modo === "ingreso" ? "bg-white text-[#174238] shadow-sm font-bold" : "text-[#526a60] hover:text-[#174238]"}`}
+                >
+                  Ya tengo cuenta
+                </button>
+              </div>
+
+              <form onSubmit={manejarEnvioActivar} className="space-y-4">
+                <Campo etiqueta="Correo autorizado">
+                  <input
+                    name="correo"
+                    type="email"
+                    value={correoInvitado}
+                    readOnly
+                    className={`${campo} cursor-not-allowed bg-[#f4f5ef] text-[#526a60]`}
+                  />
+                </Campo>
+
+                {modo === "registro" && (
+                  <Campo etiqueta="Nombre y apellidos del responsable">
+                    <input
+                      name="nombreCompleto"
+                      type="text"
+                      required
+                      minLength={3}
+                      maxLength={100}
+                      placeholder="Ej. Ana Lucía Delgado"
+                      className={campo}
+                    />
+                  </Campo>
+                )}
+
+                <Campo
+                  etiqueta={
+                    modo === "registro"
+                      ? "Crear contraseña"
+                      : "Contraseña actual"
+                  }
+                >
+                  <div className="relative">
+                    <input
+                      name="contrasena"
+                      type={mostrarClave ? "text" : "password"}
+                      required
+                      minLength={8}
+                      placeholder={
+                        modo === "registro"
+                          ? "Mínimo 8 caracteres"
+                          : "Tu contraseña de Munay"
+                      }
+                      className={campo}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => cambiarMostrarClave((previo) => !previo)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#768a80] hover:text-[#174238]"
+                      aria-label="Alternar visibilidad de contraseña"
+                    >
+                      <IconoOjo tachado={mostrarClave} />
+                    </button>
+                  </div>
+                </Campo>
+
+                {modo === "registro" && (
+                  <Campo etiqueta="Confirmar contraseña">
+                    <div className="relative">
+                      <input
+                        name="confirmarContrasena"
+                        type={mostrarConfirmacion ? "text" : "password"}
+                        required
+                        minLength={8}
+                        placeholder="Repite la contraseña"
+                        className={campo}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          cambiarMostrarConfirmacion((previo) => !previo)
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#768a80] hover:text-[#174238]"
+                        aria-label="Alternar visibilidad de confirmación de contraseña"
+                      >
+                        <IconoOjo tachado={mostrarConfirmacion} />
+                      </button>
+                    </div>
+                  </Campo>
+                )}
+
+                {esNuevo && <DatosNuevoDestino incluirDistrito />}
+
+                {errorLocal && (
+                  <p
+                    role="alert"
+                    className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900"
+                  >
+                    {errorLocal}
+                  </p>
+                )}
+
+                <Mensaje estado={estadoActivar} />
+
+                <button className={principal} disabled={pendienteActivar}>
+                  {pendienteActivar
+                    ? modo === "registro"
+                      ? "Creando cuenta y activando acceso…"
+                      : "Iniciando sesión y activando acceso…"
+                    : modo === "registro"
+                      ? "Crear cuenta y activar gestión"
+                      : "Iniciar sesión y activar gestión"}
+                </button>
+
+                {modo === "ingreso" && (
+                  <div className="text-right">
+                    <Link
+                      href="/recuperar"
+                      className="text-xs font-semibold text-[#174238] underline hover:text-[#23574a]"
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </Link>
+                  </div>
+                )}
+              </form>
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }
