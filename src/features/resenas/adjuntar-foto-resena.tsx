@@ -8,6 +8,7 @@ import { CamaraFotoResena } from "./camara-foto-resena";
 import { prepararFotoResena } from "./acciones";
 
 export type FotoResena = {
+  blob?: Blob;
   archivo: string;
   url: string;
   selfie: boolean;
@@ -41,6 +42,28 @@ async function optimizarFoto(archivo: File) {
   }
 }
 
+export async function subirFotoPendiente(slug: string, imagen: Blob) {
+  const subida = await prepararFotoResena(slug, "image/jpeg");
+  if (!subida.token) throw new Error(subida.error);
+  const { url, clave } = obtenerConfiguracionSupabase();
+  const supabase = createClient(url, clave, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+  const resultado = await supabase.storage
+    .from("resenas")
+    .uploadToSignedUrl(subida.archivo, subida.token, imagen, {
+      contentType: "image/jpeg",
+      cacheControl: "86400",
+    });
+  if (resultado.error)
+    throw new Error("No pudimos subir tu foto. Inténtalo de nuevo.");
+  return { archivo: subida.archivo, url: subida.url };
+}
+
 export function AdjuntarFotoResena({
   slug,
   foto,
@@ -48,6 +71,7 @@ export function AdjuntarFotoResena({
   ocupado,
   cambiarSubiendo,
   bono,
+  invitado = false,
 }: {
   slug: string;
   foto?: FotoResena;
@@ -55,9 +79,9 @@ export function AdjuntarFotoResena({
   ocupado: boolean;
   cambiarSubiendo: (subiendo: boolean) => void;
   bono: number;
+  invitado?: boolean;
 }) {
   const galeria = useRef<HTMLInputElement>(null);
-  const clienteSubida = useRef<ReturnType<typeof createClient> | null>(null);
   const capturaNativa = useRef<HTMLInputElement>(null);
   const [camaraAbierta, cambiarCamaraAbierta] = useState(false);
   const [consentimiento, cambiarConsentimiento] = useState(false);
@@ -78,30 +102,10 @@ export function AdjuntarFotoResena({
     cambiarEstadoSubida(true);
     try {
       const imagen = await optimizarFoto(archivo);
-      const subida = await prepararFotoResena(slug, "image/jpeg");
-      if (!subida.token) throw new Error(subida.error);
-      const { url, clave } = obtenerConfiguracionSupabase();
-      const supabase = (clienteSubida.current ??= createClient(url, clave, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false,
-        },
-      }));
-      const resultado = await supabase.storage
-        .from("resenas")
-        .uploadToSignedUrl(subida.archivo, subida.token, imagen, {
-          contentType: "image/jpeg",
-          cacheControl: "86400",
-        });
-      if (resultado.error)
-        throw new Error("No pudimos subir tu foto. Inténtalo de nuevo.");
-      cambiarFoto({
-        archivo: subida.archivo,
-        url: subida.url,
-        selfie: false,
-        consentimiento: true,
-      });
+      const guardada = invitado
+        ? { archivo: "", url: URL.createObjectURL(imagen), blob: imagen }
+        : await subirFotoPendiente(slug, imagen);
+      cambiarFoto({ ...guardada, selfie: false, consentimiento: true });
     } catch (fallo) {
       cambiarError(
         fallo instanceof Error ? fallo.message : "No pudimos preparar tu foto.",
@@ -127,7 +131,7 @@ export function AdjuntarFotoResena({
       <label className="flex items-start gap-3 text-sm">
         <input
           type="checkbox"
-          checked={consentimiento}
+          checked={foto?.consentimiento ?? consentimiento}
           onChange={(evento) => {
             cambiarConsentimiento(evento.target.checked);
             if (!evento.target.checked) cambiarFoto(undefined);
@@ -142,7 +146,7 @@ export function AdjuntarFotoResena({
       <div className="grid gap-2 sm:grid-cols-2">
         <button
           type="button"
-          disabled={!consentimiento}
+          disabled={!(foto?.consentimiento ?? consentimiento)}
           onClick={() => cambiarCamaraAbierta(true)}
           className="min-h-12 rounded-xl bg-[#174238] px-4 text-sm font-semibold text-white disabled:opacity-40"
         >
@@ -150,7 +154,7 @@ export function AdjuntarFotoResena({
         </button>
         <button
           type="button"
-          disabled={!consentimiento}
+          disabled={!(foto?.consentimiento ?? consentimiento)}
           onClick={() => galeria.current?.click()}
           className="min-h-12 rounded-xl border border-[#bdcfc2] px-4 text-sm font-semibold text-[#174238] hover:bg-[#edf4ed] disabled:opacity-40"
         >
@@ -161,7 +165,7 @@ export function AdjuntarFotoResena({
         ref={galeria}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        disabled={!consentimiento}
+        disabled={!(foto?.consentimiento ?? consentimiento)}
         aria-label="Elegir una foto de la galería"
         hidden
         onChange={(evento) => {
@@ -175,7 +179,7 @@ export function AdjuntarFotoResena({
         type="file"
         accept="image/*"
         capture="user"
-        disabled={!consentimiento}
+        disabled={!(foto?.consentimiento ?? consentimiento)}
         aria-label="Tomar foto con la cámara del dispositivo"
         hidden
         onChange={(evento) => {

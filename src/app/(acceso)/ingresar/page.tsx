@@ -9,6 +9,11 @@ import { regresoQrVisita } from "@/features/visitas/enlace-qr";
 export const metadata = { title: "Iniciar sesión · Munay" };
 
 const avisos: Record<string, DatosAviso> = {
+  "google-error": {
+    mensaje:
+      "No se completó el acceso con Google. Inténtalo otra vez o continúa con tu correo.",
+    tipo: "error",
+  },
   registro: {
     mensaje: "Revisa tu correo y la carpeta de spam para confirmar tu cuenta.",
     tipo: "exito",

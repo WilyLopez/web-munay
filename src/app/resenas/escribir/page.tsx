@@ -9,6 +9,7 @@ import { PiePagina } from "@/features/navegacion/pie-pagina";
 import { FormularioResena } from "@/features/resenas/formulario-resena";
 import { enlaceEscribirResena } from "@/features/resenas/enlaces";
 import type { PreparacionResena } from "@/features/resenas/tipos";
+import { tokenVisitaInvitada } from "@/features/visitas/invitada";
 import { solicitarVisitas } from "@/features/visitas/api";
 import { BotonActualizarPanel } from "@/features/visitas/boton-actualizar-panel";
 
@@ -26,9 +27,19 @@ async function Contenido({
   const { destino } = await consulta;
   if (typeof destino !== "string" || !destino)
     redirect("/mi-perfil?seccion=visitas");
-  const respuesta = await solicitarVisitas<PreparacionResena>(
+  let respuesta = await solicitarVisitas<PreparacionResena>(
     `/resenas/escribir/${encodeURIComponent(destino)}`,
   );
+  const invitado = !respuesta.ok && respuesta.estado === 401;
+  if (invitado) {
+    const token = await tokenVisitaInvitada();
+    if (token)
+      respuesta = await solicitarVisitas<PreparacionResena>(
+        "/visitas/invitadas/estado",
+        { token, destino },
+        { publica: true },
+      );
+  }
   if (!respuesta.ok) {
     if (respuesta.estado === 401)
       redirect(
@@ -68,6 +79,7 @@ async function Contenido({
       </header>
       {datos.estado === "habilitada" ? (
         <FormularioResena
+          invitado={invitado}
           slug={datos.destino.slug}
           fechaVisita={datos.fechaVisita}
           puntosResena={datos.puntosResena}
