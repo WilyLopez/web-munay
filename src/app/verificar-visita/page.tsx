@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { Navbar } from "@/features/navegacion/navbar";
@@ -8,7 +7,6 @@ import { solicitarVisitas } from "@/features/visitas/api";
 import { EscanerVisita } from "@/features/visitas/escaner-visita";
 import {
   codigoQrVisita,
-  ingresoParaVisita,
   rutaEscanerVisita,
 } from "@/features/visitas/enlace-qr";
 import { BotonActualizarPanel } from "@/features/visitas/boton-actualizar-panel";
@@ -24,16 +22,14 @@ async function Escaneo({ consulta }: { consulta: Promise<Consulta> }) {
   const sesion = await solicitarVisitas<{ perfil: { rol: string } }>(
     "/autenticacion/sesion",
   );
-  if (!sesion.ok && sesion.estado === 401)
-    redirect(ingresoParaVisita(slug, codigoInicial ?? undefined));
-  if (!sesion.ok)
+  if (!sesion.ok && sesion.estado !== 401)
     return (
       <div className="space-y-2 rounded-2xl border border-rose-200 bg-rose-50 p-4">
         <p role="alert">{sesion.mensaje}</p>
         <BotonActualizarPanel reintentar />
       </div>
     );
-  if (sesion.datos.perfil.rol !== "TURISTA") {
+  if (sesion.ok && sesion.datos.perfil.rol !== "TURISTA") {
     return (
       <p role="alert">
         La verificación está disponible para cuentas de turista.
@@ -78,8 +74,8 @@ export default function PaginaVerificarVisita({
           Verificar visita
         </h1>
         <p className="text-sm leading-relaxed text-[#314941] sm:text-base">
-          Usa el código QR que muestra el encargado del destino para verificar tu
-          visita.
+          Usa el código QR que muestra el encargado del destino para verificar
+          tu visita.
         </p>
         <Suspense fallback={<p role="status">Comprobando sesión…</p>}>
           <Escaneo consulta={searchParams} />

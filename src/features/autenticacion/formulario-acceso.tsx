@@ -1,15 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { BotonGoogle } from "./boton-google";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { ingresar, registrarCuenta } from "./acciones";
 import { AvisoAcceso, type DatosAviso } from "./aviso-acceso";
 import { BotonEnvioAcceso } from "./boton-envio-acceso";
-import {
-  campoAcceso,
-  enlaceAcceso,
-  tituloAcceso,
-} from "./estilos-acceso";
+import { campoAcceso, enlaceAcceso, tituloAcceso } from "./estilos-acceso";
 import type { EstadoFormulario } from "./validacion";
 
 function ErrorCampo({ id, mensaje }: { id: string; mensaje?: string }) {
@@ -170,10 +167,17 @@ export function FormularioAcceso({
         </header>
 
         {avisoActual && <AvisoAcceso {...avisoActual} />}
-        <form ref={formulario} action={accion} className="space-y-4" aria-busy={pendiente}>
-          {!registro && volver && (
-            <input type="hidden" name="volver" value={volver} />
-          )}
+        <BotonGoogle volver={volver} />
+        <p className="text-center text-sm text-stone-500">
+          O continúa con tu correo
+        </p>
+        <form
+          ref={formulario}
+          action={accion}
+          className="space-y-4"
+          aria-busy={pendiente}
+        >
+          {volver && <input type="hidden" name="volver" value={volver} />}
           {registro && (
             <div className="space-y-1.5">
               <label className="text-sm font-semibold" htmlFor="nombreCompleto">
@@ -197,10 +201,7 @@ export function FormularioAcceso({
             </div>
           )}
           <div className="space-y-1.5">
-            <label
-              className="text-sm font-semibold"
-              htmlFor={idCorreo}
-            >
+            <label className="text-sm font-semibold" htmlFor={idCorreo}>
               Correo electrónico
             </label>
             <input
@@ -220,7 +221,10 @@ export function FormularioAcceso({
                 errores.correoElectronico ? `${idCorreo}-error` : undefined
               }
             />
-            <ErrorCampo id={`${idCorreo}-error`} mensaje={errores.correoElectronico} />
+            <ErrorCampo
+              id={`${idCorreo}-error`}
+              mensaje={errores.correoElectronico}
+            />
           </div>
           <CampoContrasena
             clave="contrasena"

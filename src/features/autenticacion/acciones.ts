@@ -1,12 +1,17 @@
 "use server";
 
-import { obtenerActivacion, retomarActivacion } from "@/features/accesos/activacion-pendiente";
+import {
+  obtenerActivacion,
+  retomarActivacion,
+} from "@/features/accesos/activacion-pendiente";
 
+import { reclamarVisitaInvitada } from "@/features/visitas/invitada";
 import { regresoEscribirResena } from "@/features/resenas/enlaces";
 import { regresoQrVisita } from "@/features/visitas/enlace-qr";
 
 import { destinoSesion } from "./destino-sesion";
 
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { solicitarSesion } from "./sesion";
@@ -100,7 +105,20 @@ export async function registrarCuenta(
     return { mensaje: ERROR_SERVICIO };
   }
 
-  redirect(REGISTRO_RECIBIDO);
+  const volver = regresoEscribirResena(leerCampo(datos, "volver"));
+  if (volver)
+    (await cookies()).set("munay-resena-volver", volver, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 86400,
+    });
+  redirect(
+    volver
+      ? `${REGISTRO_RECIBIDO}&volver=${encodeURIComponent(volver)}`
+      : REGISTRO_RECIBIDO,
+  );
 }
 
 export async function ingresar(
@@ -163,7 +181,12 @@ export async function ingresar(
       }
       const sesion = (await respuesta.json()) as { perfil?: { rol?: unknown } };
       destino = destinoSesion(sesion.perfil?.rol);
-      const activacion = await retomarActivacion(data.session.access_token, data.user?.email);
+      if (sesion.perfil?.rol === "TURISTA")
+        await reclamarVisitaInvitada(data.session.access_token);
+      const activacion = await retomarActivacion(
+        data.session.access_token,
+        data.user?.email,
+      );
       if (activacion?.ok) {
         revalidatePath("/", "layout");
         destino = "/administracion";
@@ -183,10 +206,15 @@ export async function ingresar(
 
   if (activacionCompletada) redirect("/administracion");
 
-  const volver = leerCampo(datos, "volver");
-  const verificacion = destino === "/destinos"
-    ? regresoQrVisita(volver) ?? regresoEscribirResena(volver)
-    : null;
+  const volver =
+    leerCampo(datos, "volver") ||
+    (await cookies()).get("munay-resena-volver")?.value ||
+    "";
+  (await cookies()).delete("munay-resena-volver");
+  const verificacion =
+    destino === "/destinos"
+      ? (regresoQrVisita(volver) ?? regresoEscribirResena(volver))
+      : null;
   if (verificacion) redirect(verificacion);
   redirect(
     destino !== "/superadmin" &&
@@ -213,13 +241,24 @@ export async function confirmarCorreo(datos: FormData): Promise<void> {
       if (confirmado) {
         const activacion = await obtenerActivacion(data.user?.email);
         if (activacion && data.session) {
-          const sesion = await solicitarSesion(data.session.access_token, "POST").catch(() => null);
+          const sesion = await solicitarSesion(
+            data.session.access_token,
+            "POST",
+          ).catch(() => null);
           if (sesion?.ok) {
-            const resultado = await retomarActivacion(data.session.access_token, data.user?.email);
-            const perfil = (await sesion.json().catch(() => null)) as { perfil?: { rol?: string } } | null;
-            destinoInvitado = resultado?.ok || (resultado?.estado === 410 && perfil?.perfil?.rol === "ADMIN_DESTINO")
-              ? "/administracion"
-              : `/invitacion-encargado#${activacion.token}`;
+            const resultado = await retomarActivacion(
+              data.session.access_token,
+              data.user?.email,
+            );
+            const perfil = (await sesion.json().catch(() => null)) as {
+              perfil?: { rol?: string };
+            } | null;
+            destinoInvitado =
+              resultado?.ok ||
+              (resultado?.estado === 410 &&
+                perfil?.perfil?.rol === "ADMIN_DESTINO")
+                ? "/administracion"
+                : `/invitacion-encargado#${activacion.token}`;
           }
         }
         if (!destinoInvitado) {
