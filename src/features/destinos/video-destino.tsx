@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 function idYoutube(enlace: string) {
   if (!URL.canParse(enlace)) return null;
   const url = new URL(enlace);
@@ -32,7 +30,6 @@ export function VideoDestino({
   enlace: string;
   titulo: string;
 }) {
-  const [reproducir, cambiarReproduccion] = useState(false);
   const id = idYoutube(enlace);
   const directo = esVideoDirecto(enlace);
 
@@ -43,73 +40,42 @@ export function VideoDestino({
   return (
     <div className="space-y-2">
       {id ? (
-        reproducir ? (
+        <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-teal-950 shadow-md">
           <iframe
-            className="aspect-video w-full rounded-2xl bg-teal-950"
+            className="h-full w-full border-0"
             title={titulo}
-            src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1`}
-            allow="autoplay; encrypted-media; picture-in-picture"
+            src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&playsinline=1&controls=1`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
+            loading="lazy"
           />
-        ) : (
-          <button
-            type="button"
-            onClick={() => cambiarReproduccion(true)}
-            className="flex min-h-28 w-full items-center gap-4 rounded-2xl bg-teal-950 p-5 text-left text-white transition-colors hover:bg-teal-800"
-          >
-            <span
-              aria-hidden="true"
-              className="grid size-12 shrink-0 place-items-center rounded-full bg-white/20 text-lg"
-            >
-              ▶
-            </span>
-            <span>
-              <strong className="block text-base">{titulo}</strong>
-              <span className="text-sm text-teal-200">
-                Reproducir video (sin sonido por defecto)
-              </span>
-            </span>
-          </button>
-        )
-      ) : directo ? (
-        reproducir ? (
+        </div>
+      ) : (
+        <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-teal-950 shadow-md">
           <video
-            className="aspect-video w-full rounded-2xl bg-teal-950"
+            className="h-full w-full object-cover"
             src={enlace}
             controls
             autoPlay
             muted
+            loop
             playsInline
           />
-        ) : (
-          <button
-            type="button"
-            onClick={() => cambiarReproduccion(true)}
-            className="flex min-h-28 w-full items-center gap-4 rounded-2xl bg-teal-950 p-5 text-left text-white transition-colors hover:bg-teal-800"
-          >
-            <span
-              aria-hidden="true"
-              className="grid size-12 shrink-0 place-items-center rounded-full bg-white/20 text-lg"
-            >
-              ▶
-            </span>
-            <span>
-              <strong className="block text-base">{titulo}</strong>
-              <span className="text-sm text-teal-200">
-                Reproducir video (sin sonido por defecto)
-              </span>
-            </span>
-          </button>
-        )
-      ) : null}
-      <a
-        href={enlace}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex py-1 text-sm font-semibold underline underline-offset-4"
-      >
-        {id ? "Abrir en YouTube" : "Abrir video original"}
-      </a>
+        </div>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+        <span className="text-stone-600 font-medium">
+          Reproducción automática sin sonido (puedes activar el audio en los controles)
+        </span>
+        <a
+          href={enlace}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold underline underline-offset-4 hover:text-teal-900"
+        >
+          {id ? "Ver en YouTube ↗" : "Abrir video original ↗"}
+        </a>
+      </div>
     </div>
   );
 }
