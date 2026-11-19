@@ -38,6 +38,7 @@ import {
 import { guardarFichaOperativa } from "./ficha-operativa";
 import { ResumenFicha } from "./resumen-ficha";
 import { SubirFotoDestino } from "./subir-foto-destino";
+import { VideoDestino } from "@/features/destinos/video-destino";
 
 export type FichaOperativa = Omit<
   FichaDestino["destino"],
@@ -580,6 +581,11 @@ function EditorFicha({
     ficha.estadoEditorial === "en_revision" ||
     ficha.estadoEditorial === "archivada";
   const informacion = ficha.informacion ?? {};
+  const [portadaUrl, cambiarPortadaUrl] = useState(ficha.imagenUrl ?? "");
+  const [videoUrl, cambiarVideoUrl] = useState(informacion.videoYoutube ?? "");
+  const [videoTitulo, cambiarVideoTitulo] = useState(
+    informacion.videoTitulo ?? "",
+  );
   const Grupo = porSecciones ? "section" : "details";
 
   function verPrevia(formulario: HTMLFormElement) {
@@ -595,6 +601,34 @@ function EditorFicha({
       ];
       return ordenadas;
     });
+    registrarCambio();
+  };
+
+  const establecerComoPortada = (indice: number) => {
+    const seleccionada = fotos[indice];
+    if (!seleccionada?.foto?.url) return;
+
+    const urlNueva = seleccionada.foto.url;
+    const urlAnterior = portadaUrl;
+
+    cambiarPortadaUrl(urlNueva);
+
+    cambiarFotos((actuales) => {
+      const copia = [...actuales];
+      if (urlAnterior) {
+        copia[indice] = {
+          ...copia[indice],
+          foto: {
+            ...copia[indice].foto,
+            url: urlAnterior,
+          },
+        };
+      } else {
+        copia.splice(indice, 1);
+      }
+      return copia;
+    });
+
     registrarCambio();
   };
 
@@ -1002,14 +1036,85 @@ function EditorFicha({
                 )}
                 <div className="grid gap-4 sm:grid-cols-2">
                   {grupo === "Fotos y video" && (
-                    <SubirFotoDestino
-                      destinoId={ficha.id}
-                      nombre="imagenUrl"
-                      etiqueta="Foto de portada"
-                      valor={ficha.imagenUrl}
-                      cambiarOcupacion={cambiarOcupacion}
-                      alSubir={registrarFoto}
-                    />
+                    <>
+                      <div className="sm:col-span-2">
+                        <SubirFotoDestino
+                          destinoId={ficha.id}
+                          nombre="imagenUrl"
+                          etiqueta="Foto de portada principal"
+                          valor={portadaUrl}
+                          cambiarOcupacion={cambiarOcupacion}
+                          alSubir={(url) => {
+                            cambiarPortadaUrl(url);
+                            registrarFoto(url);
+                            registrarCambio();
+                          }}
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2 space-y-3 rounded-xl border border-teal-900/15 bg-stone-50 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <h4 className="font-semibold text-teal-950 flex items-center gap-2 text-sm">
+                              <span>🎬</span> Video del destino turístico
+                            </h4>
+                            <p className="text-xs text-stone-600 mt-0.5">
+                              Agrega un video de YouTube o enlace directo para que los visitantes conozcan el lugar antes de visitarlo.
+                            </p>
+                          </div>
+                          <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-[11px] font-semibold text-teal-950">
+                            Sin sonido por defecto
+                          </span>
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-2 pt-2">
+                          <div className="grid content-start gap-1.5 text-sm font-semibold">
+                            <label htmlFor="campo-video-titulo">Título del video</label>
+                            <input
+                              id="campo-video-titulo"
+                              name="videoTitulo"
+                              defaultValue={videoTitulo}
+                              onChange={(e) => {
+                                cambiarVideoTitulo(e.target.value);
+                                registrarCambio();
+                              }}
+                              maxLength={160}
+                              placeholder="Ej. El majestuoso diseño arquitectónico..."
+                              className={claseCampo}
+                            />
+                          </div>
+
+                          <div className="grid content-start gap-1.5 text-sm font-semibold">
+                            <label htmlFor="campo-video-youtube">Enlace del video (YouTube o directo)</label>
+                            <input
+                              id="campo-video-youtube"
+                              name="videoYoutube"
+                              type="url"
+                              defaultValue={videoUrl}
+                              onChange={(e) => {
+                                cambiarVideoUrl(e.target.value);
+                                registrarCambio();
+                              }}
+                              maxLength={500}
+                              placeholder="https://www.youtube.com/watch?v=..."
+                              className={claseCampo}
+                            />
+                          </div>
+                        </div>
+
+                        {videoUrl && (
+                          <div className="mt-3 pt-3 border-t border-stone-200">
+                            <p className="text-xs font-semibold text-stone-700 mb-2">
+                              Vista previa interactiva del reproductor:
+                            </p>
+                            <VideoDestino
+                              enlace={videoUrl}
+                              titulo={videoTitulo || "Video del destino"}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </>
                   )}
                   {grupo === "Información para la visita" && (
                     <>
@@ -1100,7 +1205,12 @@ function EditorFicha({
                       />
                     </>
                   )}
-                  {campos.map(([clave, etiqueta, maximo, tipo]) => (
+                  {campos
+                    .filter(
+                      ([clave]) =>
+                        clave !== "videoTitulo" && clave !== "videoYoutube",
+                    )
+                    .map(([clave, etiqueta, maximo, tipo]) => (
                     <Campo
                       key={clave}
                       nombre={clave}
@@ -1152,14 +1262,18 @@ function EditorFicha({
                             maximo={maximo}
                           />
                         ))}
-                        <div className="flex flex-wrap gap-2 sm:col-span-2">
+                        <div className="flex flex-wrap items-center gap-2 sm:col-span-2 pt-2 border-t border-teal-900/10">
+                          <span className="text-xs font-semibold text-teal-950 mr-1">
+                            Foto {indice + 1} de {fotos.length}
+                          </span>
                           <button
                             className={boton}
                             type="button"
                             disabled={subidas > 0 || indice === 0}
                             onClick={() => ordenarFoto(indice, -1)}
+                            title="Subir posición"
                           >
-                            Mover arriba
+                            ⬆ Mover arriba
                           </button>
                           <button
                             className={boton}
@@ -1168,11 +1282,21 @@ function EditorFicha({
                               subidas > 0 || indice === fotos.length - 1
                             }
                             onClick={() => ordenarFoto(indice, 1)}
+                            title="Bajar posición"
                           >
-                            Mover abajo
+                            ⬇ Mover abajo
                           </button>
                           <button
-                            className={boton}
+                            className={`${boton} bg-amber-50 hover:bg-amber-100 text-amber-950 font-bold`}
+                            type="button"
+                            disabled={subidas > 0 || !foto.url}
+                            onClick={() => establecerComoPortada(indice)}
+                            title="Establecer esta foto como la portada principal"
+                          >
+                            ⭐ Usar como portada
+                          </button>
+                          <button
+                            className={`${boton} text-rose-800 hover:bg-rose-50 ml-auto`}
                             type="button"
                             disabled={subidas > 0}
                             onClick={(evento) => {
