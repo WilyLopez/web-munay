@@ -6,6 +6,7 @@ import { destinoSesion } from "@/features/autenticacion/destino-sesion";
 import { solicitarVisitas } from "@/features/visitas/api";
 
 type PerfilPanel = {
+  id: string;
   nombreCompleto: string;
   rol: "ADMIN_DESTINO" | "SUPER_ADMIN";
 };

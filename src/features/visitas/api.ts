@@ -54,6 +54,7 @@ export async function solicitarVisitas<T>(
       mensaje?: unknown;
       message?: unknown;
       codigo?: unknown;
+      campos?: unknown;
       geocerca?: { distanciaMetros?: unknown; radioMetros?: unknown };
     } | null;
     const mensaje = error?.mensaje ?? error?.message;
@@ -65,6 +66,19 @@ export async function solicitarVisitas<T>(
           ? "No pudimos completar la solicitud. Intenta de nuevo."
           : mensaje,
       codigo: typeof error?.codigo === "string" ? error.codigo : undefined,
+      campos:
+        error?.campos &&
+        typeof error.campos === "object" &&
+        !Array.isArray(error.campos)
+          ? (Object.fromEntries(
+              Object.entries(error.campos).filter(
+                ([clave, valor]) =>
+                  /^[a-zA-Z][a-zA-Z0-9]*$/.test(clave) &&
+                  typeof valor === "string" &&
+                  valor.length <= 500,
+              ),
+            ) as Record<string, string>)
+          : undefined,
       geocerca:
         typeof error?.geocerca?.distanciaMetros === "number" &&
         Number.isFinite(error.geocerca.distanciaMetros) &&

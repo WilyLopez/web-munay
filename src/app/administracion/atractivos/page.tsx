@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { accesoPanel } from "@/features/administracion/acceso";
 import { solicitarVisitas } from "@/features/visitas/api";
 import type { DestinoVisita } from "@/features/visitas/tipos";
+import { BotonActualizarPanel } from "@/features/visitas/boton-actualizar-panel";
 
 async function FichaAsignada() {
   const perfil = await accesoPanel();
@@ -13,6 +14,15 @@ async function FichaAsignada() {
     "/visitas/administracion",
   );
   const destino = respuesta.ok ? respuesta.datos[0] : undefined;
+  if (!respuesta.ok)
+    return (
+      <div className="space-y-3">
+        <p role="alert">{respuesta.mensaje}</p>
+        {![401, 403, 404].includes(respuesta.estado) && (
+          <BotonActualizarPanel reintentar />
+        )}
+      </div>
+    );
   return redirect(
     destino
       ? `/administracion/atractivos/${encodeURIComponent(destino.slug)}`

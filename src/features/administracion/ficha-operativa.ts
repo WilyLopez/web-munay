@@ -30,6 +30,75 @@ export async function prepararSubidaDestino(id: string, tipo: string) {
   };
 }
 
+export async function limpiarFotosDestino(slug: string, urls: string[]) {
+  if (!Array.isArray(urls) || urls.length > 100) return { error: true };
+  const ficha = await solicitarVisitas<{
+    id: string;
+    imagenUrl: string | null;
+    fotosAdicionales: string[];
+    informacion?: { galeria?: { url: string }[] };
+  }>(`/destinos/administracion/${encodeURIComponent(slug)}/ficha`);
+  if (!ficha.ok) return { error: true };
+  const supabase = await crearSupabaseServidor();
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "");
+  const prefijo = `${base}/storage/v1/object/public/destinos/`;
+  const usados = new Set([
+    ficha.datos.imagenUrl,
+    ...ficha.datos.fotosAdicionales,
+    ...(ficha.datos.informacion?.galeria?.map((foto) => foto.url) ?? []),
+  ]);
+  const archivos = [...new Set(urls)]
+    .filter(
+      (url) =>
+        typeof url === "string" &&
+        !usados.has(url) &&
+        url.startsWith(`${prefijo}${ficha.datos.id}/`) &&
+        /^[a-f0-9-]{36}\.(jpg|png|webp)$/.test(
+          url.slice(`${prefijo}${ficha.datos.id}/`.length),
+        ),
+    )
+    .map((url) => url.slice(prefijo.length));
+  if (!archivos.length) return { error: false };
+  const { error } = await supabase.storage.from("destinos").remove(archivos);
+  return { error: !!error };
+}
+
+export async function limpiarFotosAntiguasDestino(
+  slug: string,
+  protegidas: string[] = [],
+) {
+  const ficha = await solicitarVisitas<{ id: string }>(
+    `/destinos/administracion/${encodeURIComponent(slug)}/ficha`,
+  );
+  if (!ficha.ok || !Array.isArray(protegidas) || protegidas.length > 100)
+    return { error: true };
+  const supabase = await crearSupabaseServidor();
+  const { data, error } = await supabase.storage
+    .from("destinos")
+    .list(ficha.datos.id, {
+      limit: 50,
+      sortBy: { column: "created_at", order: "asc" },
+    });
+  if (error) return { error: true };
+  const limite = Date.now() - 7 * 86400000;
+  const candidatas = (data ?? [])
+    .filter(
+      (foto) =>
+        /^[a-f0-9-]{36}\.(jpg|png|webp)$/.test(foto.name) &&
+        typeof foto.created_at === "string" &&
+        new Date(foto.created_at).getTime() < limite,
+    )
+    .map(
+      (foto) =>
+        supabase.storage
+          .from("destinos")
+          .getPublicUrl(`${ficha.datos.id}/${foto.name}`).data.publicUrl,
+    )
+    .filter((url) => !protegidas.includes(url));
+  if (!candidatas.length) return { error: false };
+  return limpiarFotosDestino(slug, candidatas);
+}
+
 export async function guardarFichaOperativa(
   slug: string,
   _estado: { mensaje: string; error: boolean },
@@ -37,7 +106,9 @@ export async function guardarFichaOperativa(
 ) {
   const leer = (campo: string) => {
     const valor = formulario.get(campo);
-    return typeof valor === "string" ? valor.trim() || null : null;
+    return typeof valor === "string"
+      ? valor.replace(/\r\n/g, "\n").trim() || null
+      : null;
   };
   const numero = (campo: string) => {
     const valor = leer(campo);
@@ -72,6 +143,7 @@ export async function guardarFichaOperativa(
       tarifaGeneral: leer("tarifaGeneral")?.replace(",", ".") ?? null,
       tarifaEstudiantes: leer("tarifaEstudiantes")?.replace(",", ".") ?? null,
       enviarRevision,
+      version: leer("version"),
       datos: {
         ...Object.fromEntries(
           [
@@ -95,7 +167,13 @@ export async function guardarFichaOperativa(
     },
     { metodo: "PUT" },
   );
-  if (!resultado.ok) return { mensaje: resultado.mensaje, error: true };
+  if (!resultado.ok)
+    return {
+      mensaje: resultado.mensaje,
+      error: true,
+      campos: resultado.campos,
+      conflicto: resultado.estado === 409,
+    };
   updateTag("destinos");
   revalidatePath(`/administracion/atractivos/${encodeURIComponent(slug)}`);
   revalidatePath("/destinos");
@@ -124,7 +202,6 @@ export async function resolverFichaDestino(
   revalidatePath(`/superadmin/destinos/${encodeURIComponent(slug)}`);
   return { mensaje: "Estado actualizado.", error: false };
 }
-
 
 export async function cambiarVisibilidadAtractivo(
   slug: string,

@@ -86,6 +86,63 @@ export function ResumenFicha({
           <p className="mt-2 wrap-anywhere whitespace-pre-line text-sm text-[#465a50]">
             {ficha.rutaDesdeChiclayo || ficha.ubicacion}
           </p>
+          <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="font-semibold">Coordenadas del atractivo</dt>
+              <dd>
+                {ficha.latitud}, {ficha.longitud}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-semibold">Días de atención</dt>
+              <dd>
+                {ficha.diasAtencion?.length
+                  ? ficha.diasAtencion
+                      .map(
+                        (dia) =>
+                          [
+                            "Domingo",
+                            "Lunes",
+                            "Martes",
+                            "Miércoles",
+                            "Jueves",
+                            "Viernes",
+                            "Sábado",
+                          ][dia],
+                      )
+                      .join(", ")
+                  : "Por confirmar"}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-semibold">Distancia desde Chiclayo</dt>
+              <dd>
+                {ficha.distanciaKm == null
+                  ? "Por confirmar"
+                  : `${ficha.distanciaKm} km`}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-semibold">Tiempo de trayecto</dt>
+              <dd>
+                {ficha.duracionMinutos == null
+                  ? "Por confirmar"
+                  : `${ficha.duracionMinutos} minutos`}
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="font-semibold">Recomendaciones</dt>
+              <dd className="wrap-anywhere whitespace-pre-line">
+                {ficha.recomendacion || "Por confirmar"}
+              </dd>
+            </div>
+            {ficha.fuenteRutaUrl && (
+              <div className="sm:col-span-2">
+                <dt className="font-semibold">Fuente del trayecto</dt>
+                <dd className="wrap-anywhere">{ficha.fuenteRutaUrl}</dd>
+              </div>
+            )}
+          </dl>
         </section>
         {previa && informacion.historia && (
           <section className={tarjeta}>
@@ -95,43 +152,67 @@ export function ResumenFicha({
             </p>
           </section>
         )}
-        {!previa &&
-          gruposInformacion.map(([grupo, campos]) => {
-            const datos = campos.flatMap(([clave, etiqueta, , tipo]) => {
-              const valor = informacion[clave];
-              if (!valor) return [];
-              const opciones =
-                opcionesInformacion[tipo as keyof typeof opcionesInformacion];
-              return [
-                {
-                  clave,
-                  etiqueta: etiqueta.replace(/ \([^)]*por línea\)/, ""),
-                  valor: opciones?.find(([id]) => id === valor)?.[1] ?? valor,
-                },
-              ];
-            });
-            if (!datos.length) return null;
-            return (
-              <details
-                key={grupo}
-                className="min-w-0 rounded-xl border border-[#dce3da] bg-white px-4"
-              >
-                <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold">
-                  {grupo}
-                </summary>
-                <dl className="grid gap-3 border-t border-[#dce3da] py-3 text-sm sm:grid-cols-2">
-                  {datos.map(({ clave, etiqueta, valor }) => (
-                    <div key={clave} className="min-w-0">
-                      <dt className="font-semibold">{etiqueta}</dt>
-                      <dd className="wrap-anywhere whitespace-pre-line text-[#465a50]">
-                        {valor}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </details>
-            );
-          })}
+        {gruposInformacion.map(([grupo, campos]) => {
+          const datos = campos.flatMap(([clave, etiqueta, , tipo]) => {
+            const valor = informacion[clave];
+            if (!valor) return [];
+            const opciones =
+              opcionesInformacion[tipo as keyof typeof opcionesInformacion];
+            return [
+              {
+                clave,
+                etiqueta: etiqueta.replace(/ \([^)]*por línea\)/, ""),
+                valor: opciones?.find(([id]) => id === valor)?.[1] ?? valor,
+              },
+            ];
+          });
+          if (!datos.length) return null;
+          return (
+            <details
+              key={grupo}
+              className="min-w-0 rounded-xl border border-[#dce3da] bg-white px-4"
+            >
+              <summary className="min-h-11 cursor-pointer py-3 text-sm font-semibold">
+                {grupo}
+              </summary>
+              <dl className="grid gap-3 border-t border-[#dce3da] py-3 text-sm sm:grid-cols-2">
+                {datos.map(({ clave, etiqueta, valor }) => (
+                  <div key={clave} className="min-w-0">
+                    <dt className="font-semibold">{etiqueta}</dt>
+                    <dd className="wrap-anywhere whitespace-pre-line text-[#465a50]">
+                      {valor}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </details>
+          );
+        })}
+        {!!informacion.galeria?.length && (
+          <section className={tarjeta}>
+            <h2 className="font-serif text-2xl">Galería</h2>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              {informacion.galeria
+                .filter((foto) => foto.url)
+                .map((foto, indice) => (
+                  <figure key={`${foto.url}-${indice}`}>
+                    <Image
+                      src={foto.url}
+                      alt={foto.alt || `Foto ${indice + 1} del atractivo`}
+                      width={400}
+                      height={300}
+                      unoptimized
+                      className="aspect-[4/3] w-full rounded-xl object-cover"
+                    />
+                    <figcaption className="mt-1 wrap-anywhere text-xs text-[#465a50]">
+                      {foto.descripcion || foto.alt}
+                      {foto.autor ? ` · ${foto.autor}` : ""}
+                    </figcaption>
+                  </figure>
+                ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

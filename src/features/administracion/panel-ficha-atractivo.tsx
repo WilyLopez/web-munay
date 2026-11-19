@@ -15,9 +15,11 @@ const secundario = `${boton} border border-[#ccd9cf] bg-white hover:bg-[#edf4ed]
 export function PanelFichaAtractivo({
   ficha,
   slug,
+  editorId,
 }: {
   ficha: FichaOperativa;
   slug: string;
+  editorId?: string;
 }) {
   const [modo, cambiarModo] = useState<"lectura" | "edicion" | "previa">(
     "lectura",
@@ -82,7 +84,57 @@ export function PanelFichaAtractivo({
         )}
       </header>
       {modo === "lectura" && (
-        <VisibilidadAtractivo slug={slug} nombre={ficha.nombre} estado={ficha.estadoEditorial} />
+        <section
+          aria-label="Estado de la ficha"
+          className="grid gap-4 border-b border-[#dce3da] pb-5 sm:grid-cols-3"
+        >
+          <div>
+            <p className="text-sm text-[#465a50]">En Munay</p>
+            <p className="font-semibold">
+              {ficha.estadoEditorial === "publicada"
+                ? "Visible para visitantes"
+                : "Fuera del sitio público"}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-[#465a50]">Atención al público</p>
+            <p className="font-semibold">
+              {(
+                {
+                  abierto: "Abierto",
+                  cerrado: "Cerrado temporalmente",
+                  restringido: "Acceso restringido",
+                } as Record<string, string>
+              )[ficha.informacion?.condicion ?? ""] ?? "Por confirmar"}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-[#465a50]">Verificación de Munay</p>
+            <p className="font-semibold">
+              {ficha.verificado
+                ? "Verificado por Munay"
+                : "Sin insignia de verificación"}
+            </p>
+          </div>
+          <p className="text-sm text-[#465a50] sm:col-span-3">
+            {ficha.actualizadoEn
+              ? `Última actualización: ${new Intl.DateTimeFormat("es-PE", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Lima" }).format(new Date(ficha.actualizadoEn))}. `
+              : ""}
+            Datos básicos pendientes para publicar:{" "}
+            {["distrito", "condicion", "modalidadIngreso"].filter(
+              (clave) =>
+                !ficha.informacion?.[clave as keyof typeof ficha.informacion],
+            ).length + (ficha.imagenUrl ? 0 : 1)}
+            . Publicar la ficha no significa que el lugar esté abierto.
+          </p>
+        </section>
+      )}
+      {modo === "lectura" && (
+        <VisibilidadAtractivo
+          slug={slug}
+          nombre={ficha.nombre}
+          estado={ficha.estadoEditorial}
+        />
       )}
       {mensaje && (
         <p
@@ -97,6 +149,7 @@ export function PanelFichaAtractivo({
           ficha={ficha}
           slug={slug}
           porSecciones
+          editorId={editorId}
           alCancelar={() => cambiarModo("lectura")}
           alGuardar={(texto) => {
             cambiarMensaje(texto);
