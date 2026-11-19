@@ -33,6 +33,7 @@ export type Resultado<T> =
       estado: number;
       mensaje: string;
       codigo?: string;
+      campos?: Record<string, string>;
       geocerca?: { distanciaMetros: number; radioMetros: number };
     };
 

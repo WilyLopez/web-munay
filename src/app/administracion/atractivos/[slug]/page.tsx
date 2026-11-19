@@ -5,6 +5,7 @@ import { accesoPanel } from "@/features/administracion/acceso";
 import type { FichaOperativa } from "@/features/administracion/formulario-ficha";
 import { PanelFichaAtractivo } from "@/features/administracion/panel-ficha-atractivo";
 import { solicitarVisitas } from "@/features/visitas/api";
+import { BotonActualizarPanel } from "@/features/visitas/boton-actualizar-panel";
 
 async function Editar({
   params,
@@ -16,9 +17,26 @@ async function Editar({
   const respuesta = await solicitarVisitas<FichaOperativa>(
     `/destinos/administracion/${encodeURIComponent(slug)}/ficha`,
   );
-  if (!respuesta.ok) return <p role="alert">{respuesta.mensaje}</p>;
+  if (!respuesta.ok) {
+    if (respuesta.estado === 401) redirect("/ingresar?aviso=sesion");
+    return (
+      <section className="space-y-3 rounded-xl border border-rose-200 bg-rose-50 p-5">
+        <p role="alert">{respuesta.mensaje}</p>
+        {![403, 404].includes(respuesta.estado) && (
+          <BotonActualizarPanel reintentar />
+        )}
+      </section>
+    );
+  }
 
-  return <PanelFichaAtractivo key={slug} ficha={respuesta.datos} slug={slug} />;
+  return (
+    <PanelFichaAtractivo
+      key={slug}
+      ficha={respuesta.datos}
+      slug={slug}
+      editorId={perfil.id}
+    />
+  );
 }
 
 export default function PaginaEditarFicha({
