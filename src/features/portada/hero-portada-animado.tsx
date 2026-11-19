@@ -17,55 +17,145 @@ export type HeroDestinoProps = {
 export function HeroPortadaAnimado({ destino }: { destino: HeroDestinoProps }) {
   const contenedorRef = useRef<HTMLDivElement>(null);
   const tarjetaRef = useRef<HTMLAnchorElement>(null);
-  const imagenRef = useRef<HTMLDivElement>(null);
+  const infoRef = useRef<HTMLDivElement>(null);
+  const insigniaRef = useRef<HTMLDivElement>(null);
 
   const [posicionRaton, setPosicionRaton] = useState<{ x: number; y: number } | null>(null);
   const [estaSobre, setEstaSobre] = useState(false);
 
   useEffect(() => {
-    // Si el usuario prefiere movimiento reducido, no animamos el scroll
     const prefiereReducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefiereReducido) return;
 
     let animacionId: number;
-    let ultimoScrollY = -1;
+    let observer: ResizeObserver | null = null;
 
-    const actualizarScroll = () => {
+    let deltaY = 0;
+    let deltaX = 0;
+    let targetScale = 0.5;
+    let scrollStart = 0;
+    let scrollEnd = 600;
+    let medicionLista = false;
+
+    const medir = () => {
+      const tarjeta = tarjetaRef.current;
+      const slot = document.getElementById("slot-imagen-protagonista");
+      if (!tarjeta || !slot) return;
+
       const scrollY = window.scrollY;
+      const tarjetaRect = tarjeta.getBoundingClientRect();
+      const slotRect = slot.getBoundingClientRect();
 
-      // Optimización: solo calcular si cambió la posición
-      if (scrollY !== ultimoScrollY) {
-        ultimoScrollY = scrollY;
+      const tarjetaAbsTop = tarjetaRect.top + scrollY;
+      const tarjetaAbsRight = tarjetaRect.right;
+      const slotAbsTop = slotRect.top + scrollY;
+      const slotAbsRight = slotRect.right;
 
-        // Calculamos el desplazamiento hacia abajo conforme el usuario scrollea.
-        // Hacemos que la imagen baje suavemente hacia la sección inferior ("otras vistas").
-        // Límite máximo de 135px en pantallas grandes para que conecte de forma armoniosa.
-        const factor = window.innerWidth >= 768 ? 0.28 : 0.16;
-        const maxDesplazamiento = window.innerWidth >= 768 ? 135 : 65;
-        const desplazamientoY = Math.min(maxDesplazamiento, Math.max(0, scrollY * factor));
+      deltaY = slotAbsTop - tarjetaAbsTop;
+      deltaX = slotAbsRight - tarjetaAbsRight;
+      targetScale = slotRect.width > 0 && tarjetaRect.width > 0 ? slotRect.width / tarjetaRect.width : 0.52;
 
-        if (tarjetaRef.current) {
-          tarjetaRef.current.style.transform = `translate3d(0, ${desplazamientoY.toFixed(2)}px, 0)`;
-        }
+      scrollStart = Math.max(0, tarjetaAbsTop - 40);
+      scrollEnd = Math.max(scrollStart + 120, slotAbsTop - window.innerHeight * 0.45);
+      medicionLista = true;
+    };
 
-        // Parallax sutil en sentido contrario para la imagen interior (sensación de profundidad de ventana)
-        if (imagenRef.current) {
-          const contraParallax = -desplazamientoY * 0.22;
-          imagenRef.current.style.transform = `scale(1.08) translate3d(0, ${contraParallax.toFixed(2)}px, 0)`;
+    medir();
+
+    // Intentar medir si el slot tardó en renderizarse
+    const timer = setTimeout(medir, 300);
+
+    if (window.ResizeObserver) {
+      observer = new ResizeObserver(() => {
+        medir();
+      });
+      if (contenedorRef.current) observer.observe(contenedorRef.current);
+      const slot = document.getElementById("slot-imagen-protagonista");
+      if (slot) observer.observe(slot);
+    }
+
+    const easeInOutCubic = (t: number) =>
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+    let ultimoProgreso = -1;
+
+    const actualizar = () => {
+      if (!medicionLista) {
+        medir();
+      }
+
+      const scrollY = window.scrollY;
+      const rango = Math.max(1, scrollEnd - scrollStart);
+      const progresoCrudo = Math.min(1, Math.max(0, (scrollY - scrollStart) / rango));
+      const progreso = easeInOutCubic(progresoCrudo);
+
+      const imagenDocked = document.getElementById("imagen-docked-protagonista");
+      const tarjeta = tarjetaRef.current;
+      const info = infoRef.current;
+      const insignia = insigniaRef.current;
+
+      if (Math.abs(progreso - ultimoProgreso) > 0.0005) {
+        ultimoProgreso = progreso;
+
+        if (tarjeta) {
+          if (progreso >= 0.96) {
+            // Llegó al destino: mostramos la imagen fija de la grilla y ocultamos la flotante
+            tarjeta.style.opacity = "0";
+            tarjeta.style.pointerEvents = "none";
+            if (imagenDocked) imagenDocked.style.opacity = "1";
+          } else {
+            // En transición o arriba: mostramos la flotante y ocultamos la fija
+            tarjeta.style.opacity = "1";
+            tarjeta.style.pointerEvents = "auto";
+            if (imagenDocked) imagenDocked.style.opacity = "0";
+
+            const currY = progreso * deltaY;
+            const currX = progreso * deltaX;
+            const currScale = 1 - progreso * (1 - targetScale);
+
+            tarjeta.style.transformOrigin = "top right";
+            tarjeta.style.transform = `translate3d(${currX.toFixed(2)}px, ${currY.toFixed(2)}px, 0) scale(${currScale.toFixed(4)})`;
+
+            // Transición suave de border radius hacia el estilo de tarjeta de grilla
+            if (progreso > 0.4) {
+              tarjeta.style.borderRadius = "1rem";
+            } else {
+              tarjeta.style.borderRadius = "";
+            }
+
+            // Desvanecer el texto superpuesto para que al llegar a la grilla se vea limpia
+            if (info) {
+              const alphaTexto = Math.max(0, 1 - progreso * 1.5);
+              info.style.opacity = alphaTexto.toFixed(2);
+            }
+
+            if (insignia) {
+              const alphaInsignia = Math.max(0, 1 - progreso * 2);
+              insignia.style.opacity = alphaInsignia.toFixed(2);
+            }
+          }
         }
       }
 
-      animacionId = requestAnimationFrame(actualizarScroll);
+      animacionId = requestAnimationFrame(actualizar);
     };
 
-    animacionId = requestAnimationFrame(actualizarScroll);
+    animacionId = requestAnimationFrame(actualizar);
+
+    window.addEventListener("resize", medir, { passive: true });
 
     return () => {
+      clearTimeout(timer);
       cancelAnimationFrame(animacionId);
+      window.removeEventListener("resize", medir);
+      if (observer) observer.disconnect();
     };
   }, []);
 
   const manejarMouseMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // Solo aplicar inclinación 3D cuando no se ha scrolleado significativamente
+    if (window.scrollY > 80) return;
+
     const tarjeta = tarjetaRef.current;
     if (!tarjeta) return;
 
@@ -74,32 +164,21 @@ export function HeroPortadaAnimado({ destino }: { destino: HeroDestinoProps }) {
     const y = e.clientY - rect.top;
 
     setPosicionRaton({ x, y });
-
-    // Inclinación 3D sutil interactiva
-    const centroX = rect.width / 2;
-    const centroY = rect.height / 2;
-    const rotacionX = ((y - centroY) / centroY) * -5;
-    const rotacionY = ((x - centroX) / centroX) * 5;
-
-    tarjeta.style.setProperty("--rot-x", `${rotacionX.toFixed(2)}deg`);
-    tarjeta.style.setProperty("--rot-y", `${rotacionY.toFixed(2)}deg`);
   };
 
   const manejarMouseEnter = () => {
-    setEstaSobre(true);
+    if (window.scrollY <= 80) {
+      setEstaSobre(true);
+    }
   };
 
   const manejarMouseLeave = () => {
     setEstaSobre(false);
     setPosicionRaton(null);
-    if (tarjetaRef.current) {
-      tarjetaRef.current.style.removeProperty("--rot-x");
-      tarjetaRef.current.style.removeProperty("--rot-y");
-    }
   };
 
   return (
-    <figure ref={contenedorRef} className="relative min-w-0 space-y-2 py-2">
+    <figure ref={contenedorRef} className="relative z-30 min-w-0 space-y-2 py-2">
       <Link
         ref={tarjetaRef}
         href={enlaceFicha(destino.slug)}
@@ -108,16 +187,12 @@ export function HeroPortadaAnimado({ destino }: { destino: HeroDestinoProps }) {
         onMouseLeave={manejarMouseLeave}
         style={{
           transform: "translate3d(0, 0, 0)",
-          willChange: "transform",
+          willChange: "transform, opacity",
         }}
         className="group relative block aspect-[5/4] overflow-hidden rounded-t-[2.75rem] rounded-b-2xl bg-[#193b33] shadow-lg transition-shadow duration-500 hover:shadow-2xl hover:shadow-[#174238]/30 focus-visible:outline-2 focus-visible:outline-offset-4 sm:aspect-[4/3]"
       >
-        {/* Capa de imagen con contra-parallax interno */}
-        <div
-          ref={imagenRef}
-          className="absolute inset-0 h-full w-full will-change-transform transition-transform duration-300 ease-out"
-          style={{ transform: "scale(1.08) translate3d(0, 0, 0)" }}
-        >
+        {/* Imagen principal */}
+        <div className="absolute inset-0 h-full w-full">
           <Image
             src={destino.imagenUrl}
             alt={destino.nombre}
@@ -129,19 +204,22 @@ export function HeroPortadaAnimado({ destino }: { destino: HeroDestinoProps }) {
           />
         </div>
 
-        {/* Reflejo / Resplandor interactivo dinámico que sigue el cursor */}
+        {/* Reflejo interactivo dinámico que sigue el cursor */}
         {estaSobre && posicionRaton && (
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 z-10 transition-opacity duration-300"
             style={{
-              background: `radial-gradient(600px circle at ${posicionRaton.x}px ${posicionRaton.y}px, rgba(255, 255, 255, 0.16), transparent 70%)`,
+              background: `radial-gradient(500px circle at ${posicionRaton.x}px ${posicionRaton.y}px, rgba(255, 255, 255, 0.2), transparent 70%)`,
             }}
           />
         )}
 
-        {/* Insignia interactiva flotante "Destino destacado" con indicador en vivo */}
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-2 rounded-full border border-white/25 bg-black/40 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-md transition-transform duration-300 group-hover:scale-105 sm:top-5 sm:right-5">
+        {/* Insignia interactiva flotante "Destino destacado" */}
+        <div
+          ref={insigniaRef}
+          className="absolute top-4 right-4 z-20 flex items-center gap-2 rounded-full border border-white/25 bg-black/40 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-md transition-opacity duration-300 sm:top-5 sm:right-5"
+        >
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
@@ -149,8 +227,11 @@ export function HeroPortadaAnimado({ destino }: { destino: HeroDestinoProps }) {
           <span>Destino destacado</span>
         </div>
 
-        {/* Información superpuesta del destino */}
-        <div className="absolute inset-x-0 bottom-0 z-20 bg-linear-to-t from-black/95 via-black/70 to-transparent px-5 pt-20 pb-5 text-white sm:px-7 sm:pb-7">
+        {/* Información superpuesta del destino (se desvanece al encogerse y llegar a la grilla) */}
+        <div
+          ref={infoRef}
+          className="absolute inset-x-0 bottom-0 z-20 bg-linear-to-t from-black/95 via-black/70 to-transparent px-5 pt-20 pb-5 text-white transition-opacity duration-300 sm:px-7 sm:pb-7"
+        >
           <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-200/90 sm:text-sm">
             <svg
               className="h-4 w-4 shrink-0 text-emerald-300"

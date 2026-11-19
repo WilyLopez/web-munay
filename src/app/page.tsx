@@ -79,8 +79,13 @@ function ExplorarIntereses() {
 }
 
 async function DestinosDestacados() {
-  const destacados = (await obtenerSeleccionPortada()).slice(1, 5);
-  if (!destacados.length) return null;
+  const todos = await obtenerSeleccionPortada();
+  if (!todos.length) return null;
+
+  const protagonista = todos[0];
+  const otros = todos.slice(1, 4);
+  // Colocamos los otros tres primero y al protagonista como 4to (columna derecha donde aterriza al scrollear)
+  const destacados = otros.length > 0 ? [...otros, protagonista] : todos;
 
   return (
     <section aria-labelledby="titulo-destinos" className="py-10 md:py-14">
@@ -91,42 +96,53 @@ async function DestinosDestacados() {
         </Link>
       </div>
       <ul className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory no-scrollbar -mx-5 px-5 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
-        {destacados.map((destino) => (
-          <li
-            key={destino.slug}
-            className="flex w-[82vw] max-w-[20rem] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-[#dedacf] bg-[#fffdf6] shadow-sm sm:w-auto sm:max-w-none lg:transition-transform lg:duration-200 lg:hover:-translate-y-1 lg:hover:shadow-md"
-          >
-            <div className="relative aspect-[16/10] bg-[#dedacf]">
-              <Image
-                src={destino.imagenUrl}
-                alt=""
-                fill
-                loading="lazy"
-                unoptimized={!destino.imagenUrl.startsWith("/")}
-                sizes="(min-width: 1280px) 290px, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                className="object-cover"
-              />
-            </div>
-            <div className="flex flex-1 flex-col gap-3 p-5">
-              <p className="text-sm font-semibold text-[#8d402d]">{categorias[destino.categoria]} · {destino.ubicacion}</p>
-              <h3 className="font-serif text-2xl leading-tight">{destino.nombre}</h3>
-              <p className="line-clamp-3 text-sm leading-relaxed text-[#465a50]">{destino.descripcion}</p>
-              {destino.calificacionPromedio != null && (destino.totalResenas ?? 0) >= 2 && (
-                <p className="text-sm font-semibold">
-                  <span aria-hidden="true">★ </span>{formatoNota.format(destino.calificacionPromedio)} de 5 · {destino.totalResenas} reseñas
-                </p>
-              )}
-              <Link
-                href={enlaceFicha(destino.slug)}
-                aria-label={`Ver detalles de ${destino.nombre}`}
-                className={`${enlaceVisible} mt-auto self-start text-sm font-semibold`}
+        {destacados.map((destino, index) => {
+          const esProtagonista = destino.slug === protagonista.slug && index === destacados.length - 1;
+
+          return (
+            <li
+              key={`${destino.slug}-${index}`}
+              id={esProtagonista ? "slot-destino-protagonista" : undefined}
+              className="flex w-[82vw] max-w-[20rem] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-[#dedacf] bg-[#fffdf6] shadow-sm sm:w-auto sm:max-w-none lg:transition-transform lg:duration-200 lg:hover:-translate-y-1 lg:hover:shadow-md"
+            >
+              <div
+                id={esProtagonista ? "slot-imagen-protagonista" : undefined}
+                className="relative aspect-[16/10] bg-[#dedacf] overflow-hidden"
               >
-                Ver detalles
-              </Link>
-              <CreditoFoto imagenUrl={destino.imagenUrl} />
-            </div>
-          </li>
-        ))}
+                <Image
+                  id={esProtagonista ? "imagen-docked-protagonista" : undefined}
+                  src={destino.imagenUrl}
+                  alt=""
+                  fill
+                  loading="lazy"
+                  unoptimized={!destino.imagenUrl.startsWith("/")}
+                  sizes="(min-width: 1280px) 290px, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                  className={`object-cover transition-opacity duration-300 ${esProtagonista ? "opacity-0" : ""}`}
+                />
+              </div>
+              <div className="flex flex-1 flex-col gap-3 p-5">
+                <p className="text-sm font-semibold text-[#8d402d]">
+                  {categorias[destino.categoria]} · {destino.ubicacion}
+                </p>
+                <h3 className="font-serif text-2xl leading-tight">{destino.nombre}</h3>
+                <p className="line-clamp-3 text-sm leading-relaxed text-[#465a50]">{destino.descripcion}</p>
+                {destino.calificacionPromedio != null && (destino.totalResenas ?? 0) >= 2 && (
+                  <p className="text-sm font-semibold">
+                    <span aria-hidden="true">★ </span>{formatoNota.format(destino.calificacionPromedio)} de 5 · {destino.totalResenas} reseñas
+                  </p>
+                )}
+                <Link
+                  href={enlaceFicha(destino.slug)}
+                  aria-label={`Ver detalles de ${destino.nombre}`}
+                  className={`${enlaceVisible} mt-auto self-start text-sm font-semibold`}
+                >
+                  Ver detalles
+                </Link>
+                <CreditoFoto imagenUrl={destino.imagenUrl} />
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
