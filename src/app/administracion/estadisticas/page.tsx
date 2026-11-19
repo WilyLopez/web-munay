@@ -11,6 +11,7 @@ import { fechaVisita, type DestinoVisita } from "@/features/visitas/tipos";
 import type { Resena } from "@/features/resenas/tipos";
 import { ReportarResena } from "@/features/administracion/controles-reporte";
 import { accesoPanel } from "@/features/administracion/acceso";
+import { leerPeriodo } from "@/features/administracion/lectura-periodo";
 
 type Consulta = {
   destino?: string;
@@ -204,6 +205,7 @@ async function ResultadosEstadisticas({
     );
   }
   const datos = respuesta.datos;
+  const lectura = leerPeriodo(datos);
   const pico = datos.tendencia.reduce(
     (mayor, periodo) => (periodo.total > mayor.total ? periodo : mayor),
     { mes: "", total: 0 },
@@ -224,7 +226,7 @@ async function ResultadosEstadisticas({
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm text-stone-700">
-        <p>
+        <p role="status" aria-live="polite" aria-atomic="true">
           Actualizado el{" "}
           <time dateTime={datos.actualizadoEn}>
             {fechaVisita.format(new Date(datos.actualizadoEn))}
@@ -244,6 +246,27 @@ async function ResultadosEstadisticas({
           </div>
         ))}
       </dl>
+      <section className="rounded-2xl border border-[#cbdcca] bg-[#edf4ed] p-4 sm:p-6" aria-labelledby="lectura-periodo">
+        <h2 id="lectura-periodo" className="font-serif text-2xl text-[#14382e]">Lectura del período</h2>
+        <div className="mt-3 grid gap-4 lg:grid-cols-2">
+          <p className="text-sm leading-relaxed text-[#234c3d]">
+            {lectura.destacados.length > 0 ? (
+              <>
+                <strong>{lectura.destacados.map((mes) => formatoMes.format(new Date(`${mes}-01T00:00:00Z`))).join(" · ")}</strong>
+                {lectura.destacados.length === 1 ? " fue el mes con más visitas" : " comparten el mayor número de visitas"}:
+                {" "}{lectura.maximo.toLocaleString("es-PE")} {lectura.maximo === 1 ? "visita" : "visitas"}
+                {lectura.destacados.length > 1 ? " en cada mes" : ""},
+                {" "}{lectura.porcentaje.toLocaleString("es-PE", { maximumFractionDigits: 1 })}% del total del período
+                {lectura.destacados.length > 1 ? " por mes" : ""}.
+              </>
+            ) : "Aún no hay visitas verificadas en este período. Comparte el QR en tu atractivo para empezar a registrar las visitas."}
+          </p>
+          <div className="space-y-2 text-sm leading-relaxed text-[#234c3d]">
+            <p>{lectura.observacion}</p>
+            {datos.recientes.length > 0 && <p className="text-xs text-[#496653]">Esta lectura considera únicamente las reseñas recientes mostradas; no representa todas las opiniones del período ni un análisis del texto de los comentarios.</p>}
+          </div>
+        </div>
+      </section>
       <div className={distribucionDetalle}>
         <section className={tarjeta} aria-labelledby="visitas-por-mes">
           <h2 id="visitas-por-mes" className="font-serif text-2xl text-[#14382e]">Visitas por mes</h2>
