@@ -5,6 +5,7 @@ import { categorias, enlaceFicha, provincias } from "@/features/destinos/catalog
 import { CreditoFoto } from "@/features/destinos/credito-foto";
 import { Navbar, cargarCatalogoPublico } from "@/features/navegacion/navbar";
 import { PiePagina } from "@/features/navegacion/pie-pagina";
+import { HeroPortadaAnimado } from "@/features/portada/hero-portada-animado";
 import { OpinionesPortada } from "@/features/portada/opiniones-portada";
 
 const contenedor = "mx-auto w-full max-w-[82rem] px-5 sm:px-8 lg:px-12";
@@ -13,7 +14,6 @@ const enlaceVisible =
   "inline-flex min-h-12 items-center rounded-sm underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4";
 const botonPrincipal =
   "inline-flex min-h-12 items-center justify-center rounded-full bg-[#174238] px-6 py-3 text-base sm:text-sm font-semibold text-white hover:bg-[#23574a] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#174238] shadow-sm active:scale-95 transition-transform";
-const marcoHero = "relative block aspect-[5/4] overflow-hidden rounded-t-[2.75rem] rounded-b-2xl bg-[#193b33] sm:aspect-[4/3]";
 const formatoNota = new Intl.NumberFormat("es-PE", { maximumFractionDigits: 1 });
 
 const descripciones = {
@@ -51,27 +51,7 @@ async function DestinoProtagonista() {
   const [destino] = await obtenerSeleccionPortada();
   if (!destino) return null;
 
-  return (
-    <figure className="min-w-0 space-y-2">
-      <Link href={enlaceFicha(destino.slug)} className={`${marcoHero} group focus-visible:outline-2 focus-visible:outline-offset-4`}>
-        <Image
-          src={destino.imagenUrl}
-          alt=""
-          fill
-          preload
-          sizes="(min-width: 1280px) 590px, (min-width: 768px) 50vw, 100vw"
-          unoptimized={!destino.imagenUrl.startsWith("/")}
-          className="object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-[1.03]"
-        />
-        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/65 to-transparent px-5 pt-16 pb-5 text-white sm:px-7 sm:pb-7">
-          <p className="text-sm text-white/90">{destino.ubicacion}</p>
-          <p className="mt-1 text-balance font-serif text-2xl leading-tight sm:text-3xl">{destino.nombre}</p>
-          <span className="mt-2 inline-block text-sm font-semibold underline underline-offset-4">Ver detalles</span>
-        </div>
-      </Link>
-      <figcaption><CreditoFoto imagenUrl={destino.imagenUrl} /></figcaption>
-    </figure>
-  );
+  return <HeroPortadaAnimado destino={destino} />;
 }
 
 function ExplorarIntereses() {
@@ -99,8 +79,13 @@ function ExplorarIntereses() {
 }
 
 async function DestinosDestacados() {
-  const destacados = (await obtenerSeleccionPortada()).slice(1, 5);
-  if (!destacados.length) return null;
+  const todos = await obtenerSeleccionPortada();
+  if (!todos.length) return null;
+
+  const protagonista = todos[0];
+  const otros = todos.slice(1, 4);
+  // Colocamos los otros tres primero y al protagonista como 4to (columna derecha donde aterriza al scrollear)
+  const destacados = otros.length > 0 ? [...otros, protagonista] : todos;
 
   return (
     <section aria-labelledby="titulo-destinos" className="py-10 md:py-14">
@@ -111,42 +96,53 @@ async function DestinosDestacados() {
         </Link>
       </div>
       <ul className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory no-scrollbar -mx-5 px-5 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
-        {destacados.map((destino) => (
-          <li
-            key={destino.slug}
-            className="flex w-[82vw] max-w-[20rem] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-[#dedacf] bg-[#fffdf6] shadow-sm sm:w-auto sm:max-w-none lg:transition-transform lg:duration-200 lg:hover:-translate-y-1 lg:hover:shadow-md"
-          >
-            <div className="relative aspect-[16/10] bg-[#dedacf]">
-              <Image
-                src={destino.imagenUrl}
-                alt=""
-                fill
-                loading="lazy"
-                unoptimized={!destino.imagenUrl.startsWith("/")}
-                sizes="(min-width: 1280px) 290px, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                className="object-cover"
-              />
-            </div>
-            <div className="flex flex-1 flex-col gap-3 p-5">
-              <p className="text-sm font-semibold text-[#8d402d]">{categorias[destino.categoria]} · {destino.ubicacion}</p>
-              <h3 className="font-serif text-2xl leading-tight">{destino.nombre}</h3>
-              <p className="line-clamp-3 text-sm leading-relaxed text-[#465a50]">{destino.descripcion}</p>
-              {destino.calificacionPromedio != null && (destino.totalResenas ?? 0) >= 2 && (
-                <p className="text-sm font-semibold">
-                  <span aria-hidden="true">★ </span>{formatoNota.format(destino.calificacionPromedio)} de 5 · {destino.totalResenas} reseñas
-                </p>
-              )}
-              <Link
-                href={enlaceFicha(destino.slug)}
-                aria-label={`Ver detalles de ${destino.nombre}`}
-                className={`${enlaceVisible} mt-auto self-start text-sm font-semibold`}
+        {destacados.map((destino, index) => {
+          const esProtagonista = destino.slug === protagonista.slug && index === destacados.length - 1;
+
+          return (
+            <li
+              key={`${destino.slug}-${index}`}
+              id={esProtagonista ? "slot-destino-protagonista" : undefined}
+              className="flex w-[82vw] max-w-[20rem] shrink-0 snap-start flex-col overflow-hidden rounded-2xl border border-[#dedacf] bg-[#fffdf6] shadow-sm sm:w-auto sm:max-w-none lg:transition-transform lg:duration-200 lg:hover:-translate-y-1 lg:hover:shadow-md"
+            >
+              <div
+                id={esProtagonista ? "slot-imagen-protagonista" : undefined}
+                className="relative aspect-[16/10] bg-[#dedacf] overflow-hidden"
               >
-                Ver detalles
-              </Link>
-              <CreditoFoto imagenUrl={destino.imagenUrl} />
-            </div>
-          </li>
-        ))}
+                <Image
+                  id={esProtagonista ? "imagen-docked-protagonista" : undefined}
+                  src={destino.imagenUrl}
+                  alt=""
+                  fill
+                  loading="lazy"
+                  unoptimized={!destino.imagenUrl.startsWith("/")}
+                  sizes="(min-width: 1280px) 290px, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+                  className={`object-cover transition-opacity duration-300 ${esProtagonista ? "opacity-0" : ""}`}
+                />
+              </div>
+              <div className="flex flex-1 flex-col gap-3 p-5">
+                <p className="text-sm font-semibold text-[#8d402d]">
+                  {categorias[destino.categoria]} · {destino.ubicacion}
+                </p>
+                <h3 className="font-serif text-2xl leading-tight">{destino.nombre}</h3>
+                <p className="line-clamp-3 text-sm leading-relaxed text-[#465a50]">{destino.descripcion}</p>
+                {destino.calificacionPromedio != null && (destino.totalResenas ?? 0) >= 2 && (
+                  <p className="text-sm font-semibold">
+                    <span aria-hidden="true">★ </span>{formatoNota.format(destino.calificacionPromedio)} de 5 · {destino.totalResenas} reseñas
+                  </p>
+                )}
+                <Link
+                  href={enlaceFicha(destino.slug)}
+                  aria-label={`Ver detalles de ${destino.nombre}`}
+                  className={`${enlaceVisible} mt-auto self-start text-sm font-semibold`}
+                >
+                  Ver detalles
+                </Link>
+                <CreditoFoto imagenUrl={destino.imagenUrl} />
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
