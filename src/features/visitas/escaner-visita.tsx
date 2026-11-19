@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { OpcionesIdentificacion } from "@/features/autenticacion/opciones-identificacion";
 import { useRouter } from "next/navigation";
 import { enlaceEscribirResena } from "@/features/resenas/enlaces";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -29,11 +31,13 @@ export function EscanerVisita({
   codigoInicial,
   avisoInicial,
   demoHabilitada = false,
+  invitado = false,
 }: {
   destino?: string;
   codigoInicial?: string;
   avisoInicial?: string;
   demoHabilitada?: boolean;
+  invitado?: boolean;
 }) {
   const router = useRouter();
   const visor = useRef<HTMLVideoElement>(null);
@@ -65,8 +69,13 @@ export function EscanerVisita({
     resultado?.modo === "real" ? resultado.datos.destino.slug : undefined;
   useEffect(() => {
     if (destinoVerificado)
-      router.replace(enlaceEscribirResena(destinoVerificado));
-  }, [destinoVerificado, router]);
+      router.replace(
+        enlaceEscribirResena(
+          destinoVerificado,
+          resultado?.modo === "real" && resultado.datos.yaVerificada,
+        ),
+      );
+  }, [destinoVerificado, resultado, router]);
 
   useEffect(() => {
     if (estado !== "activo") return;
@@ -376,7 +385,7 @@ export function EscanerVisita({
     const solicitando = estado === "ubicando";
     const registrando = estado === "registrando";
     return (
-      <section className="space-y-4 rounded-3xl border border-teal-200 bg-white p-5 sm:p-7">
+      <section className="space-y-4 rounded-3xl border border-[#d5e0d6] bg-white p-5 sm:p-7">
         {fueraRadio && (
           <AvisoFueraRadio
             nombre={preparacion.destino.nombre}
@@ -386,29 +395,60 @@ export function EscanerVisita({
             reintentar={() => void validarUbicacion()}
           />
         )}
-        <p className="text-sm font-semibold text-emerald-900">QR comprobado</p>
-        <h2 className="font-serif text-3xl text-teal-950">
-          Confirma tu ubicación
-        </h2>
-        <p className="font-semibold text-teal-950">
-          {preparacion.destino.nombre}
+        <header className="flex items-center gap-4">
+          {preparacion.destino.imagenUrl && (
+            <Image
+              src={preparacion.destino.imagenUrl}
+              alt=""
+              width={80}
+              height={80}
+              unoptimized
+              className="size-18 shrink-0 rounded-2xl object-cover sm:size-20"
+            />
+          )}
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-[#527062]">
+              {preparacion.destino.nombre}
+            </p>
+            <h1 className="mt-1 font-serif text-3xl text-teal-950">
+              Comparte tu experiencia
+            </h1>
+          </div>
+        </header>
+        <p className="text-sm leading-relaxed text-stone-600">
+          Confirma que estás en el lugar y cuéntanos cómo fue tu visita.
         </p>
-        <p role="status" className="text-sm font-semibold text-teal-950">
-          {registrando
-            ? "Ubicación obtenida. Comprobando el radio y registrando la visita…"
-            : solicitando
-              ? "Solicitando ubicación…"
-              : "Permite el acceso a tu ubicación para guardar la visita."}
-        </p>
-        <p className="text-sm">
-          Tienes cinco minutos desde la lectura válida para confirmar tu
-          ubicación, aunque el QR de la pantalla cambie.
-        </p>
-        <p className="text-sm">
-          Usaremos tu ubicación solo para confirmar que estás a{" "}
-          {preparacion.radioMetros} m o menos del atractivo. Las coordenadas no
-          se guardan ni se comparten con proveedores de mapas.
-        </p>
+        <div className="flex gap-3 rounded-xl bg-[#edf4ee] p-4 text-sm text-[#335346]">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            className="mt-0.5 size-5 shrink-0"
+          >
+            <path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z" />
+            <circle cx="12" cy="10" r="2.5" />
+          </svg>
+          <p>
+            Usamos tu ubicación para verificar tu visita dentro de{" "}
+            {preparacion.radioMetros} m. Solo se solicita al pulsar el botón.
+          </p>
+        </div>
+        {(solicitando || registrando) && (
+          <p
+            role="status"
+            className="flex items-center gap-2 text-sm font-semibold text-teal-950"
+          >
+            <span
+              aria-hidden="true"
+              className="size-4 rounded-full border-2 border-teal-200 border-t-teal-900 motion-safe:animate-spin"
+            />
+            {registrando
+              ? "Verificando tu visita…"
+              : "Esperando el permiso de ubicación…"}
+          </p>
+        )}
         {mensaje && (
           <p
             role="alert"
@@ -422,11 +462,15 @@ export function EscanerVisita({
             type="button"
             disabled={solicitando || registrando}
             onClick={() => void validarUbicacion()}
-            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-950 px-5 py-2.5 text-sm font-semibold text-white active:scale-95 transition-transform disabled:opacity-50"
+            className="inline-flex min-h-13 w-full items-center justify-center rounded-xl bg-[#174238] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#215749] disabled:opacity-60"
           >
-            {mensaje ? "Intentar de nuevo" : "Permitir ubicación"}
+            {solicitando || registrando
+              ? "Verificando…"
+              : mensaje
+                ? "Intentar de nuevo"
+                : "Verificar mi visita y escribir"}
           </button>
-          {!registrando && (
+          {solicitando && (
             <button
               type="button"
               className="inline-flex min-h-12 items-center text-sm font-semibold underline hover:text-[#0b6b52]"
@@ -452,6 +496,30 @@ export function EscanerVisita({
             </>
           )}
         </div>
+        {invitado && !requiereNuevoQr && (
+          <div className="space-y-3 border-t border-[#dbe5dc] pt-5">
+            <p className="text-center text-sm text-stone-600">
+              ¿Prefieres identificarte primero?
+            </p>
+            <OpcionesIdentificacion
+              volver={rutaEscanerVisita(
+                preparacion.destino.slug,
+                codigoPendiente.replace("munay:visita:", ""),
+              )}
+              deshabilitado={solicitando || registrando}
+            />
+          </div>
+        )}
+        <details className="text-xs leading-relaxed text-stone-500">
+          <summary className="min-h-10 cursor-pointer py-2 underline underline-offset-4">
+            Sobre la verificación de ubicación
+          </summary>
+          <p>
+            Tienes cinco minutos desde la lectura del QR para confirmar tu
+            ubicación, aunque el código cambie. No guardamos tus coordenadas ni
+            las compartimos con proveedores de mapas.
+          </p>
+        </details>
       </section>
     );
   }
@@ -459,9 +527,9 @@ export function EscanerVisita({
   return (
     <section className="space-y-4 rounded-3xl border border-stone-200 bg-white p-4 sm:p-6">
       <div>
-        <h2 className="font-serif text-2xl text-teal-950">
+        <h1 className="font-serif text-2xl text-teal-950">
           Escanea el QR del destino
-        </h2>
+        </h1>
         <p className="mt-1 text-sm text-stone-700">
           Centra el código en el visor. Después podrás confirmar dónde estás.
         </p>

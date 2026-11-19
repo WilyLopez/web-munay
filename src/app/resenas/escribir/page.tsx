@@ -9,6 +9,7 @@ import { PiePagina } from "@/features/navegacion/pie-pagina";
 import { FormularioResena } from "@/features/resenas/formulario-resena";
 import { enlaceEscribirResena } from "@/features/resenas/enlaces";
 import type { PreparacionResena } from "@/features/resenas/tipos";
+import { rutaEscanerVisita } from "@/features/visitas/enlace-qr";
 import { tokenVisitaInvitada } from "@/features/visitas/invitada";
 import { solicitarVisitas } from "@/features/visitas/api";
 import { BotonActualizarPanel } from "@/features/visitas/boton-actualizar-panel";
@@ -21,18 +22,23 @@ export const metadata: Metadata = {
 async function Contenido({
   consulta,
 }: {
-  consulta: Promise<{ destino?: string }>;
+  consulta: Promise<{ destino?: string; aviso?: string }>;
 }) {
   await connection();
-  const { destino } = await consulta;
-  if (typeof destino !== "string" || !destino)
-    redirect("/mi-perfil?seccion=visitas");
+  const { destino, aviso } = await consulta;
+  if (
+    typeof destino !== "string" ||
+    destino.length > 180 ||
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(destino)
+  )
+    redirect("/destinos");
   let respuesta = await solicitarVisitas<PreparacionResena>(
     `/resenas/escribir/${encodeURIComponent(destino)}`,
   );
   const invitado = !respuesta.ok && respuesta.estado === 401;
   if (invitado) {
     const token = await tokenVisitaInvitada();
+    if (!token) redirect(rutaEscanerVisita(destino));
     if (token)
       respuesta = await solicitarVisitas<PreparacionResena>(
         "/visitas/invitadas/estado",
@@ -43,18 +49,60 @@ async function Contenido({
   if (!respuesta.ok) {
     if (respuesta.estado === 401)
       redirect(
-        `/ingresar?aviso=sesion&volver=${encodeURIComponent(enlaceEscribirResena(destino))}`,
+        `/ingresar?aviso=sesion&volver=${encodeURIComponent(enlaceEscribirResena(destino, aviso === "visita-verificada"))}`,
       );
     return (
       <div className="space-y-3 rounded-2xl border border-stone-200 bg-white p-5">
         <p role="alert">{respuesta.mensaje}</p>
-        <BotonActualizarPanel reintentar />
+        {invitado && respuesta.estado === 410 ? (
+          <Link
+            href={rutaEscanerVisita(destino)}
+            className="inline-flex min-h-12 items-center rounded-xl bg-[#174238] px-4 text-sm font-semibold text-white"
+          >
+            Verificar mi visita
+          </Link>
+        ) : (
+          <BotonActualizarPanel reintentar />
+        )}
       </div>
     );
   }
   const datos = respuesta.datos;
   return (
     <div className="space-y-5">
+      {aviso === "visita-verificada" && datos.fechaVisita && (
+        <section
+          role="status"
+          aria-labelledby="aviso-visita-previa"
+          className="flex gap-3 rounded-2xl border border-[#bdd4c4] bg-[#edf6ef] p-4 text-[#174238]"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            className="mt-0.5 size-6 shrink-0"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="m8 12 2.5 2.5L16 9" />
+          </svg>
+          <div>
+            <h2 id="aviso-visita-previa" className="font-semibold">
+              Tu visita ya estaba verificada
+            </h2>
+            <p className="mt-1 text-sm leading-relaxed">
+              Conservamos la fecha original y no registramos otra visita.{" "}
+              {datos.estado === "publicada"
+                ? "Tu reseña ya está publicada; puedes consultarla a continuación."
+                : datos.estado === "retirada"
+                  ? "Puedes consultar a continuación el estado de tu reseña."
+                  : "Puedes continuar con tu reseña a continuación."}
+            </p>
+          </div>
+        </section>
+      )}
+
       <header className="flex min-w-0 items-center gap-4 rounded-2xl border border-[#d5e0d6] bg-white p-4 sm:p-5">
         {datos.destino.imagenUrl && (
           <Image
@@ -79,7 +127,11 @@ async function Contenido({
       </header>
       {datos.estado === "habilitada" ? (
         <FormularioResena
+          key={datos.destino.slug}
           invitado={invitado}
+          visitaPrevia={
+            aviso === "visita-verificada" && Boolean(datos.fechaVisita)
+          }
           slug={datos.destino.slug}
           fechaVisita={datos.fechaVisita}
           puntosResena={datos.puntosResena}
@@ -107,6 +159,14 @@ async function Contenido({
               className="inline-flex min-h-11 items-center rounded-xl bg-[#174238] px-4 text-sm font-semibold text-white"
             >
               Ver mi reseña
+            </Link>
+          )}
+          {datos.estado === "publicada" && (
+            <Link
+              href={`/destinos/${encodeURIComponent(destino)}#opiniones`}
+              className="inline-flex min-h-11 items-center text-sm font-semibold text-[#174238] underline underline-offset-4"
+            >
+              Ver opiniones del destino
             </Link>
           )}
           {datos.estado === "bloqueada" && (
@@ -140,7 +200,7 @@ async function Contenido({
 export default function PaginaEscribirResena({
   searchParams,
 }: {
-  searchParams: Promise<{ destino?: string }>;
+  searchParams: Promise<{ destino?: string; aviso?: string }>;
 }) {
   return (
     <div className="flex min-h-dvh flex-col bg-[#f4f6f0] text-[#173b32]">

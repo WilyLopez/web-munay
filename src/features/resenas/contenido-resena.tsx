@@ -138,6 +138,7 @@ export function ContenidoResena({
               {verificada ? "Visita verificada" : "Sin verificación de visita"}
             </span>
           )}
+          {verificada && <span title="Acredita una visita verificada, no la veracidad de la opinión ni la calidad del lugar." className="rounded-full bg-[#f5efe2] px-2.5 py-1 font-medium text-[#79572f]">Opinión auténtica en sitio</span>}
           {fechaVisita && (
             <span>
               Visitó en{" "}

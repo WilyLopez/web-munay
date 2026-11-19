@@ -23,11 +23,10 @@ export async function tokenVisitaInvitada(crear = false) {
 export async function reclamarVisitaInvitada(tokenSesion: string) {
   const token = await tokenVisitaInvitada();
   if (!token) return null;
-  const resultado = await solicitarVisitas<{ visitaId: string; slug: string }>(
-    "/visitas/invitadas/reclamar",
-    { token },
-    { token: tokenSesion },
-  );
+  const resultado = await solicitarVisitas<{
+    visitaId: string | null;
+    slug: string;
+  }>("/visitas/invitadas/reclamar", { token }, { token: tokenSesion });
   if (resultado.ok) (await cookies()).delete(NOMBRE);
   return resultado;
 }

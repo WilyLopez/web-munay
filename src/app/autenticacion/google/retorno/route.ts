@@ -6,7 +6,7 @@ import {
 } from "@/features/autenticacion/supabase/servidor";
 import { solicitarSesion } from "@/features/autenticacion/sesion";
 import { destinoSesion } from "@/features/autenticacion/destino-sesion";
-import { regresoEscribirResena } from "@/features/resenas/enlaces";
+import { regresoEscribirResena, regresoDetalleResena } from "@/features/resenas/enlaces";
 import { regresoQrVisita } from "@/features/visitas/enlace-qr";
 import { retomarActivacion } from "@/features/accesos/activacion-pendiente";
 import { reclamarVisitaInvitada } from "@/features/visitas/invitada";
@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
               destino =
                 regresoEscribirResena(volver) ??
                 regresoQrVisita(volver) ??
+                regresoDetalleResena(volver) ??
                 panel;
             }
           } else await borrarCookiesSesion();
