@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { regresoEscribirResena, regresoDetalleResena } from "@/features/resenas/enlaces";
+import { regresoQrVisita } from "@/features/visitas/enlace-qr";
 import { BotonGoogle } from "./boton-google";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { ingresar, registrarCuenta } from "./acciones";
@@ -95,12 +97,17 @@ export function FormularioAcceso({
   aviso?: DatosAviso;
   volver?: string;
 }) {
+  const [googleIniciado, cambiarGoogleIniciado] = useState(false);
+  const contextoResena = Boolean(volver && regresoEscribirResena(volver));
+  const contextoOpinion = Boolean(volver && regresoDetalleResena(volver));
+  const contextoQr = Boolean(volver && regresoQrVisita(volver));
   const [nombre, cambiarNombre] = useState("");
   const [correo, cambiarCorreo] = useState("");
   const [acepta, cambiarAcepta] = useState(false);
   const [estado, accion, pendiente] = useActionState(
     async (anterior: EstadoFormulario, datos: FormData) => {
       try {
+        cambiarGoogleIniciado(false);
         return await (registro ? registrarCuenta : ingresar)(anterior, datos);
       } catch (error) {
         if (error instanceof TypeError)
@@ -134,43 +141,38 @@ export function FormularioAcceso({
 
   return (
     <>
-      <nav
-        aria-label="Acceso a Munay"
-        className="grid grid-cols-2 border-b border-[#dbe2d7] text-sm"
-      >
-        {(
-          [
-            ["/ingresar", "Iniciar sesión", !registro],
-            ["/registro", "Crear cuenta", registro],
-          ] as const
-        ).map(([ruta, etiqueta, actual]) => (
-          <Link
-            key={ruta}
-            href={`${ruta}${consulta}`}
-            aria-current={actual ? "page" : undefined}
-            className="flex min-h-11 items-center justify-center border-b-2 border-transparent px-2 text-center font-semibold text-stone-700 hover:bg-[#edf1e9] focus-visible:outline-2 focus-visible:outline-[#174238] aria-[current=page]:border-[#174238] aria-[current=page]:text-[#174238]"
-          >
-            {etiqueta}
-          </Link>
-        ))}
-      </nav>
       <div className="entrada-acceso space-y-5">
         <header className="space-y-2">
           <h1 className={tituloAcceso}>
-            {registro ? "Crea tu cuenta" : "Inicia sesión"}
+            {contextoResena
+              ? "Tu reseña está casi lista"
+              : contextoOpinion ? "Continúa con esta reseña" : contextoQr
+                ? "Continúa con tu visita"
+                : registro
+                  ? "Empieza a explorar Munay"
+                  : "Qué bueno verte de nuevo"}
           </h1>
           <p className="text-sm leading-relaxed text-stone-600">
-            {registro
-              ? "Guarda tus destinos favoritos y registra tus visitas."
-              : "Accede a tus visitas y destinos guardados."}
+            {contextoResena
+              ? "Identifícate para volver a tu borrador y publicar tu experiencia."
+              : contextoOpinion ? "Al terminar volverás a la opinión que estabas consultando para marcarla como útil." : contextoQr
+                ? "Al terminar volverás al lugar para verificar tu visita y escribir."
+                : registro
+                  ? "Descubre lugares, guarda tus favoritos y comparte tus experiencias."
+                  : "Tus destinos guardados y experiencias te esperan."}
           </p>
         </header>
 
-        {avisoActual && <AvisoAcceso {...avisoActual} />}
-        <BotonGoogle volver={volver} />
-        <p className="text-center text-sm text-stone-500">
-          O continúa con tu correo
-        </p>
+        {!googleIniciado && avisoActual && <AvisoAcceso {...avisoActual} />}
+        <BotonGoogle
+          volver={volver}
+          alIniciar={() => cambiarGoogleIniciado(true)}
+        />
+        <div className="flex items-center gap-4 text-xs text-stone-500">
+          <span className="h-px flex-1 bg-[#dbe2d7]" />
+          <span>O continúa con tu correo</span>
+          <span className="h-px flex-1 bg-[#dbe2d7]" />
+        </div>
         <form
           ref={formulario}
           action={accion}
@@ -291,6 +293,15 @@ export function FormularioAcceso({
             esperando={registro ? "Creando cuenta…" : "Iniciando sesión…"}
           />
         </form>
+        <p className="border-t border-[#dbe2d7] pt-4 text-center text-sm text-stone-600">
+          {registro ? "¿Ya tienes cuenta? " : "¿No tienes cuenta? "}
+          <Link
+            href={`${registro ? "/ingresar" : "/registro"}${consulta}`}
+            className={`${enlaceAcceso} inline-flex min-h-11 items-center font-semibold`}
+          >
+            {registro ? "Inicia sesión" : "Regístrate"}
+          </Link>
+        </p>
       </div>
     </>
   );

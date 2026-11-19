@@ -1,15 +1,31 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+} from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { fechaVisita as formatoFechaVisita } from "@/features/visitas/tipos";
 import { AdjuntarFotoResena, type FotoResena } from "./adjuntar-foto-resena";
-import { BotonGoogle } from "@/features/autenticacion/boton-google";
+import { OpcionesIdentificacion } from "@/features/autenticacion/opciones-identificacion";
 import { enlaceEscribirResena } from "./enlaces";
 import { guardarBorrador, leerBorrador, borrarBorrador } from "./borrador";
 import { subirFotoPendiente } from "./adjuntar-foto-resena";
 import { publicarResena } from "./acciones";
+
+function suscribirFormulario() {
+  return () => {};
+}
+function formularioEnCliente() {
+  return true;
+}
+function formularioEnServidor() {
+  return false;
+}
 
 export function FormularioResena({
   slug,
@@ -17,17 +33,26 @@ export function FormularioResena({
   puntosResena = 10,
   puntosSelfie = 5,
   invitado = false,
+  visitaPrevia = false,
 }: {
   slug: string;
   fechaVisita?: string | null;
   puntosResena?: number;
   puntosSelfie?: number;
   invitado?: boolean;
+  visitaPrevia?: boolean;
 }) {
   const router = useRouter();
+  const [recuperando, cambiarRecuperando] = useState(true);
+  const enCliente = useSyncExternalStore(
+    suscribirFormulario,
+    formularioEnCliente,
+    formularioEnServidor,
+  );
+  const formularioListo = enCliente && !recuperando;
   const [identificar, cambiarIdentificar] = useState(false);
   const [restaurado, cambiarRestaurado] = useState(false);
-  const dialogo = useRef<HTMLDialogElement>(null);
+  const identificacion = useRef<HTMLElement>(null);
   const [foto, cambiarFoto] = useState<FotoResena>();
   const [subiendo, cambiarSubiendo] = useState(false);
   const [calificacion, cambiarCalificacion] = useState(0);
@@ -59,21 +84,32 @@ export function FormularioResena({
         }
         cambiarRestaurado(true);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (activo) cambiarRecuperando(false);
+      });
     return () => {
       activo = false;
       if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
     };
   }, [slug]);
   useEffect(() => {
-    if (identificar) dialogo.current?.showModal();
+    if (identificar) {
+      identificacion.current?.scrollIntoView({
+        block: "nearest",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "instant"
+          : "smooth",
+      });
+      identificacion.current?.focus({ preventScroll: true });
+    }
   }, [identificar]);
   const faltaNota = Boolean(error && !calificacion);
   const faltaComentario = Boolean(error && calificacion && !comentario.trim());
 
   async function publicar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
-    if (publicando || subiendo) return;
+    if (!formularioListo || publicando || subiendo) return;
     cambiarReintento(false);
     if (!calificacion || !comentario.trim()) {
       cambiarError(
@@ -135,7 +171,11 @@ export function FormularioResena({
         cambiarReintento(true);
       } else cambiarError(resultado.mensaje);
     } catch {
-      cambiarError("Se perdió la conexión. Puedes volver a publicar.");
+      cambiarError(
+        invitado
+          ? "No pudimos guardar tu borrador en este dispositivo. Mantén esta página abierta e inténtalo de nuevo."
+          : "Se perdió la conexión. Puedes volver a publicar.",
+      );
       cambiarReintento(true);
     } finally {
       cambiarPublicando(false);
@@ -153,6 +193,12 @@ export function FormularioResena({
           Gracias por compartir tu visita. Los puntos se acreditan después de la
           revisión correspondiente.
         </p>
+        <Link
+          href={`/destinos/${encodeURIComponent(slug)}#opiniones`}
+          className="inline-flex min-h-11 items-center text-sm font-semibold underline"
+        >
+          Ver opiniones del destino
+        </Link>
         <Link
           href="/mi-perfil#ranking"
           className="inline-flex min-h-11 items-center text-sm font-semibold underline"
@@ -177,20 +223,13 @@ export function FormularioResena({
             Recuperamos tu borrador. Revísalo y confirma la publicación.
           </p>
         )}
-        {invitado && (
-          <p className="rounded-xl bg-teal-50 p-3 text-sm text-teal-950">
-            Prepara tu reseña aquí. Al terminar podrás identificarte con Google
-            o con tu correo para publicarla. Tu visita se conserva durante 24
-            horas.
-          </p>
-        )}
         <div className="space-y-2">
           <h3 className="font-serif text-2xl text-[#174238]">
             Cuéntanos cómo fue tu visita
           </h3>
           <p className="text-sm text-stone-700">
-            Tu experiencia ayuda a otros viajeros. Recibe {puntosResena} puntos
-            por tu reseña verificada.
+            Gana {puntosResena} puntos por tu reseña y {puntosSelfie}{" "}
+            adicionales con una selfie.
           </p>
         </div>
         {fechaVisita && (
@@ -199,13 +238,10 @@ export function FormularioResena({
             <time dateTime={fechaVisita}>
               {formatoFechaVisita.format(new Date(fechaVisita))}
             </time>
-            <p className="mt-1 text-xs">
-              Completada automáticamente con tu visita verificada.
-            </p>
           </div>
         )}
         <fieldset
-          disabled={publicando}
+          disabled={!formularioListo || publicando || identificar}
           aria-invalid={faltaNota}
           aria-describedby={faltaNota ? "error-publicacion-resena" : undefined}
           className={
@@ -241,7 +277,7 @@ export function FormularioResena({
         <label className="block font-semibold text-[#174238]">
           Comentario
           <textarea
-            disabled={publicando}
+            disabled={!formularioListo || publicando || identificar}
             maxLength={2000}
             value={comentario}
             onChange={(evento) => cambiarComentario(evento.target.value)}
@@ -254,39 +290,37 @@ export function FormularioResena({
             className="mt-2 block w-full rounded-xl border border-stone-300 p-3 text-base font-normal sm:text-sm aria-invalid:border-red-600 focus-visible:outline-2 focus-visible:outline-teal-900"
           />
         </label>
-        <AdjuntarFotoResena
-          slug={slug}
-          invitado={invitado}
-          foto={foto}
-          cambiarFoto={cambiarFoto}
-          ocupado={publicando}
-          cambiarSubiendo={cambiarSubiendo}
-          bono={puntosSelfie}
-        />
-        <p className="text-sm font-semibold text-teal-950">
-          Puntos de esta reseña:{" "}
-          {puntosResena + (foto?.selfie ? puntosSelfie : 0)}
-        </p>
-        <p className="text-xs text-stone-600">
-          El bono de selfie se basa en tu declaración. Las publicaciones pueden
-          revisarse y los puntos revertirse si la reseña es retirada.
-        </p>
-        <aside className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          <h4 className="font-semibold">
-            Acumula puntos y descubre beneficios
-          </h4>
-          <p className="mt-1 leading-relaxed">
-            Estamos preparando beneficios como entradas y descuentos en
-            atractivos participantes. Próximamente podrás consultar las
-            opciones, sus condiciones y los puntos necesarios.
+        <details
+          open={Boolean(foto)}
+          className="rounded-xl border border-[#d5e0d6] bg-white px-4"
+        >
+          <summary className="flex min-h-13 cursor-pointer items-center justify-between gap-3 py-3 text-sm font-semibold text-[#174238]">
+            {foto ? "Foto de tu visita" : "Agregar una foto · opcional"}
+            <span className="rounded-full bg-[#edf4ee] px-2 py-1 text-xs">
+              +{puntosSelfie} puntos con selfie
+            </span>
+          </summary>
+          <AdjuntarFotoResena
+            slug={slug}
+            invitado={invitado}
+            foto={foto}
+            cambiarFoto={cambiarFoto}
+            ocupado={!formularioListo || publicando || identificar}
+            cambiarSubiendo={cambiarSubiendo}
+            bono={puntosSelfie}
+          />
+        </details>
+        <details className="text-xs leading-relaxed text-stone-600">
+          <summary className="flex min-h-11 cursor-pointer items-center underline underline-offset-4">
+            Condiciones de puntos y beneficios
+          </summary>
+          <p>
+            El bono de selfie se basa en tu declaración. Las publicaciones
+            pueden revisarse y los puntos revertirse si la reseña es retirada.
+            Los beneficios y descuentos estarán sujetos a disponibilidad y
+            condiciones de los atractivos participantes.
           </p>
-          <Link
-            href="/mi-perfil#ranking"
-            className="mt-2 inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
-          >
-            Consultar mis puntos
-          </Link>
-        </aside>
+        </details>
         {error && (
           <p
             id="error-publicacion-resena"
@@ -296,49 +330,51 @@ export function FormularioResena({
             {error}
           </p>
         )}
-        <button
-          disabled={publicando || subiendo}
-          className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-950 px-6 py-2.5 font-semibold text-white transition-transform hover:bg-teal-900 active:scale-95 disabled:opacity-60"
-        >
-          {subiendo
-            ? "Subiendo foto…"
-            : publicando
-              ? "Publicando…"
-              : reintento
-                ? "Reintentar publicación"
-                : invitado
-                  ? "Continuar para publicar"
-                  : "Publicar"}
-        </button>
+        {!identificar && (
+          <button
+            disabled={!formularioListo || publicando || subiendo}
+            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-950 px-6 py-2.5 font-semibold text-white transition-transform hover:bg-teal-900 active:scale-95 disabled:opacity-60"
+          >
+            {!formularioListo
+              ? "Preparando formulario…"
+              : subiendo
+                ? "Subiendo foto…"
+                : publicando
+                  ? "Publicando…"
+                  : reintento
+                    ? "Reintentar publicación"
+                    : invitado
+                      ? "Continuar para publicar"
+                      : "Publicar mi reseña"}
+          </button>
+        )}
       </form>
-      <dialog
-        ref={dialogo}
-        onClose={() => cambiarIdentificar(false)}
-        aria-labelledby="identificar-titulo"
-        className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-[#d5e0d6] bg-white p-5 text-[#174238] shadow-xl backdrop:bg-black/45 sm:p-7"
-      >
-        <h2 id="identificar-titulo" className="font-serif text-2xl">
-          Tu reseña está lista
-        </h2>
-        <p className="mb-5 mt-2 text-sm leading-relaxed text-stone-600">
-          Guardamos tu borrador y tu foto en este dispositivo durante 24 horas.
-          Identifícate para asociar la visita a tu cuenta y publicar.
-        </p>
-        <BotonGoogle volver={enlaceEscribirResena(slug)} />
-        <Link
-          href={`/ingresar?volver=${encodeURIComponent(enlaceEscribirResena(slug))}`}
-          className="mt-3 flex min-h-12 items-center justify-center rounded-xl bg-[#174238] px-4 font-semibold text-white"
+      {identificar && (
+        <section
+          ref={identificacion}
+          tabIndex={-1}
+          aria-labelledby="identificar-titulo"
+          className="rounded-2xl border border-[#c5d6ca] bg-white p-5 text-[#174238] focus:outline-none sm:p-6"
         >
-          Continuar con correo
-        </Link>
-        <button
-          type="button"
-          onClick={() => dialogo.current?.close()}
-          className="mt-3 min-h-11 w-full text-sm font-semibold underline"
-        >
-          Seguir editando
-        </button>
-      </dialog>
+          <h2 id="identificar-titulo" className="font-serif text-2xl">
+            Identifícate para publicar
+          </h2>
+          <p className="mb-5 mt-2 text-sm leading-relaxed text-stone-600">
+            Tu borrador y tu foto están guardados por 24 horas en este
+            dispositivo. Con Google no necesitas crear una contraseña.
+          </p>
+          <OpcionesIdentificacion
+            volver={enlaceEscribirResena(slug, visitaPrevia)}
+          />
+          <button
+            type="button"
+            onClick={() => cambiarIdentificar(false)}
+            className="mt-2 min-h-11 w-full text-sm font-semibold underline underline-offset-4"
+          >
+            Seguir editando
+          </button>
+        </section>
+      )}
     </>
   );
 }

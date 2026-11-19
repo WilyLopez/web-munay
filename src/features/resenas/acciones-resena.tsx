@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconoResena } from "./icono-resena";
+import { ingresoParaResena } from "./enlaces";
 import { votarResena } from "./acciones";
 
 export function AccionesResena({
@@ -34,7 +35,7 @@ export function AccionesResena({
       const respuesta = await votarResena(id, siguiente);
       if (respuesta.ok) return;
       cambiarVoto(anterior);
-      if (respuesta.estado === 401) router.push("/ingresar?aviso=sesion");
+      if (respuesta.estado === 401) router.push(ingresoParaResena(id));
       else cambiarAviso(respuesta.mensaje);
     } catch {
       cambiarVoto(anterior);

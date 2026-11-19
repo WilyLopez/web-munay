@@ -30,6 +30,7 @@ export function TarjetaResena({
       />
       <div className="mt-4 flex flex-wrap items-center gap-x-1 gap-y-1 border-t border-[#e5e9df] pt-2">
         <AccionesResena
+          key={`${resena.id}:${resena.utiles}:${resena.votoPropio}`}
           id={resena.id}
           utiles={resena.utiles}
           votoPropio={resena.votoPropio}
@@ -45,7 +46,8 @@ export function TarjetaResena({
           <summary className="min-h-11 cursor-pointer content-center text-xs font-medium text-[#526a60]">
             Detalles de verificación
           </summary>
-          <div className="pb-3">
+          <div className="space-y-2 pb-3">
+            <p className="text-xs leading-relaxed text-[#526a60]">Se comprobó la visita al destino. La opinión pertenece a su autor; las insignias no certifican la veracidad de su contenido.</p>
             <VerificarIntegridad id={resena.id} registro={resena.integridad} />
           </div>
         </details>

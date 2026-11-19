@@ -2,7 +2,7 @@
 import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { crearSupabaseServidor } from "./supabase/servidor";
-import { regresoEscribirResena } from "@/features/resenas/enlaces";
+import { regresoEscribirResena, regresoDetalleResena } from "@/features/resenas/enlaces";
 import { regresoQrVisita } from "@/features/visitas/enlace-qr";
 
 export async function ingresarGoogle(
@@ -12,6 +12,7 @@ export async function ingresarGoogle(
   const volver =
     regresoEscribirResena(String(datos.get("volver") ?? "")) ??
     regresoQrVisita(String(datos.get("volver") ?? "")) ??
+    regresoDetalleResena(String(datos.get("volver") ?? "")) ??
     "/destinos";
   let url: string | undefined;
   try {

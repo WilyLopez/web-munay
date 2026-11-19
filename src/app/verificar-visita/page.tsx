@@ -43,6 +43,7 @@ async function Escaneo({ consulta }: { consulta: Promise<Consulta> }) {
           ? "qr-invalido"
           : rutaEscanerVisita(slug, id)
       }
+      invitado={!sesion.ok}
       destino={slug}
       codigoInicial={codigoInicial ?? undefined}
       avisoInicial={
@@ -70,14 +71,16 @@ export default function PaginaVerificarVisita({
         >
           Volver a destinos
         </Link>
-        <h1 className="font-serif text-2xl font-bold text-teal-950 sm:text-3xl">
-          Verificar visita
-        </h1>
-        <p className="text-sm leading-relaxed text-[#314941] sm:text-base">
-          Usa el código QR que muestra el encargado del destino para verificar
-          tu visita.
-        </p>
-        <Suspense fallback={<p role="status">Comprobando sesión…</p>}>
+        <Suspense
+          fallback={
+            <div
+              role="status"
+              className="h-96 rounded-3xl bg-[#e5ece5] motion-safe:animate-pulse"
+            >
+              <span className="sr-only">Preparando tu visita…</span>
+            </div>
+          }
+        >
           <Escaneo consulta={searchParams} />
         </Suspense>
       </main>

@@ -3,15 +3,15 @@ import { solicitarVisitas } from "@/features/visitas/api";
 import { fechaVisita } from "@/features/visitas/tipos";
 import { FormularioResena } from "./formulario-resena";
 import { ReintentarOpiniones } from "./reintentar-opiniones";
-import type { ListadoResenas } from "./tipos";
+import { tokenVisitaInvitada } from "@/features/visitas/invitada";
+import { enlaceEscribirResena } from "./enlaces";
+import type { PreparacionResena, ListadoResenas } from "./tipos";
+import { FiltrosResenas } from "./filtros-resenas";
 import { TarjetaResena } from "./tarjeta-resena";
 
 const formatoNota = new Intl.NumberFormat("es-PE", {
   maximumFractionDigits: 1,
 });
-const campo =
-  "min-h-12 w-full min-w-0 rounded-lg border border-[#b9c4b9] bg-white px-3 text-base font-normal text-[#193b33] focus-visible:outline-2 focus-visible:outline-offset-2 sm:text-sm";
-
 export async function Opiniones({
   slug,
   filtro,
@@ -51,51 +51,25 @@ export async function Opiniones({
       </section>
     );
   const datos = resultado.datos;
+  let puedeRetomar = false;
+  if (destino && datos.estado === "visitante") {
+    const token = await tokenVisitaInvitada();
+    if (token) {
+      const preparacion = await solicitarVisitas<PreparacionResena>(
+        "/visitas/invitadas/estado",
+        { token, destino },
+        { publica: true },
+      );
+      puedeRetomar =
+        preparacion.ok && preparacion.datos.estado === "habilitada";
+    }
+  }
   const conteos = new Map(
     datos.distribucion.map(({ calificacion, total }) => [calificacion, total]),
   );
   const controles = (
     <div className="space-y-4">
-      <form
-        action={`${ruta}#opiniones`}
-        className="grid items-end gap-3 rounded-2xl border border-[#dedacf] bg-[#fffdf6] p-4 sm:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] sm:p-5"
-      >
-        {regreso && <input type="hidden" name="volver" value={regreso} />}
-        {!slug && (
-          <label className="grid min-w-0 gap-1.5 text-sm font-semibold">
-            Destino
-            <select
-              name="destino"
-              defaultValue={filtro ?? ""}
-              className={campo}
-            >
-              <option value="">Todos los destinos</option>
-              {datos.destinos.map((lugar) => (
-                <option key={lugar.slug} value={lugar.slug}>
-                  {lugar.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <label className="grid min-w-0 gap-1.5 text-sm font-semibold">
-          Ordenar por
-          <select
-            name="orden"
-            defaultValue={orden === "calificacion" ? orden : "fecha"}
-            className={campo}
-          >
-            <option value="fecha">Más recientes</option>
-            <option value="calificacion">Mejor calificadas</option>
-          </select>
-        </label>
-        <button
-          type="submit"
-          className="min-h-12 rounded-lg bg-[#174238] px-4 text-sm font-semibold text-white hover:bg-[#23574a] focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95 transition-transform"
-        >
-          Aplicar filtros
-        </button>
-      </form>
+      <FiltrosResenas ruta={ruta} destino={filtro ?? slug} orden={orden} regreso={regreso} destinos={datos.destinos} mostrarDestinos={!slug} />
       {datos.total > 0 && (
         <div className="grid min-w-0 gap-4 rounded-2xl border border-[#dedacf] bg-[#fffdf6] p-5 sm:p-6">
           <div>
@@ -113,8 +87,7 @@ export async function Opiniones({
               {datos.verificadas} con visita verificada
             </p>
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-[#465a50]">
-              La etiqueta «Visita verificada» indica que Munay comprobó una
-              visita al destino.
+              Las insignias indican que Munay comprobó una visita al destino. No garantizan la veracidad de la opinión ni la calidad del lugar.
             </p>
           </div>
           <ul
@@ -236,10 +209,16 @@ export async function Opiniones({
               )}
               {datos.estado === "visitante" && (
                 <Link
-                  href="/ingresar?aviso=sesion"
+                  href={
+                    puedeRetomar
+                      ? enlaceEscribirResena(destino)
+                      : `/verificar-visita?destino=${encodeURIComponent(destino)}`
+                  }
                   className="inline-flex min-h-12 items-center font-semibold underline hover:text-[#0b6b52]"
                 >
-                  Escribir una reseña
+                  {puedeRetomar
+                    ? "Continuar mi reseña"
+                    : "Verificar mi visita y escribir"}
                 </Link>
               )}
             </div>
