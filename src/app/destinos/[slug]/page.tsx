@@ -27,13 +27,11 @@ import {
   AvisoDestino,
   ContactoDestino,
   DatosVisitaDestino,
+  DetalleVisitaDestino,
   HistoriaDestino,
 } from "@/features/destinos/contenido-destino";
 
-const moneda = new Intl.NumberFormat("es-PE", {
-  style: "currency",
-  currency: "PEN",
-});
+import { textoTarifa } from "@/features/destinos/presentacion-ficha";
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -109,7 +107,7 @@ async function ContenidoFicha({ params, searchParams }: Props) {
       >
         <span aria-hidden="true">←</span> Volver a explorar
       </Link>
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] lg:gap-10">
         <header className="space-y-3 lg:pt-5">
           <p className="text-sm font-semibold text-[#8d402d]">
             {[
@@ -120,7 +118,7 @@ async function ContenidoFicha({ params, searchParams }: Props) {
               .filter(Boolean)
               .join(" · ")}
           </p>
-          <h1 className="wrap-anywhere text-balance font-serif text-[clamp(2.35rem,6vw,4.75rem)] leading-[1.04] tracking-tight">
+          <h1 className="wrap-anywhere text-balance font-serif text-[clamp(2rem,4.5vw,3.5rem)] leading-[1.04] tracking-tight">
             {destino.nombre}
           </h1>
           <p className="text-sm text-[#465a50] sm:text-base">
@@ -132,6 +130,8 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           >
             {destino.calificacionPromedio !== null &&
               `★ ${destino.calificacionPromedio} de 5 · `}
+            {destino.calificacionPromedio === null &&
+              "Sin calificaciones todavía · "}
             {destino.totalResenas}{" "}
             {destino.totalResenas === 1 ? "reseña" : "reseñas"}
           </a>
@@ -151,7 +151,7 @@ async function ContenidoFicha({ params, searchParams }: Props) {
       </p>
       <nav
         aria-label="Secciones del destino"
-        className="flex flex-wrap gap-2 border-y border-[#dedacf] py-3 text-sm font-semibold"
+        className="flex gap-2 overflow-x-auto border-y border-[#dedacf] py-3 text-sm font-semibold"
       >
         {[
           ["#planifica", "Planea tu visita"],
@@ -162,7 +162,7 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           <a
             key={href}
             href={href}
-            className="inline-flex min-h-12 items-center rounded-full border border-[#b9c4b9] px-4 hover:bg-[#e8eee6] focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95 transition-transform"
+            className="inline-flex min-h-12 shrink-0 items-center rounded-full border border-[#b9c4b9] px-4 hover:bg-[#e8eee6] focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-95 transition-transform"
           >
             {texto}
           </a>
@@ -176,7 +176,7 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           <h2 className="font-serif text-3xl tracking-tight">
             Planea tu visita
           </h2>
-          <dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-1">
+          <dl className="grid gap-4 text-sm sm:grid-cols-2">
             <div>
               <dt className="font-semibold">Horario de atención</dt>
               <dd>{destino.horario ?? "Por confirmar"}</dd>
@@ -184,17 +184,19 @@ async function ContenidoFicha({ params, searchParams }: Props) {
             <div>
               <dt className="font-semibold">Tarifa general</dt>
               <dd>
-                {destino.tarifaGeneral === null
-                  ? "Por confirmar"
-                  : moneda.format(destino.tarifaGeneral)}
+                {textoTarifa(
+                  destino.tarifaGeneral,
+                  informacion.modalidadIngreso,
+                )}
               </dd>
             </div>
             <div>
               <dt className="font-semibold">Tarifa para estudiantes</dt>
               <dd>
-                {destino.tarifaEstudiantes === null
-                  ? "Por confirmar"
-                  : moneda.format(destino.tarifaEstudiantes)}
+                {textoTarifa(
+                  destino.tarifaEstudiantes,
+                  informacion.modalidadIngreso,
+                )}
               </dd>
             </div>
             <DatosVisitaDestino informacion={informacion} />
@@ -204,7 +206,12 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           </p>
           {informacion.condicion !== "cerrado" &&
             informacion.condicion !== "restringido" && (
-              <DisponibilidadVisita dias={destino.diasAtencion ?? []} />
+              <details className="border-t border-[#dedacf] pt-3">
+                <summary className="cursor-pointer py-2 text-sm font-semibold focus-visible:outline-2">
+                  Consultar días de atención
+                </summary>
+                <DisponibilidadVisita dias={destino.diasAtencion ?? []} />
+              </details>
             )}
           {destino.revisadoEn && (
             <p className="text-sm text-stone-600">
@@ -235,6 +242,8 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           </div>
         </section>
         <div className="min-w-0 space-y-5 lg:col-start-1 lg:row-start-1">
+          <HistoriaDestino informacion={informacion} />
+          <DetalleVisitaDestino informacion={informacion} />
           <section
             id="como-llegar"
             tabIndex={-1}
@@ -245,9 +254,9 @@ async function ContenidoFicha({ params, searchParams }: Props) {
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <a
                 className="inline-flex min-h-11 items-center rounded-xl bg-teal-950 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-950"
-                href={`https://www.google.com/maps/dir/?${rutaDesdeUbicacion}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                href={`https://www.google.com/maps/dir/?${rutaDesdeUbicacion}`}
               >
                 Cómo llegar desde mi ubicación
                 <span className="sr-only"> (abre en otra pestaña)</span>
@@ -274,18 +283,24 @@ async function ContenidoFicha({ params, searchParams }: Props) {
               {destino.rutaDesdeChiclayo ??
                 "Los detalles del trayecto están por confirmar."}
             </p>
-            {(destino.distanciaKm != null ||
-              destino.duracionMinutos != null) && (
-              <p className="font-semibold text-teal-900">
-                {[
-                  destino.distanciaKm != null && `${destino.distanciaKm} km`,
-                  destino.duracionMinutos != null &&
-                    `${destino.duracionMinutos} min aprox.`,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </p>
-            )}
+            <dl className="grid gap-3 rounded-xl bg-[#edf3ea] p-4 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-[#52675b]">Distancia desde Chiclayo</dt>
+                <dd className="mt-1 font-semibold">
+                  {destino.distanciaKm == null
+                    ? "Por confirmar"
+                    : `${destino.distanciaKm} km`}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[#52675b]">Tiempo aproximado</dt>
+                <dd className="mt-1 font-semibold">
+                  {destino.duracionMinutos == null
+                    ? "Por confirmar"
+                    : `${destino.duracionMinutos} minutos`}
+                </dd>
+              </div>
+            </dl>
             {informacion.transporte && (
               <p className="whitespace-pre-line text-stone-700">
                 <strong>Transporte</strong> {informacion.transporte}
@@ -335,15 +350,31 @@ async function ContenidoFicha({ params, searchParams }: Props) {
               <p className="text-stone-700">{destino.recomendacion}</p>
             </aside>
           )}
-          <HistoriaDestino informacion={informacion} />
           <ContactoDestino informacion={informacion} />
         </div>
       </div>
       <Suspense fallback={<EsqueletoSentimiento />}>
-        <TarjetaSentimiento slug={slug} />
+        <TarjetaSentimiento slug={slug} ocultarSinDatos />
       </Suspense>
       <div id="resenas-del-destino" className="scroll-mt-28">
-        <Suspense fallback={<p role="status">Cargando reseñas…</p>}>
+        <Suspense
+          fallback={
+            <div
+              role="status"
+              className="space-y-3 rounded-2xl border border-[#dedacf] p-5 motion-safe:animate-pulse"
+            >
+              <span className="sr-only">Cargando opiniones de visitantes…</span>
+              <div
+                aria-hidden="true"
+                className="h-6 w-48 rounded bg-[#e8eee6]"
+              />
+              <div
+                aria-hidden="true"
+                className="h-24 rounded-xl bg-[#e8eee6]"
+              />
+            </div>
+          }
+        >
           <Opiniones
             regreso={regreso}
             slug={slug}
@@ -352,34 +383,36 @@ async function ContenidoFicha({ params, searchParams }: Props) {
           />
         </Suspense>
       </div>
-      <Link href="/resenas" className="inline-flex min-h-12 items-center font-semibold underline underline-offset-4">
+      <Link
+        href="/resenas"
+        className="inline-flex min-h-12 items-center font-semibold underline underline-offset-4"
+      >
         Ver reseñas de todos los atractivos
       </Link>
 
-      {/* Barra de acción rápida fija en móvil (Regla de arquitectura responsiva #4) */}
       <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-stone-200 bg-[#fffdf7]/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur-md lg:hidden">
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
             Tarifa general
           </p>
           <p className="truncate text-base font-bold text-teal-950">
-            {destino.tarifaGeneral === null
-              ? "Ingreso libre"
-              : moneda.format(destino.tarifaGeneral)}
+            {textoTarifa(destino.tarifaGeneral, informacion.modalidadIngreso)}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <a
             className="inline-flex min-h-12 items-center justify-center rounded-full bg-teal-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm active:scale-95 transition-transform"
+            target="_blank"
+            rel="noopener noreferrer"
             href={`https://www.google.com/maps/dir/?${rutaDesdeUbicacion}`}
           >
-            Cómo llegar
+            Cómo llegar<span className="sr-only"> (abre en otra pestaña)</span>
           </a>
           <Link
             href={`/verificar-visita?destino=${encodeURIComponent(destino.slug)}`}
-            className="inline-flex min-h-12 items-center justify-center rounded-full border border-teal-900 bg-white px-3.5 py-2.5 text-xs font-semibold text-teal-950 shadow-sm active:scale-95 transition-transform"
+            className="hidden min-h-12 items-center justify-center rounded-full border border-teal-900 bg-white px-3.5 py-2.5 text-xs font-semibold text-teal-950 shadow-sm min-[380px]:inline-flex motion-safe:active:scale-95 motion-safe:transition-transform"
           >
-            Registrar visita
+            Ya estoy aquí
           </Link>
         </div>
       </div>
@@ -398,7 +431,7 @@ export default function PaginaFicha(props: Props) {
           <ContenidoFicha {...props} />
         </Suspense>
       </div>
-      <PiePagina />
+      <PiePagina className="pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0" />
     </div>
   );
 }

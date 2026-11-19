@@ -37,11 +37,18 @@ async function cargarResumen(slug: string) {
   }
 }
 
-export async function TarjetaSentimiento({ slug }: { slug: string }) {
+export async function TarjetaSentimiento({
+  slug,
+  ocultarSinDatos = false,
+}: {
+  slug: string;
+  ocultarSinDatos?: boolean;
+}) {
   const resumen = await cargarResumen(slug);
   const total = resumen
     ? resumen.positivas + resumen.neutras + resumen.negativas
     : 0;
+  if (ocultarSinDatos && (!resumen || total === 0)) return null;
 
   return (
     <section
@@ -49,7 +56,7 @@ export async function TarjetaSentimiento({ slug }: { slug: string }) {
       className="space-y-4 rounded-3xl border border-teal-200 bg-teal-50 p-5 sm:p-8"
     >
       <h2 id="titulo-sentimiento" className="text-2xl font-bold text-teal-950">
-        Sentimiento de reseñas
+        Qué opinan los visitantes
       </h2>
       {!resumen ? (
         <p className="text-sm">

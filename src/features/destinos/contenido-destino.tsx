@@ -178,9 +178,15 @@ export function DatosVisitaDestino({
       ([grupo]) => grupo === "Información para la visita",
     )?.[1] ?? [];
   const omitidos = new Set(["motivoCierre", "reapertura", "reservaUrl"]);
+  const esenciales = new Set([
+    "condicion",
+    "modalidadIngreso",
+    "duracionVisita",
+    "accesoSilla",
+  ]);
   const detalles = campos.flatMap(([clave, etiqueta, , tipo]) => {
     const valor = informacion[clave];
-    if (!valor || omitidos.has(clave)) return [];
+    if (!valor || omitidos.has(clave) || !esenciales.has(clave)) return [];
     const opciones =
       tipo && tipo in opcionesInformacion
         ? opcionesInformacion[tipo as keyof typeof opcionesInformacion]
@@ -205,6 +211,82 @@ export function DatosVisitaDestino({
   );
 }
 
+export function DetalleVisitaDestino({
+  informacion,
+}: {
+  informacion: InformacionDestino;
+}) {
+  const grupos = [
+    [
+      "Servicios y accesibilidad",
+      [
+        "servicios",
+        "idiomas",
+        "accesoSilla",
+        "rampas",
+        "banosAdaptados",
+        "terreno",
+      ],
+    ],
+    [
+      "Actividades y recomendaciones",
+      ["actividades", "duracionVisita", "dificultad", "temporada"],
+    ],
+    [
+      "Reglas, horarios y pagos",
+      [
+        "reglas",
+        "ultimoIngreso",
+        "excepcionesHorario",
+        "tarifasAdicionales",
+        "metodosPago",
+      ],
+    ],
+  ] as const;
+  const campos = gruposInformacion.flatMap(([, campos]) => [...campos]);
+  const presentes = grupos.filter(([, claves]) =>
+    claves.some((clave) => informacion[clave]),
+  );
+  if (!presentes.length) return null;
+  return (
+    <SeccionDestino id="informacion-visita" titulo="Información para tu visita">
+      <div className="divide-y divide-[#dedacf]">
+        {presentes.map(([titulo, claves]) => (
+          <details key={titulo} className="group py-2" open={undefined}>
+            <summary className="cursor-pointer py-3 text-base font-semibold focus-visible:outline-2 focus-visible:outline-offset-2">
+              {titulo}
+            </summary>
+            <dl className="grid gap-4 pb-4 text-sm sm:grid-cols-2">
+              {claves.map((clave) => {
+                const valor = informacion[clave];
+                if (!valor) return null;
+                const campo = campos.find(([id]) => id === clave);
+                const tipo = campo?.[3];
+                const opciones =
+                  tipo && tipo in opcionesInformacion
+                    ? opcionesInformacion[
+                        tipo as keyof typeof opcionesInformacion
+                      ]
+                    : [];
+                return (
+                  <div key={clave} className="min-w-0">
+                    <dt className="font-semibold">
+                      {campo?.[1].replace(/ \(un[ao] por línea\)/, "") ?? clave}
+                    </dt>
+                    <dd className="mt-1 wrap-anywhere whitespace-pre-line leading-relaxed text-[#465a50]">
+                      {opciones.find(([id]) => id === valor)?.[1] ?? valor}
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+          </details>
+        ))}
+      </div>
+    </SeccionDestino>
+  );
+}
+
 export function ContactoDestino({
   informacion,
 }: {
@@ -225,8 +307,18 @@ export function ContactoDestino({
       <ul className="flex flex-wrap gap-2 text-sm">
         {enlaces.map(([href, etiqueta]) => (
           <li key={etiqueta}>
-            <a className={claseEnlace} href={href}>
+            <a
+              className={claseEnlace}
+              href={href}
+              target={href?.startsWith("https://") ? "_blank" : undefined}
+              rel={
+                href?.startsWith("https://") ? "noopener noreferrer" : undefined
+              }
+            >
               {etiqueta}
+              {href?.startsWith("https://") && (
+                <span className="sr-only"> (abre en otra pestaña)</span>
+              )}
             </a>
           </li>
         ))}

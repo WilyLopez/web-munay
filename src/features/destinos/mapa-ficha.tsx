@@ -16,7 +16,7 @@ function EsqueletoMapaFicha() {
   return (
     <div
       role="status"
-      className="grid h-96 place-items-center rounded-2xl border border-[#dedacf] bg-[#e8eee6] p-4 text-center text-sm sm:h-[32rem]"
+      className="grid h-64 place-items-center rounded-2xl border border-[#dedacf] bg-[#e8eee6] p-4 text-center text-sm sm:h-80"
     >
       Cargando mapa del punto de llegada…
     </div>
@@ -61,6 +61,7 @@ export function MapaFicha({
     <div ref={contenedor}>
       {visible ? (
         <MapaGoogle
+          compacto
           destinos={[llegada]}
           seleccionado={llegada}
           volver={volver}

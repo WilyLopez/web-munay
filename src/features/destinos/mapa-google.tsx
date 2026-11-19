@@ -11,12 +11,14 @@ export function MapaGoogle({
   seleccionar,
   ubicacion,
   volver,
+  compacto = false,
 }: {
   destinos: Destino[];
   seleccionado?: Destino;
   seleccionar?: (id: string) => void;
   ubicacion?: google.maps.LatLngLiteral;
   volver: string;
+  compacto?: boolean;
 }) {
   const contenedor = useRef<HTMLDivElement>(null);
   const [motor, cambiarMotor] = useState<{
@@ -133,7 +135,11 @@ export function MapaGoogle({
             ref={contenedor}
             role="region"
             aria-label="Google Maps de Lambayeque"
-            className="h-96 overflow-hidden rounded-2xl border border-stone-200 sm:h-[32rem]"
+            className={
+              compacto
+                ? "h-64 overflow-hidden rounded-2xl border border-stone-200 sm:h-80"
+                : "h-96 overflow-hidden rounded-2xl border border-stone-200 sm:h-[32rem]"
+            }
           />
         </>
       )}
