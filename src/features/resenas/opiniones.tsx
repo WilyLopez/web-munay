@@ -64,12 +64,51 @@ export async function Opiniones({
         preparacion.ok && preparacion.datos.estado === "habilitada";
     }
   }
+  if (
+    slug &&
+    datos.total === 0 &&
+    datos.estado !== "habilitada" &&
+    datos.estado !== "publicada"
+  )
+    return (
+      <section
+        id="opiniones"
+        className="scroll-mt-28 rounded-2xl border border-[#dedacf] bg-[#fffdf6] p-6 sm:p-8"
+      >
+        <h2 className="font-serif text-2xl">
+          Sé la primera persona en compartir su experiencia
+        </h2>
+        <p className="mt-2 max-w-prose text-sm leading-relaxed text-[#465a50]">
+          Todavía no hay reseñas de este destino. Después de tu visita, verifica
+          tu presencia con el QR para compartir tu opinión.
+        </p>
+        <Link
+          href={
+            puedeRetomar
+            ? enlaceEscribirResena(slug, true)
+              : `/verificar-visita?destino=${encodeURIComponent(slug)}`
+          }
+          className="mt-4 inline-flex min-h-11 items-center rounded-full bg-[#174238] px-4 text-sm font-semibold text-white hover:bg-[#245649] focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          {puedeRetomar
+            ? "Continuar mi reseña"
+            : "Verificar mi visita y escribir"}
+        </Link>
+      </section>
+    );
   const conteos = new Map(
     datos.distribucion.map(({ calificacion, total }) => [calificacion, total]),
   );
   const controles = (
     <div className="space-y-4">
-      <FiltrosResenas ruta={ruta} destino={filtro ?? slug} orden={orden} regreso={regreso} destinos={datos.destinos} mostrarDestinos={!slug} />
+      <FiltrosResenas
+        ruta={ruta}
+        destino={filtro ?? slug}
+        orden={orden}
+        regreso={regreso}
+        destinos={datos.destinos}
+        mostrarDestinos={!slug}
+      />
       {datos.total > 0 && (
         <div className="grid min-w-0 gap-4 rounded-2xl border border-[#dedacf] bg-[#fffdf6] p-5 sm:p-6">
           <div>
@@ -87,7 +126,8 @@ export async function Opiniones({
               {datos.verificadas} con visita verificada
             </p>
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-[#465a50]">
-              Las insignias indican que Munay comprobó una visita al destino. No garantizan la veracidad de la opinión ni la calidad del lugar.
+              Las insignias indican que Munay comprobó una visita al destino. No
+              garantizan la veracidad de la opinión ni la calidad del lugar.
             </p>
           </div>
           <ul
