@@ -5,6 +5,7 @@ import { categorias, enlaceFicha, provincias } from "@/features/destinos/catalog
 import { CreditoFoto } from "@/features/destinos/credito-foto";
 import { Navbar, cargarCatalogoPublico } from "@/features/navegacion/navbar";
 import { PiePagina } from "@/features/navegacion/pie-pagina";
+import { HeroPortadaAnimado } from "@/features/portada/hero-portada-animado";
 import { OpinionesPortada } from "@/features/portada/opiniones-portada";
 
 const contenedor = "mx-auto w-full max-w-[82rem] px-5 sm:px-8 lg:px-12";
@@ -13,7 +14,6 @@ const enlaceVisible =
   "inline-flex min-h-12 items-center rounded-sm underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-4";
 const botonPrincipal =
   "inline-flex min-h-12 items-center justify-center rounded-full bg-[#174238] px-6 py-3 text-base sm:text-sm font-semibold text-white hover:bg-[#23574a] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#174238] shadow-sm active:scale-95 transition-transform";
-const marcoHero = "relative block aspect-[5/4] overflow-hidden rounded-t-[2.75rem] rounded-b-2xl bg-[#193b33] sm:aspect-[4/3]";
 const formatoNota = new Intl.NumberFormat("es-PE", { maximumFractionDigits: 1 });
 
 const descripciones = {
@@ -51,27 +51,7 @@ async function DestinoProtagonista() {
   const [destino] = await obtenerSeleccionPortada();
   if (!destino) return null;
 
-  return (
-    <figure className="min-w-0 space-y-2">
-      <Link href={enlaceFicha(destino.slug)} className={`${marcoHero} group focus-visible:outline-2 focus-visible:outline-offset-4`}>
-        <Image
-          src={destino.imagenUrl}
-          alt=""
-          fill
-          preload
-          sizes="(min-width: 1280px) 590px, (min-width: 768px) 50vw, 100vw"
-          unoptimized={!destino.imagenUrl.startsWith("/")}
-          className="object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-[1.03]"
-        />
-        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/90 via-black/65 to-transparent px-5 pt-16 pb-5 text-white sm:px-7 sm:pb-7">
-          <p className="text-sm text-white/90">{destino.ubicacion}</p>
-          <p className="mt-1 text-balance font-serif text-2xl leading-tight sm:text-3xl">{destino.nombre}</p>
-          <span className="mt-2 inline-block text-sm font-semibold underline underline-offset-4">Ver detalles</span>
-        </div>
-      </Link>
-      <figcaption><CreditoFoto imagenUrl={destino.imagenUrl} /></figcaption>
-    </figure>
-  );
+  return <HeroPortadaAnimado destino={destino} />;
 }
 
 function ExplorarIntereses() {
