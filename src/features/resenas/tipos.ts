@@ -6,6 +6,7 @@ export type Resena = {
   fechaVisita?: string | null;
   fotoUrl?: string | null;
   totalRespuestas?: number;
+  respuestaOficial?: boolean;
   usuario: { nombreCompleto: string };
   destino: { nombre: string; slug: string; imagenUrl?: string | null };
   verificada: boolean;
@@ -36,6 +37,7 @@ export type RespuestaResena = {
   creadaEn: string;
   usuario: { nombreCompleto: string };
   propia: boolean;
+  oficial?: boolean;
 };
 
 export type ListadoRespuestas = {
