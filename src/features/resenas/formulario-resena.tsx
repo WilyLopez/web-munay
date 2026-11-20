@@ -43,7 +43,7 @@ export function FormularioResena({
   visitaPrevia?: boolean;
 }) {
   const router = useRouter();
-  const [recuperando, cambiarRecuperando] = useState(true);
+  const [recuperando, cambiarRecuperando] = useState(false);
   const enCliente = useSyncExternalStore(
     suscribirFormulario,
     formularioEnCliente,
@@ -325,29 +325,83 @@ export function FormularioResena({
           <p
             id="error-publicacion-resena"
             role="alert"
-            className="text-red-800"
+            className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-800"
           >
             {error}
           </p>
         )}
-        {!identificar && (
-          <button
-            disabled={!formularioListo || publicando || subiendo}
-            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-950 px-6 py-2.5 font-semibold text-white transition-transform hover:bg-teal-900 active:scale-95 disabled:opacity-60"
-          >
-            {!formularioListo
-              ? "Preparando formulario…"
-              : subiendo
-                ? "Subiendo foto…"
-                : publicando
-                  ? "Publicando…"
-                  : reintento
-                    ? "Reintentar publicación"
-                    : invitado
-                      ? "Continuar para publicar"
-                      : "Publicar mi reseña"}
-          </button>
-        )}
+        <div className="pt-2">
+          {!identificar ? (
+            <button
+              type="submit"
+              disabled={publicando || subiendo}
+              className="inline-flex min-h-12 w-full sm:w-auto cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#174238] px-8 py-3 text-base font-bold text-white shadow-md transition-all hover:bg-[#102e27] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {subiendo ? (
+                <>
+                  <span className="inline-block size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Subiendo foto…</span>
+                </>
+              ) : publicando ? (
+                <>
+                  <span className="inline-block size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Publicando reseña…</span>
+                </>
+              ) : reintento ? (
+                <>
+                  <svg
+                    className="size-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  <span>Reintentar publicación</span>
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="size-5 text-emerald-300"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                  </svg>
+                  <span>Publicar reseña</span>
+                </>
+              )}
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              <svg
+                className="size-5 shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              <span>
+                Tu reseña está lista para publicarse. Inicia sesión abajo para
+                confirmar la autoría.
+              </span>
+            </div>
+          )}
+        </div>
       </form>
       {identificar && (
         <section
