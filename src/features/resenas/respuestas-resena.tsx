@@ -16,10 +16,12 @@ export function RespuestasResena({
   resenaId,
   total = 0,
   puedeResponder = false,
+  oficial = false,
 }: {
   resenaId: string;
   total?: number;
   puedeResponder?: boolean;
+  oficial?: boolean;
 }) {
   const router = useRouter();
   const campoRespuesta = useRef<HTMLTextAreaElement>(null);
@@ -33,6 +35,9 @@ export function RespuestasResena({
   const [texto, cambiarTexto] = useState("");
   const [confirmacion, cambiarConfirmacion] = useState("");
   const solicitud = useRef<{ id: string; texto: string }>(null);
+  const dialogo = useRef<HTMLDialogElement>(null);
+  const formulario = useRef<HTMLFormElement>(null);
+  const confirmado = useRef(false);
 
   async function cargar(numero: number) {
     cambiarOcupado(true);
@@ -54,6 +59,11 @@ export function RespuestasResena({
     evento.preventDefault();
     const comentario = texto.trim();
     if (ocupado || !comentario) return;
+    if (oficial && !confirmado.current) {
+      dialogo.current?.showModal();
+      return;
+    }
+    confirmado.current = false;
     cambiarOcupado(true);
     cambiarError("");
     cambiarMensaje("");
@@ -159,6 +169,11 @@ export function RespuestasResena({
                 key={respuesta.id}
                 className="space-y-2 rounded-xl border-l-2 border-[#aac4b2] bg-white p-3 sm:p-4"
               >
+                {respuesta.oficial && (
+                  <p className="mb-2 text-xs font-semibold text-[#174238]">
+                    Respuesta oficial del atractivo
+                  </p>
+                )}
                 <ContenidoResena
                   autor={respuesta.usuario.nombreCompleto}
                   creadaEn={respuesta.creadaEn}
@@ -226,9 +241,9 @@ export function RespuestasResena({
             </nav>
           )}
           {habilitado ? (
-            <form onSubmit={enviar} className="space-y-2">
+            <form ref={formulario} onSubmit={enviar} className="space-y-2">
               <label className="grid gap-2 text-sm font-semibold">
-                Tu respuesta
+                {oficial ? "Respuesta del encargado" : "Tu respuesta"}
                 <textarea
                   ref={campoRespuesta}
                   required
@@ -242,13 +257,19 @@ export function RespuestasResena({
                 />
               </label>
               <p className="text-xs text-stone-600">
-                Tu respuesta será pública. Responder no genera puntos.
+                {oficial
+                  ? "Se publicará como respuesta oficial del atractivo. Agradece la visita y responde con respeto."
+                  : "Tu respuesta será pública. Responder no genera puntos."}
               </p>
               <button
                 disabled={ocupado || !texto.trim()}
                 className="min-h-11 rounded-xl bg-[#174238] px-4 text-sm font-semibold text-white disabled:opacity-60"
               >
-                Publicar respuesta
+                {ocupado
+                  ? "Publicando…"
+                  : oficial
+                    ? "Revisar y publicar"
+                    : "Publicar respuesta"}
               </button>
             </form>
           ) : (
@@ -280,6 +301,43 @@ export function RespuestasResena({
             </div>
           )}
         </div>
+      )}
+      {oficial && (
+        <dialog
+          ref={dialogo}
+          aria-labelledby={`confirmar-${resenaId}`}
+          className="fixed inset-0 m-auto w-[calc(100%_-_2rem)] max-w-lg rounded-2xl border border-[#d5e0d6] bg-white p-6 text-[#14382e] shadow-xl backdrop:bg-black/40"
+        >
+          <h3 id={`confirmar-${resenaId}`} className="text-lg font-semibold">
+            ¿Publicar respuesta oficial?
+          </h3>
+          <p className="mt-2 text-sm text-[#526a60]">
+            Los visitantes verán esta respuesta en nombre de tu atractivo.
+          </p>
+          <p className="mt-4 max-h-48 overflow-y-auto whitespace-pre-wrap wrap-anywhere rounded-xl bg-[#f0f5ef] p-4 text-sm">
+            {texto}
+          </p>
+          <div className="mt-5 flex flex-wrap justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => dialogo.current?.close()}
+              className="min-h-11 rounded-xl border px-4 text-sm font-semibold"
+            >
+              Seguir editando
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                confirmado.current = true;
+                dialogo.current?.close();
+                formulario.current?.requestSubmit();
+              }}
+              className="min-h-11 rounded-xl bg-[#174238] px-4 text-sm font-semibold text-white"
+            >
+              Confirmar publicación
+            </button>
+          </div>
+        </dialog>
       )}
     </div>
   );

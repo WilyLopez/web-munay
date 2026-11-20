@@ -29,6 +29,8 @@ export async function publicarResena(
     revalidatePath("/mi-perfil");
     revalidatePath("/destinos");
     revalidatePath("/destinos/[slug]", "page");
+    revalidatePath("/administracion");
+    revalidatePath("/administracion/resenas");
     revalidatePath("/resenas");
   }
   return resultado;
@@ -92,14 +94,23 @@ export async function publicarRespuesta(
   if (resultado.ok) {
     revalidatePath("/resenas");
     revalidatePath("/destinos/[slug]", "page");
+    revalidatePath("/administracion");
+    revalidatePath("/administracion/resenas");
   }
   return resultado;
 }
 
 export async function retirarRespuesta(id: string) {
-  return solicitarVisitas<void>(
+  const resultado = await solicitarVisitas<void>(
     `/resenas/respuestas/${encodeURIComponent(id)}`,
     undefined,
     { metodo: "DELETE" },
   );
+  if (resultado.ok) {
+    revalidatePath("/resenas");
+    revalidatePath("/destinos/[slug]", "page");
+    revalidatePath("/administracion");
+    revalidatePath("/administracion/resenas");
+  }
+  return resultado;
 }

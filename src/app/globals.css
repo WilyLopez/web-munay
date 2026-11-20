@@ -1,5 +1,30 @@
 @import "tailwindcss";
 
+html:has(.detalle-opinion-munay[open]) {
+  overflow: hidden;
+}
+
+.detalle-opinion-munay > header {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
+
+.detalle-opinion-munay > div {
+  padding-bottom: max(1.75rem, env(safe-area-inset-bottom));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .detalle-opinion-munay[open] {
+    animation: abrir-detalle-opinion 180ms ease-out;
+  }
+}
+
+@keyframes abrir-detalle-opinion {
+  from {
+    opacity: 0;
+    transform: translateX(1.5rem);
+  }
+}
+
 html,
 body,
 button,

@@ -1,15 +1,27 @@
-import { ContenidoResena } from "@/features/resenas/contenido-resena";
+import {
+  OpinionResumen,
+  DetalleOpinion,
+} from "@/features/administracion/opinion-encargado";
 import Form from "next/form";
 import Link from "next/link";
 import { Suspense } from "react";
 import { accesoPanel } from "@/features/administracion/acceso";
-import { ReportarResena } from "@/features/administracion/controles-reporte";
-import type { ListadoResenas, Resena } from "@/features/resenas/tipos";
+import type { ListadoResenas } from "@/features/resenas/tipos";
 import { solicitarVisitas } from "@/features/visitas/api";
 import { BotonActualizarPanel } from "@/features/visitas/boton-actualizar-panel";
 import type { DestinoVisita } from "@/features/visitas/tipos";
 
-type Consulta = { destino?: string; pagina?: string; orden?: string };
+type Consulta = {
+  destino?: string;
+  pagina?: string;
+  orden?: string;
+  estrellas?: string;
+  desde?: string;
+  hasta?: string;
+  foto?: string;
+  respuesta?: string;
+  resena?: string;
+};
 
 const ruta = "/administracion/resenas";
 const numero = new Intl.NumberFormat("es-PE");
@@ -18,7 +30,8 @@ const decimal = new Intl.NumberFormat("es-PE", {
   maximumFractionDigits: 1,
 });
 const panel = "min-w-0 rounded-2xl border border-[#d5e0d6] bg-white";
-const distribucion = "grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_19rem]";
+const distribucion =
+  "grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_19rem]";
 
 function ResumenResenas({ datos }: { datos: ListadoResenas }) {
   const porCalificacion = new Map(
@@ -26,44 +39,75 @@ function ResumenResenas({ datos }: { datos: ListadoResenas }) {
   );
 
   return (
-    <aside className={`${panel} p-4 sm:p-5`} aria-labelledby="resumen-opiniones">
+    <aside
+      className={`${panel} p-4 sm:p-5`}
+      aria-labelledby="resumen-opiniones"
+    >
       <h2 id="resumen-opiniones" className="font-serif text-xl text-[#14382e]">
         Resumen de opiniones
       </h2>
       <dl className="mt-4 grid grid-cols-2 gap-3">
         <div className="col-span-2 rounded-xl bg-[#174238] p-4 text-white">
-          <dt className="text-sm font-semibold text-teal-100">Calificación promedio</dt>
+          <dt className="text-sm font-semibold text-teal-100">
+            Calificación promedio
+          </dt>
           <dd className="mt-1 text-2xl font-semibold tabular-nums">
-            {datos.promedio === null ? "Sin calificaciones" : (
+            {datos.promedio === null ? (
+              "Sin calificaciones"
+            ) : (
               <>
                 {decimal.format(datos.promedio)}
-                <span className="ml-2 text-sm font-medium text-teal-100">de 5</span>
+                <span className="ml-2 text-sm font-medium text-teal-100">
+                  de 5
+                </span>
               </>
             )}
           </dd>
         </div>
         <div className="rounded-xl bg-[#f0f5ef] p-3">
           <dt className="text-sm text-[#426456]">Publicadas</dt>
-          <dd className="mt-1 text-xl font-semibold tabular-nums">{numero.format(datos.total)}</dd>
+          <dd className="mt-1 text-xl font-semibold tabular-nums">
+            {numero.format(datos.total)}
+          </dd>
         </div>
         <div className="rounded-xl bg-[#f0f5ef] p-3">
           <dt className="text-sm text-[#426456]">Verificadas</dt>
-          <dd className="mt-1 text-xl font-semibold tabular-nums">{numero.format(datos.verificadas)}</dd>
+          <dd className="mt-1 text-xl font-semibold tabular-nums">
+            {numero.format(datos.verificadas)}
+          </dd>
         </div>
       </dl>
       {datos.total > 0 && (
         <>
-          <h3 className="mt-5 text-sm font-semibold text-[#14382e]">Distribución por estrellas</h3>
+          <h3 className="mt-5 text-sm font-semibold text-[#14382e]">
+            Distribución por estrellas
+          </h3>
           <ul className="mt-2 space-y-2">
             {[5, 4, 3, 2, 1].map((estrellas) => {
               const total = porCalificacion.get(estrellas) ?? 0;
               return (
-                <li key={estrellas} className="grid grid-cols-[2rem_minmax(0,1fr)_3.5rem] items-center gap-2 text-sm">
-                  <span>{estrellas}<span aria-hidden="true"> ★</span><span className="sr-only"> estrellas</span></span>
-                  <span aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-[#e5eee7]">
-                    <span className="block h-full rounded-full bg-[#447862]" style={{ width: `${(total / datos.total) * 100}%` }} />
+                <li
+                  key={estrellas}
+                  className="grid grid-cols-[2rem_minmax(0,1fr)_3.5rem] items-center gap-2 text-sm"
+                >
+                  <span>
+                    {estrellas}
+                    <span aria-hidden="true"> ★</span>
+                    <span className="sr-only"> estrellas</span>
                   </span>
-                  <span className="text-right tabular-nums">{numero.format(total)}<span className="sr-only"> reseñas</span></span>
+                  <span
+                    aria-hidden="true"
+                    className="h-2 overflow-hidden rounded-full bg-[#e5eee7]"
+                  >
+                    <span
+                      className="block h-full rounded-full bg-[#447862]"
+                      style={{ width: `${(total / datos.total) * 100}%` }}
+                    />
+                  </span>
+                  <span className="text-right tabular-nums">
+                    {numero.format(total)}
+                    <span className="sr-only"> reseñas</span>
+                  </span>
                 </li>
               );
             })}
@@ -74,80 +118,126 @@ function ResumenResenas({ datos }: { datos: ListadoResenas }) {
   );
 }
 
-function TarjetaResena({ resena }: { resena: Resena }) {
-  return (
-    <li className="p-4 sm:p-6">
-      <ContenidoResena autor={resena.usuario.nombreCompleto} creadaEn={resena.creadaEn} fechaVisita={resena.fechaVisita}
-        calificacion={resena.calificacion} verificada={resena.verificada} comentario={resena.comentario} fotoUrl={resena.fotoUrl} compacto />
-      <ReportarResena id={resena.id} />
-    </li>
-  );
-}
-
-async function ResultadosResenas({ filtro, pagina }: { filtro: string; pagina: number }) {
+async function ResultadosResenas({
+  filtro,
+  pagina,
+  seleccion,
+}: {
+  filtro: string;
+  pagina: number;
+  seleccion?: string;
+}) {
   const resultado = await solicitarVisitas<ListadoResenas>(
-    `/resenas?${filtro}&pagina=${pagina}`,
+    `/resenas?${filtro}&pagina=${pagina}&administracion=1`,
   );
 
   if (!resultado.ok) {
     return (
       <div className="space-y-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-950">
         <p role="alert">{resultado.mensaje}</p>
-        {![401, 403, 404].includes(resultado.estado) && <BotonActualizarPanel reintentar />}
+        {![401, 403, 404].includes(resultado.estado) && (
+          <BotonActualizarPanel reintentar />
+        )}
       </div>
     );
   }
 
   const datos = resultado.datos;
-  const botonPagina = "inline-flex min-h-11 items-center rounded-lg border border-[#b8cbbb] bg-white px-3 text-sm font-semibold text-[#174238] hover:bg-[#edf4ed]";
+  const botonPagina =
+    "inline-flex min-h-11 items-center rounded-lg border border-[#b8cbbb] bg-white px-3 text-sm font-semibold text-[#174238] hover:bg-[#edf4ed]";
   const primeraPagina = `${ruta}?${filtro}`;
+  const volver = `${primeraPagina}&pagina=${pagina}`;
+  const elegida = datos.resenas.find(({ id }) => id === seleccion);
 
   return (
     <div className={distribucion}>
-      <section className={`${panel} xl:col-start-1 xl:row-start-1`} aria-labelledby="opiniones-publicadas">
-        <h2 id="opiniones-publicadas" className="border-b border-[#d5e0d6] px-4 py-4 font-serif text-2xl text-[#14382e] sm:px-6">
-          Opiniones publicadas
+      <section
+        className={`${panel} xl:col-start-1 xl:row-start-1`}
+        aria-labelledby="opiniones-publicadas"
+      >
+        <h2
+          id="opiniones-publicadas"
+          className="border-b border-[#d5e0d6] px-4 py-4 font-serif text-2xl text-[#14382e] sm:px-6"
+        >
+          Opiniones encontradas ({numero.format(datos.total)})
         </h2>
         {datos.resenas.length > 0 ? (
           <ul className="divide-y divide-[#d5e0d6]">
-            {datos.resenas.map((resena) => <TarjetaResena key={resena.id} resena={resena} />)}
+            {datos.resenas.map((resena) => (
+              <li key={resena.id} className="px-4 sm:px-6">
+                <OpinionResumen
+                  resena={resena}
+                  href={`${volver}&resena=${encodeURIComponent(resena.id)}`}
+                />
+              </li>
+            ))}
           </ul>
         ) : (
           <div className="space-y-2 p-4 text-sm text-stone-700 sm:p-6">
-            <p>{datos.total > 0 ? "Esta página está vacía." : "Este atractivo todavía no tiene reseñas publicadas."}</p>
+            <p>
+              {datos.total > 0
+                ? "Esta página está vacía."
+                : "No hay reseñas que coincidan con estos filtros."}
+            </p>
             {pagina > 1 && (
-              <Link href={primeraPagina} className="inline-flex min-h-11 items-center font-semibold text-[#174238] underline underline-offset-4">
+              <Link
+                href={primeraPagina}
+                className="inline-flex min-h-11 items-center font-semibold text-[#174238] underline underline-offset-4"
+              >
                 Volver a la primera página
               </Link>
             )}
           </div>
         )}
         {(pagina > 1 || datos.hayMas) && (
-          <nav aria-label="Páginas de reseñas" className="flex flex-wrap items-center gap-2 border-t border-[#d5e0d6] px-4 py-3 sm:px-6">
+          <nav
+            aria-label="Páginas de reseñas"
+            className="flex flex-wrap items-center gap-2 border-t border-[#d5e0d6] px-4 py-3 sm:px-6"
+          >
             {pagina > 1 && (
-              <Link className={botonPagina} rel="prev" href={`${primeraPagina}&pagina=${pagina - 1}`}>
+              <Link
+                className={botonPagina}
+                rel="prev"
+                href={`${primeraPagina}&pagina=${pagina - 1}`}
+              >
                 Anterior
               </Link>
             )}
-            <span aria-current="page" className="px-1 text-sm font-medium text-stone-700">
+            <span
+              aria-current="page"
+              className="px-1 text-sm font-medium text-stone-700"
+            >
               Página {numero.format(pagina)}
             </span>
             {datos.hayMas && pagina < 99999 && (
-              <Link className={botonPagina} rel="next" href={`${primeraPagina}&pagina=${pagina + 1}`}>
+              <Link
+                className={botonPagina}
+                rel="next"
+                href={`${primeraPagina}&pagina=${pagina + 1}`}
+              >
                 Siguiente
               </Link>
             )}
           </nav>
         )}
       </section>
-      <ResumenResenas datos={datos} />
+      <div className="space-y-3">
+        <ResumenResenas datos={datos} />
+        <p className="px-2 text-xs leading-relaxed text-[#526a60]">
+          El resumen corresponde a los filtros aplicados. Las reseñas negativas
+          ayudan a identificar mejoras; repórtalas solo si incumplen las normas.
+        </p>
+      </div>
+      {elegida && (
+        <DetalleOpinion key={elegida.id} resena={elegida} volver={volver} />
+      )}
     </div>
   );
 }
 
 async function ResenasAsignadas({ consulta }: { consulta: Promise<Consulta> }) {
   if (!(await accesoPanel())) return null;
-  const [{ destino, pagina, orden }, acceso] = await Promise.all([
+  const [parametros, acceso] = await Promise.all([
     consulta,
     solicitarVisitas<DestinoVisita[]>("/visitas/administracion"),
   ]);
@@ -155,20 +245,30 @@ async function ResenasAsignadas({ consulta }: { consulta: Promise<Consulta> }) {
     return (
       <div className="space-y-2 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-950">
         <p role="alert">{acceso.mensaje}</p>
-        {![401, 403, 404].includes(acceso.estado) && <BotonActualizarPanel reintentar />}
+        {![401, 403, 404].includes(acceso.estado) && (
+          <BotonActualizarPanel reintentar />
+        )}
       </div>
     );
   }
 
+  const { destino, pagina, orden } = parametros;
   const elegido = destino
     ? acceso.datos.find(({ slug }) => slug === destino)
     : acceso.datos[0];
   if (!elegido) {
     return (
       <div className={`${panel} space-y-2 p-5`}>
-        <p role="status">{acceso.datos.length ? "El atractivo no está disponible para tu cuenta." : "Tu cuenta aún no tiene un atractivo asignado."}</p>
+        <p role="status">
+          {acceso.datos.length
+            ? "El atractivo no está disponible para tu cuenta."
+            : "Tu cuenta aún no tiene un atractivo asignado."}
+        </p>
         {acceso.datos.length > 0 && (
-          <Link href={ruta} className="inline-flex min-h-11 items-center font-semibold text-[#174238] underline underline-offset-4">
+          <Link
+            href={ruta}
+            className="inline-flex min-h-11 items-center font-semibold text-[#174238] underline underline-offset-4"
+          >
             Ver reseñas del atractivo asignado
           </Link>
         )}
@@ -177,22 +277,50 @@ async function ResenasAsignadas({ consulta }: { consulta: Promise<Consulta> }) {
   }
 
   const actual = pagina && /^[1-9]\d{0,4}$/.test(pagina) ? Number(pagina) : 1;
-  const ordenActual = orden === "calificacion" ? "calificacion" : "recientes";
-  const filtro = new URLSearchParams({ destino: elegido.slug, orden: ordenActual }).toString();
-  const campo = "min-h-11 w-full rounded-xl border border-[#b8cbbb] bg-white px-3 font-medium";
+  const ordenActual = ["calificacion", "menor"].includes(orden ?? "")
+    ? orden!
+    : "recientes";
+  const filtros = new URLSearchParams({
+    destino: elegido.slug,
+    orden: ordenActual,
+  });
+  for (const clave of [
+    "estrellas",
+    "desde",
+    "hasta",
+    "foto",
+    "respuesta",
+  ] as const) {
+    if (parametros[clave]) filtros.set(clave, parametros[clave]!);
+  }
+  const filtro = filtros.toString();
+  const campo =
+    "min-h-11 w-full rounded-xl border border-[#b8cbbb] bg-white px-3 font-medium";
 
   return (
     <>
-      <div className="flex flex-col gap-4 border-b border-[#d5e0d6] pb-5 xl:flex-row xl:items-end xl:justify-between">
+      <div className="flex flex-col gap-4 border-b border-[#d5e0d6] pb-5 ">
         <h2 className="min-w-0 wrap-anywhere font-serif text-2xl text-[#14382e] sm:text-3xl">
           {elegido.nombre}
         </h2>
-        <Form key={filtro} action={ruta} className="grid items-end gap-3 sm:flex sm:flex-wrap">
+        <Form
+          key={filtro}
+          action={ruta}
+          className="grid w-full items-end gap-3 sm:flex sm:flex-wrap"
+        >
           {acceso.datos.length > 1 ? (
             <label className="grid min-w-0 gap-1 text-sm font-semibold">
               Atractivo
-              <select name="destino" defaultValue={elegido.slug} className={`${campo} sm:max-w-64`}>
-                {acceso.datos.map(({ id, slug, nombre }) => <option key={id} value={slug}>{nombre}</option>)}
+              <select
+                name="destino"
+                defaultValue={elegido.slug}
+                className={`${campo} sm:max-w-64`}
+              >
+                {acceso.datos.map(({ id, slug, nombre }) => (
+                  <option key={id} value={slug}>
+                    {nombre}
+                  </option>
+                ))}
               </select>
             </label>
           ) : (
@@ -203,15 +331,101 @@ async function ResenasAsignadas({ consulta }: { consulta: Promise<Consulta> }) {
             <select name="orden" defaultValue={ordenActual} className={campo}>
               <option value="recientes">Más recientes</option>
               <option value="calificacion">Mayor calificación</option>
+              <option value="menor">Menor calificación</option>
             </select>
           </label>
+          <details
+            className="w-full rounded-xl border border-[#d5e0d6] bg-white p-3 sm:basis-full"
+            open={Boolean(
+              parametros.estrellas ||
+              parametros.desde ||
+              parametros.hasta ||
+              parametros.foto ||
+              parametros.respuesta,
+            )}
+          >
+            <summary className="cursor-pointer py-1 text-sm font-semibold">
+              Filtros avanzados
+            </summary>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <label className="grid gap-1 text-sm">
+                Estrellas
+                <select
+                  name="estrellas"
+                  defaultValue={parametros.estrellas ?? ""}
+                  className={campo}
+                >
+                  <option value="">Todas</option>
+                  {[5, 4, 3, 2, 1].map((valor) => (
+                    <option key={valor} value={valor}>
+                      {valor} de 5
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-1 text-sm">
+                Desde
+                <input
+                  type="date"
+                  name="desde"
+                  defaultValue={parametros.desde}
+                  className={campo}
+                />
+              </label>
+              <label className="grid gap-1 text-sm">
+                Hasta
+                <input
+                  type="date"
+                  name="hasta"
+                  defaultValue={parametros.hasta}
+                  min={parametros.desde}
+                  className={campo}
+                />
+              </label>
+              <label className="grid gap-1 text-sm">
+                Respuesta oficial
+                <select
+                  name="respuesta"
+                  defaultValue={parametros.respuesta ?? ""}
+                  className={campo}
+                >
+                  <option value="">Todas</option>
+                  <option value="pendiente">Pendientes de respuesta</option>
+                  <option value="respondida">Con respuesta oficial</option>
+                </select>
+              </label>
+              <label className="flex min-h-11 items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="foto"
+                  value="1"
+                  defaultChecked={parametros.foto === "1"}
+                  className="size-4 accent-[#174238]"
+                />
+                Solo con fotografías
+              </label>
+            </div>
+          </details>
+          <Link
+            href={`${ruta}?destino=${encodeURIComponent(elegido.slug)}`}
+            className="inline-flex min-h-11 items-center px-2 text-sm font-semibold underline underline-offset-4"
+          >
+            Limpiar filtros
+          </Link>
           <button className="min-h-11 rounded-xl bg-[#174238] px-4 text-sm font-semibold text-white hover:bg-[#245649]">
             Aplicar
           </button>
         </Form>
       </div>
-      <Suspense key={`${filtro}&pagina=${actual}`} fallback={<EsqueletoResenas />}>
-        <ResultadosResenas filtro={filtro} pagina={actual} />
+      <Suspense
+        key={`${filtro}&pagina=${actual}`}
+        fallback={<EsqueletoResenas />}
+      >
+        <ResultadosResenas
+          filtro={filtro}
+          pagina={actual}
+          seleccion={parametros.resena}
+        />
       </Suspense>
     </>
   );
@@ -227,10 +441,16 @@ function EsqueletoResenas() {
   );
 }
 
-export default function PaginaResenas({ searchParams }: { searchParams: Promise<Consulta> }) {
+export default function PaginaResenas({
+  searchParams,
+}: {
+  searchParams: Promise<Consulta>;
+}) {
   return (
     <main className="mx-auto w-full max-w-[100rem] space-y-5 py-2 text-[#14382e]">
-      <h1 className="text-sm font-semibold text-[#426456]">Reseñas del atractivo</h1>
+      <h1 className="text-sm font-semibold text-[#426456]">
+        Reseñas del atractivo
+      </h1>
       <Suspense fallback={<EsqueletoResenas />}>
         <ResenasAsignadas consulta={searchParams} />
       </Suspense>
