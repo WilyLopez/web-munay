@@ -79,21 +79,33 @@ export async function Opiniones({
           Sé la primera persona en compartir su experiencia
         </h2>
         <p className="mt-2 max-w-prose text-sm leading-relaxed text-[#465a50]">
-          Todavía no hay reseñas de este destino. Después de tu visita, verifica
-          tu presencia con el QR para compartir tu opinión.
+          Todavía no hay reseñas de este destino. Comparte tu opinión para ayudar
+          a otros viajeros.
         </p>
-        <Link
-          href={
-            puedeRetomar
-            ? enlaceEscribirResena(slug, true)
-              : `/verificar-visita?destino=${encodeURIComponent(slug)}`
-          }
-          className="mt-4 inline-flex min-h-11 items-center rounded-full bg-[#174238] px-4 text-sm font-semibold text-white hover:bg-[#245649] focus-visible:outline-2 focus-visible:outline-offset-2"
-        >
-          {puedeRetomar
-            ? "Continuar mi reseña"
-            : "Verificar mi visita y escribir"}
-        </Link>
+        <div className="mt-5 space-y-4">
+          <FormularioResena
+            key={slug}
+            slug={slug}
+            invitado={datos.estado === "visitante"}
+            puntosResena={datos.puntosResena}
+            puntosSelfie={datos.puntosSelfie}
+          />
+          <div className="flex flex-wrap items-center gap-3 text-sm text-stone-600">
+            <span>¿Estás en el destino turístico?</span>
+            <Link
+              href={
+                puedeRetomar
+                  ? enlaceEscribirResena(slug, true)
+                  : `/verificar-visita?destino=${encodeURIComponent(slug)}`
+              }
+              className="font-semibold underline hover:text-[#0b6b52]"
+            >
+              {puedeRetomar
+                ? "Continuar con visita verificada"
+                : "Verificar visita con código QR"}
+            </Link>
+          </div>
+        </div>
       </section>
     );
   const conteos = new Map(
@@ -226,40 +238,53 @@ export async function Opiniones({
                 <p>Esta reseña fue retirada de la publicación.</p>
               )}
               {datos.estado === "bloqueada" && (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <button
-                    type="button"
-                    disabled
-                    aria-describedby="motivo-resena-bloqueada"
-                    className="inline-flex min-h-12 items-center justify-center cursor-not-allowed rounded-full border border-teal-900/20 px-4 py-2 text-sm font-semibold text-stone-600"
-                  >
-                    Escribir una reseña
-                  </button>
-                  <p id="motivo-resena-bloqueada" className="text-sm">
-                    Verifica tu visita escaneando el QR que muestra el
-                    encargado.
-                  </p>
-                  <Link
-                    href={`/verificar-visita?destino=${encodeURIComponent(destino)}`}
-                    className="inline-flex min-h-12 items-center text-sm font-semibold underline underline-offset-4 hover:text-[#0b6b52]"
-                  >
-                    Verificar mi visita
-                  </Link>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-amber-200/70 bg-amber-50/70 p-3 text-amber-900">
+                    <p id="motivo-resena-bloqueada" className="text-sm">
+                      Para sumar puntos oficiales MUNAY en tu ranking, verifica
+                      tu visita escaneando el código QR del encargado.
+                    </p>
+                    <Link
+                      href={`/verificar-visita?destino=${encodeURIComponent(destino)}`}
+                      className="inline-flex min-h-10 items-center text-sm font-semibold underline underline-offset-4 hover:text-[#0b6b52]"
+                    >
+                      Verificar mi visita
+                    </Link>
+                  </div>
+                  <FormularioResena
+                    key={destino}
+                    slug={destino}
+                    invitado={false}
+                    puntosResena={datos.puntosResena}
+                    puntosSelfie={datos.puntosSelfie}
+                  />
                 </div>
               )}
               {datos.estado === "visitante" && (
-                <Link
-                  href={
-                    puedeRetomar
-                      ? enlaceEscribirResena(destino)
-                      : `/verificar-visita?destino=${encodeURIComponent(destino)}`
-                  }
-                  className="inline-flex min-h-12 items-center font-semibold underline hover:text-[#0b6b52]"
-                >
-                  {puedeRetomar
-                    ? "Continuar mi reseña"
-                    : "Verificar mi visita y escribir"}
-                </Link>
+                <div className="space-y-4">
+                  <FormularioResena
+                    key={destino}
+                    slug={destino}
+                    invitado={true}
+                    puntosResena={datos.puntosResena}
+                    puntosSelfie={datos.puntosSelfie}
+                  />
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-stone-600">
+                    <span>¿Visitaste el lugar?</span>
+                    <Link
+                      href={
+                        puedeRetomar
+                          ? enlaceEscribirResena(destino)
+                          : `/verificar-visita?destino=${encodeURIComponent(destino)}`
+                      }
+                      className="font-semibold underline hover:text-[#0b6b52]"
+                    >
+                      {puedeRetomar
+                        ? "Continuar con visita verificada"
+                        : "Escanear QR para verificar visita y ganar puntos"}
+                    </Link>
+                  </div>
+                </div>
               )}
             </div>
           )}

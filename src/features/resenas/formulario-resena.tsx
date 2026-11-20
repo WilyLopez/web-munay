@@ -44,7 +44,7 @@ export function FormularioResena({
   visitaPrevia?: boolean;
 }) {
   const router = useRouter();
-  const [recuperando, cambiarRecuperando] = useState(true);
+  const [recuperando, cambiarRecuperando] = useState(false);
   const enCliente = useSyncExternalStore(
     suscribirFormulario,
     formularioEnCliente,
@@ -395,7 +395,7 @@ export function FormularioResena({
           <p
             id="error-publicacion-resena"
             role="alert"
-            className="text-red-800"
+            className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-800"
           >
             {error}
           </p>
@@ -410,7 +410,7 @@ export function FormularioResena({
             <button
               type="submit"
               disabled={!formularioListo || publicando || subiendo}
-              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-teal-950 px-6 py-2.5 font-semibold text-white transition-colors hover:bg-teal-900 disabled:opacity-60 sm:w-auto"
+              className="inline-flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#174238] px-8 py-3 text-base font-bold text-white shadow-md transition-all hover:bg-[#102e27] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               {!formularioListo
                 ? "Preparando formulario…"
