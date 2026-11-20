@@ -59,3 +59,13 @@ export type PreparacionResena = {
   puntosResena: number;
   puntosSelfie: number;
 };
+
+export type RecompensaResena = {
+  estado: "acreditada" | "pendiente" | "revertida";
+  destino: { nombre: string; slug: string };
+  registradoEn: string;
+  puntosResena: number;
+  puntosSelfie: number;
+  total: number;
+  previstos: number;
+};

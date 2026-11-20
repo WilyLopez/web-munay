@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { solicitarDestinos } from "@/features/destinos/api";
+import { resolverUrlApi } from "@/lib/api-url";
 
 const categorias = [
   [
@@ -23,13 +23,14 @@ type Resumen = {
   neutras: number;
   negativas: number;
   temas: string[];
+  actualizadoEn?: string;
 };
 
 async function cargarResumen(slug: string) {
   try {
-    const respuesta = await solicitarDestinos(
-      undefined,
-      `/resenas/sentimiento/${encodeURIComponent(slug)}`,
+    const respuesta = await fetch(
+      resolverUrlApi(`/resenas/sentimiento/${encodeURIComponent(slug)}`),
+      { cache: "no-store", signal: AbortSignal.timeout(5000) },
     );
     return respuesta.ok ? ((await respuesta.json()) as Resumen) : null;
   } catch {
@@ -37,18 +38,11 @@ async function cargarResumen(slug: string) {
   }
 }
 
-export async function TarjetaSentimiento({
-  slug,
-  ocultarSinDatos = false,
-}: {
-  slug: string;
-  ocultarSinDatos?: boolean;
-}) {
+export async function TarjetaSentimiento({ slug }: { slug: string }) {
   const resumen = await cargarResumen(slug);
   const total = resumen
     ? resumen.positivas + resumen.neutras + resumen.negativas
     : 0;
-  if (ocultarSinDatos && (!resumen || total === 0)) return null;
 
   return (
     <section
@@ -56,8 +50,11 @@ export async function TarjetaSentimiento({
       className="space-y-4 rounded-3xl border border-teal-200 bg-teal-50 p-5 sm:p-8"
     >
       <h2 id="titulo-sentimiento" className="text-2xl font-bold text-teal-950">
-        Qué opinan los visitantes
+        Sentimiento de las reseñas
       </h2>
+      <p className="text-xs font-medium text-teal-900">
+        Generado por IA · Clasificación experimental
+      </p>
       {!resumen ? (
         <p className="text-sm">
           El análisis no está disponible en este momento.
@@ -148,8 +145,9 @@ function Distribucion({ resumen, total }: { resumen: Resumen; total: number }) {
           ` Los temas más mencionados son: ${temas.toLocaleLowerCase("es-PE")}.`}
       </p>
       <p className="text-xs text-stone-700">
-        El análisis resume opiniones de visitantes. La clasificación es
-        experimental y puede equivocarse.
+        Este resumen refleja opiniones de visitantes, no una evaluación oficial
+        del destino. La clasificación es experimental y puede equivocarse. Los
+        temas se identifican mediante reglas de palabras clave.
       </p>
     </>
   );

@@ -1,12 +1,16 @@
 "use server";
 
+import { regresoBeneficios } from "@/features/beneficios/enlaces";
 import {
   obtenerActivacion,
   retomarActivacion,
 } from "@/features/accesos/activacion-pendiente";
 
 import { reclamarVisitaInvitada } from "@/features/visitas/invitada";
-import { regresoEscribirResena, regresoDetalleResena } from "@/features/resenas/enlaces";
+import {
+  regresoEscribirResena,
+  regresoDetalleResena,
+} from "@/features/resenas/enlaces";
 import { regresoQrVisita } from "@/features/visitas/enlace-qr";
 
 import { destinoSesion } from "./destino-sesion";
@@ -107,7 +111,9 @@ export async function registrarCuenta(
 
   const volver =
     regresoEscribirResena(leerCampo(datos, "volver")) ??
-    regresoQrVisita(leerCampo(datos, "volver")) ?? regresoDetalleResena(leerCampo(datos, "volver"));
+    regresoQrVisita(leerCampo(datos, "volver")) ??
+    regresoDetalleResena(leerCampo(datos, "volver")) ??
+    regresoBeneficios(leerCampo(datos, "volver"));
   if (volver)
     (await cookies()).set("munay-resena-volver", volver, {
       httpOnly: true,
@@ -215,7 +221,10 @@ export async function ingresar(
   (await cookies()).delete("munay-resena-volver");
   const verificacion =
     destino === "/destinos"
-      ? (regresoQrVisita(volver) ?? regresoEscribirResena(volver) ?? regresoDetalleResena(volver))
+      ? (regresoQrVisita(volver) ??
+        regresoEscribirResena(volver) ??
+        regresoDetalleResena(volver) ??
+        regresoBeneficios(volver))
       : null;
   if (verificacion) redirect(verificacion);
   redirect(

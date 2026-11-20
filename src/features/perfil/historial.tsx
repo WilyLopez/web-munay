@@ -79,24 +79,43 @@ function actividades(historial: HistorialPerfilDatos): Actividad[] {
       enlace: `${enlaceFicha(fila.resena.destino.slug)}#resena-${fila.resena.id}`,
     }));
   if (historial.seccion === "puntos")
-    return historial.filas.map((fila) => ({
-      id: fila.id,
-      destino: fila.resena.destino,
-      fecha: fila.creadoEn,
-      estado:
-        fila.tipo === "reversion"
-          ? "Reversión de puntos"
-          : "Puntos acreditados",
-      puntos: fila.puntos,
-      detalle:
-        fila.tipo === "reversion"
-          ? "Ajuste por retirada de la reseña."
-          : fila.resena.selfieDeclarada && fila.puntos === 15
-            ? "10 puntos por reseña y 5 por selfie."
-            : "Recompensa por compartir tu visita.",
-      accion: "Ver lugar",
-      enlace: enlaceFicha(fila.resena.destino.slug),
-    }));
+    return historial.filas.flatMap((fila) =>
+      fila.tipo === "canje" && fila.canje
+        ? [
+            {
+              id: fila.id,
+              destino: fila.canje.beneficio.destino,
+              fecha: fila.creadoEn,
+              estado: "Canje de beneficio",
+              puntos: fila.puntos,
+              detalle: fila.canje.nombre,
+              accion: "Ver comprobante",
+              enlace: "/beneficios?seccion=canjes",
+            },
+          ]
+        : fila.resena
+          ? [
+              {
+                id: fila.id,
+                destino: fila.resena.destino,
+                fecha: fila.creadoEn,
+                estado:
+                  fila.tipo === "reversion"
+                    ? "Reversión de puntos"
+                    : "Puntos acreditados",
+                puntos: fila.puntos,
+                detalle:
+                  fila.tipo === "reversion"
+                    ? "Ajuste por retirada de la reseña."
+                    : fila.resena.selfieDeclarada && fila.puntos === 15
+                      ? "10 puntos por reseña y 5 por selfie."
+                      : "Recompensa por compartir tu visita.",
+                accion: "Ver lugar",
+                enlace: enlaceFicha(fila.resena.destino.slug),
+              },
+            ]
+          : [],
+    );
   return historial.filas.map((fila) => {
     const puntos = fila.movimientosPuntos.reduce(
       (saldo, movimiento) => saldo + movimiento.puntos,

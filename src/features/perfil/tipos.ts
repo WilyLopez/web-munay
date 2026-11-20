@@ -90,7 +90,12 @@ export type HistorialPerfilDatos = { hayMas: boolean } & (
           id: string;
           selfieDeclarada: boolean;
           destino: DestinoHistorial;
-        };
+        } | null;
+        canje?: {
+          id: string;
+          nombre: string;
+          beneficio: { destino: DestinoHistorial };
+        } | null;
       }[];
     }
 );

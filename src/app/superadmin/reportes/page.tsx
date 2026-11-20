@@ -1,3 +1,4 @@
+import { PanelAnalisisRiesgo } from "@/features/administracion/panel-analisis-riesgo";
 import { ContenidoResena } from "@/features/resenas/contenido-resena";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -13,6 +14,7 @@ type Consulta = {
   origen?: string;
   destino?: string;
   nivel?: string;
+  analisis?: string;
 };
 type Listado = {
   reportes: {
@@ -33,18 +35,20 @@ type Listado = {
       | "verificada"
       | "fotoUrl"
       | "creadaEn"
-    >;
+    > & { analisisRiesgo?: { modelo: string | null; puntajeModelo: number | null; puntajeReglas: number | null; senales: unknown } | null };
   }[];
   hayMas: boolean;
   pendientesAutomaticos: number;
   revisadosHoy: number;
   destinos: Resena["destino"][];
   umbral: number;
+  actualizadoEn: string;
 };
 
 async function Bandeja({ consulta }: { consulta: Promise<Consulta> }) {
   if (!(await accesoPanel(true))) return null;
-  const { estado, pagina, origen, destino, nivel } = await consulta;
+  const { estado, pagina, origen, destino, nivel, analisis } = await consulta;
+  if (estado === "analisis") return <PanelAnalisisRiesgo pagina={pagina} filtro={analisis} />;
   const revisados = estado === "revisados";
   const actual = pagina && /^[1-9]\d{0,4}$/.test(pagina) ? Number(pagina) : 1;
   const filtro = new URLSearchParams({
@@ -63,6 +67,7 @@ async function Bandeja({ consulta }: { consulta: Promise<Consulta> }) {
           [
             ["pendientes", "Pendientes"],
             ["revisados", "Revisados"],
+            ["analisis", "Cola de análisis"],
           ] as const
         ).map(([id, etiqueta]) => (
           <Link
@@ -98,6 +103,9 @@ async function Bandeja({ consulta }: { consulta: Promise<Consulta> }) {
               <p>
                 Umbral de alerta: más de{" "}
                 <strong>{respuesta.datos.umbral}/100</strong>
+              </p>
+              <p role="status">
+                Actualizado {fechaVisita.format(new Date(respuesta.datos.actualizadoEn))}
               </p>
             </section>
           )}
@@ -187,6 +195,7 @@ async function Bandeja({ consulta }: { consulta: Promise<Consulta> }) {
                       </p>
                       <p className="wrap-anywhere">{motivo}</p>
                     </div>
+                    {resena.analisisRiesgo?.puntajeModelo != null && <p className="text-xs text-[#4d665b]">Modelo experimental: {resena.analisisRiesgo.puntajeModelo}/100. Reglas informativas: {resena.analisisRiesgo.puntajeReglas ?? 0}/100. No es una confirmación de fraude.</p>}
                     <p className="text-xs text-[#4d665b]">
                       Recibido {fechaVisita.format(new Date(creadoEn))}
                       {revisadoEn &&

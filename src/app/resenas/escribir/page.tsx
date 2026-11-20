@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { Navbar } from "@/features/navegacion/navbar";
 import { PiePagina } from "@/features/navegacion/pie-pagina";
 import { FormularioResena } from "@/features/resenas/formulario-resena";
+import { RecompensaPublicada } from "@/features/resenas/recompensa-publicada";
 import { enlaceEscribirResena } from "@/features/resenas/enlaces";
 import type { PreparacionResena } from "@/features/resenas/tipos";
 import { rutaEscanerVisita } from "@/features/visitas/enlace-qr";
@@ -127,7 +128,7 @@ async function Contenido({
       </header>
       {datos.estado === "habilitada" ? (
         <FormularioResena
-          key={datos.destino.slug}
+          key={`${datos.destino.slug}:${invitado ? "invitado" : "sesion"}`}
           invitado={invitado}
           visitaPrevia={
             aviso === "visita-verificada" && Boolean(datos.fechaVisita)
@@ -137,6 +138,8 @@ async function Contenido({
           puntosResena={datos.puntosResena}
           puntosSelfie={datos.puntosSelfie}
         />
+      ) : datos.estado === "publicada" && datos.resenaId ? (
+        <RecompensaPublicada id={datos.resenaId} />
       ) : (
         <section className="space-y-3 rounded-2xl border border-[#d5e0d6] bg-white p-5">
           <h2 className="font-serif text-2xl">

@@ -354,7 +354,7 @@ async function ContenidoFicha({ params, searchParams }: Props) {
         </div>
       </div>
       <Suspense fallback={<EsqueletoSentimiento />}>
-        <TarjetaSentimiento slug={slug} ocultarSinDatos />
+        <TarjetaSentimiento slug={slug} />
       </Suspense>
       <div id="resenas-del-destino" className="scroll-mt-28">
         <Suspense

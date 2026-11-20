@@ -517,6 +517,9 @@ export async function DashboardEncargado({
           )}
         </section>
       </div>
+      <Link href="/administracion/beneficios" className={accion}>
+        Gestionar beneficios y validar comprobantes
+      </Link>
       <VisibilidadAtractivo
         slug={destino.slug}
         nombre={destino.nombre}

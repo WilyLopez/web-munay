@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
 const enlaces = [
-  ["/administracion", "Dashboard"],
+  ["/administracion", "Inicio"],
   ["/administracion/atractivos", "Mi atractivo"],
   ["/administracion/visitas", "Mi QR"],
-  ["/administracion/estadisticas", "Estadísticas"],
+  ["/administracion/estadisticas", "Datos"],
   ["/administracion/resenas", "Reseñas"],
+  ["/administracion/beneficios", "Beneficios"],
 ] as const;
 
 export function MenuMovilEncargado() {
@@ -29,7 +30,7 @@ export function MenuMovilEncargado() {
   return (
     <nav
       aria-label="Panel del encargado"
-      className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-teal-900/15 bg-[#f8f5ea] px-1 pt-1 pb-[calc(0.35rem+env(safe-area-inset-bottom))] text-center text-[0.65rem] font-semibold sm:text-xs md:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-teal-900/15 bg-[#f8f5ea] px-1 pt-1 pb-[calc(0.35rem+env(safe-area-inset-bottom))] text-center text-[0.65rem] font-semibold sm:text-xs md:hidden"
     >
       {enlaces.map(([href, etiqueta]) => (
         <Link

@@ -216,6 +216,23 @@ async function ContenidoPerfil({ searchParams }: Props) {
           </div>
         ))}
       </dl>
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c7d7cb] bg-white p-5">
+        <div>
+          <h2 className="text-lg font-semibold text-[#174238]">
+            Tus puntos, nuevas experiencias
+          </h2>
+          <p className="mt-1 text-sm text-[#526a60]">
+            Consulta los beneficios aprobados y conserva tus comprobantes de
+            canje.
+          </p>
+        </div>
+        <Link
+          href="/beneficios"
+          className="inline-flex min-h-11 items-center rounded-xl bg-[#174238] px-4 text-sm font-semibold text-white"
+        >
+          Ver beneficios y mis canjes
+        </Link>
+      </section>
       <div className={distribucion}>
         <div className="min-w-0">
           <HistorialPerfil consulta={consulta} resumen={resumen} />
@@ -307,6 +324,23 @@ function EsqueletoPerfil() {
           <div key={item} className="h-28 rounded-2xl bg-[#dce6dc]" />
         ))}
       </div>
+      <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#c7d7cb] bg-white p-5">
+        <div>
+          <h2 className="text-lg font-semibold text-[#174238]">
+            Tus puntos, nuevas experiencias
+          </h2>
+          <p className="mt-1 text-sm text-[#526a60]">
+            Consulta los beneficios aprobados y conserva tus comprobantes de
+            canje.
+          </p>
+        </div>
+        <Link
+          href="/beneficios"
+          className="inline-flex min-h-11 items-center rounded-xl bg-[#174238] px-4 text-sm font-semibold text-white"
+        >
+          Ver beneficios y mis canjes
+        </Link>
+      </section>
       <div className={distribucion}>
         <div className={panel}>
           <EsqueletoActividad />

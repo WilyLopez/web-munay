@@ -19,6 +19,7 @@ export function Sidebar({ global }: { global: boolean }) {
         ["/superadmin/accesos", "Accesos de encargados"],
         ["/superadmin/destinos", "Revisión de destinos"],
         ["/superadmin/reportes", "Reportes"],
+        ["/superadmin/beneficios", "Beneficios"],
         ["/superadmin/blockchain", "Registros blockchain"],
         ...enlacesOperacion,
       ]
@@ -28,6 +29,7 @@ export function Sidebar({ global }: { global: boolean }) {
         enlacesOperacion[1],
         enlacesOperacion[0],
         enlacesOperacion[2],
+        ["/administracion/beneficios", "Beneficios"],
       ];
 
   return (

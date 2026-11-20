@@ -1,3 +1,4 @@
+import { regresoBeneficios } from "@/features/beneficios/enlaces";
 import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import {
@@ -6,7 +7,10 @@ import {
 } from "@/features/autenticacion/supabase/servidor";
 import { solicitarSesion } from "@/features/autenticacion/sesion";
 import { destinoSesion } from "@/features/autenticacion/destino-sesion";
-import { regresoEscribirResena, regresoDetalleResena } from "@/features/resenas/enlaces";
+import {
+  regresoEscribirResena,
+  regresoDetalleResena,
+} from "@/features/resenas/enlaces";
 import { regresoQrVisita } from "@/features/visitas/enlace-qr";
 import { retomarActivacion } from "@/features/accesos/activacion-pendiente";
 import { reclamarVisitaInvitada } from "@/features/visitas/invitada";
@@ -40,6 +44,7 @@ export async function GET(request: NextRequest) {
                 regresoEscribirResena(volver) ??
                 regresoQrVisita(volver) ??
                 regresoDetalleResena(volver) ??
+                regresoBeneficios(volver) ??
                 panel;
             }
           } else await borrarCookiesSesion();

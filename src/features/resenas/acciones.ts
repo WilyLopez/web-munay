@@ -2,8 +2,24 @@
 
 import { revalidatePath, updateTag } from "next/cache";
 import { crearSupabaseServidor } from "@/features/autenticacion/supabase/servidor";
-import type { ListadoRespuestas, PreparacionResena } from "./tipos";
+import type {
+  ListadoRespuestas,
+  PreparacionResena,
+  RecompensaResena,
+} from "./tipos";
 import { solicitarVisitas } from "@/features/visitas/api";
+
+export async function comprobarSesionResena(slug: string) {
+  return solicitarVisitas<PreparacionResena>(
+    `/resenas/escribir/${encodeURIComponent(slug)}`,
+  );
+}
+
+export async function consultarRecompensaResena(id: string) {
+  return solicitarVisitas<RecompensaResena>(
+    `/puntos/resenas/${encodeURIComponent(id)}/recompensa`,
+  );
+}
 
 export async function publicarResena(
   slug: string,
