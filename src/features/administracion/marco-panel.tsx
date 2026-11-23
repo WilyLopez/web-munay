@@ -3,7 +3,8 @@ import { Suspense, type ReactNode } from "react";
 import { accesoPanel } from "./acceso";
 import { MenuCuenta } from "./menu-cuenta";
 import { MenuMovilEncargado } from "./menu-movil-encargado";
-import { Sidebar } from "./sidebar";
+import { Sidebar, type ContadoresSidebar } from "./sidebar";
+import { solicitarVisitas } from "@/features/visitas/api";
 
 const marco =
   "min-h-dvh bg-[#f4f5ef] text-[#173b32] md:grid md:grid-cols-[15rem_minmax(0,1fr)]";
@@ -81,9 +82,28 @@ async function Marco({
   }
   const esSuperAdmin = perfil.rol === "SUPER_ADMIN";
 
+  let contadores: ContadoresSidebar | undefined;
+  if (esSuperAdmin) {
+    type ResAccesos = { filas: { estado: string }[] };
+    type ResReportes = { reportes: unknown[] };
+    type ResDestinos = { id: string; estadoEditorial: string }[];
+    const [resAccesos, resReportes, resDestinos] = await Promise.all([
+      solicitarVisitas<ResAccesos>("/gestion-accesos?estado=pendientes&pagina=1"),
+      solicitarVisitas<ResReportes>("/reportes-resenas?estado=pendientes&pagina=1"),
+      solicitarVisitas<ResDestinos>("/destinos/administracion/resumen"),
+    ]);
+    contadores = {
+      accesosPendientes: resAccesos.ok ? (resAccesos.datos.filas?.length ?? 0) : 0,
+      reportesPendientes: resReportes.ok ? (resReportes.datos.reportes?.length ?? 0) : 0,
+      revisionPendientes: resDestinos.ok
+        ? resDestinos.datos.filter((d) => d.estadoEditorial === "en_revision").length
+        : 0,
+    };
+  }
+
   return (
     <div className={marco}>
-      <Sidebar global={esSuperAdmin} />
+      <Sidebar global={esSuperAdmin} contadores={contadores} />
       <div className="min-w-0">
         <header className={encabezado}>
           <p className="text-sm font-semibold">
