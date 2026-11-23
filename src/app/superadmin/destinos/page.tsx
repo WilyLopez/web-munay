@@ -5,6 +5,7 @@ import {
   estadosFicha,
   type EstadoFicha,
 } from "@/features/destinos/informacion";
+import { BotonExportarCsv } from "@/features/administracion/boton-exportar-csv";
 import { solicitarVisitas } from "@/features/visitas/api";
 
 type FilaDestino = {
@@ -78,30 +79,44 @@ async function ListaDestinos({
 
   return (
     <div className="space-y-5">
-      <nav
-        aria-label="Filtrar por estado"
-        className="flex flex-wrap gap-2"
-      >
-        {filtros.map(({ valor, etiqueta, cuenta }) => {
-          const activo = estadoActual === valor;
-          const params = new URLSearchParams();
-          if (valor) params.set("estado", valor);
-          if (buscar) params.set("buscar", buscar);
-          return (
-            <Link
-              key={valor}
-              href={params.size ? `?${params}` : "/superadmin/destinos"}
-              aria-current={activo ? "page" : undefined}
-              className="flex items-center gap-1.5 rounded-full border border-[#ccd9cf] px-3 py-1.5 text-sm font-semibold hover:bg-[#edf3ec] aria-[current=page]:border-[#174238] aria-[current=page]:bg-[#dbece0]"
-            >
-              {etiqueta}
-              <span className="rounded-full bg-[#dce3da] px-1.5 py-0.5 text-[10px] font-bold text-[#173b32]">
-                {cuenta}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <nav
+          aria-label="Filtrar por estado"
+          className="flex flex-wrap gap-2"
+        >
+          {filtros.map(({ valor, etiqueta, cuenta }) => {
+            const activo = estadoActual === valor;
+            const params = new URLSearchParams();
+            if (valor) params.set("estado", valor);
+            if (buscar) params.set("buscar", buscar);
+            return (
+              <Link
+                key={valor}
+                href={params.size ? `?${params}` : "/superadmin/destinos"}
+                aria-current={activo ? "page" : undefined}
+                className="flex items-center gap-1.5 rounded-full border border-[#ccd9cf] px-3 py-1.5 text-sm font-semibold hover:bg-[#edf3ec] aria-[current=page]:border-[#174238] aria-[current=page]:bg-[#dbece0]"
+              >
+                {etiqueta}
+                <span className="rounded-full bg-[#dce3da] px-1.5 py-0.5 text-[10px] font-bold text-[#173b32]">
+                  {cuenta}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+        <BotonExportarCsv
+          nombreArchivo={`destinos_${new Date().toISOString().slice(0, 10)}`}
+          columnas={[
+            { cabecera: "Nombre", valor: (d) => d.nombre },
+            { cabecera: "Slug", valor: (d) => d.slug },
+            {
+              cabecera: "Estado Editorial",
+              valor: (d) => estadosFicha[d.estadoEditorial] ?? d.estadoEditorial,
+            },
+          ]}
+          datos={filas}
+        />
+      </div>
 
       {filas.length > 0 ? (
         <div className="overflow-hidden rounded-2xl border border-[#dce3da] bg-white">

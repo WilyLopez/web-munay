@@ -7,6 +7,7 @@ import { useEffect, useRef, type FormEvent, type ReactNode } from "react";
 import { consultar, useDestinos } from "./consultas";
 import { FichaUsuario } from "./detalle";
 import { boton, campo, fecha, principal, roles, type Pagina } from "./tipos";
+import { descargarCsv } from "@/lib/exportar-csv";
 
 const ruta = "/superadmin/usuarios";
 const camposFiltro = [
@@ -77,11 +78,46 @@ export function TablaUsuarios() {
 
   return (
     <main className="space-y-5">
-      <div>
-        <h1 className="font-serif text-4xl tracking-tight">Usuarios</h1>
-        <p className="mt-2 text-sm text-[#4d665b]">
-          Consulta cuentas y gestiona sus accesos.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-serif text-4xl tracking-tight">Usuarios</h1>
+          <p className="mt-2 text-sm text-[#4d665b]">
+            Consulta cuentas y gestiona sus accesos.
+          </p>
+        </div>
+        {datos && datos.usuarios.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              descargarCsv(
+                `usuarios_${new Date().toISOString().slice(0, 10)}`,
+                [
+                  { cabecera: "Nombre Completo", valor: (u) => u.nombreCompleto },
+                  { cabecera: "Correo Electrónico", valor: (u) => u.correo },
+                  { cabecera: "Rol", valor: (u) => roles[u.rol] ?? u.rol },
+                  { cabecera: "Estado", valor: (u) => (u.activo ? "Activa" : "Desactivada") },
+                  { cabecera: "Confirmado", valor: (u) => (u.confirmado ? "Sí" : "No") },
+                  { cabecera: "Destinos Asignados", valor: (u) => u.asignados },
+                  { cabecera: "Fecha de Creación", valor: (u) => u.creadaEn },
+                ],
+                datos.usuarios,
+              );
+            }}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#ccd9cf] bg-white px-3 py-2 text-xs font-semibold text-[#173b32] hover:bg-[#e6eee6]"
+          >
+            <svg
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="size-4"
+              aria-hidden="true"
+            >
+              <path d="M10 3v10m0 0l-3-3m3 3l3-3M4 17h12" />
+            </svg>
+            Exportar a CSV
+          </button>
+        )}
       </div>
       <nav aria-label="Vistas de usuarios" className="flex flex-wrap gap-2">
         {(
