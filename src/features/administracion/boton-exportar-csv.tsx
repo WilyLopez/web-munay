@@ -1,6 +1,7 @@
 "use client";
 
 import { descargarCsv, type ColumnaCsv } from "@/lib/exportar-csv";
+import { useNotificaciones } from "./contexto-notificaciones";
 
 export function BotonExportarCsv<T>({
   nombreArchivo,
@@ -13,12 +14,23 @@ export function BotonExportarCsv<T>({
   datos: T[];
   etiqueta?: string;
 }) {
+  const notificaciones = useNotificaciones();
+
   if (!datos.length) return null;
+
+  const ejecutarDescarga = () => {
+    try {
+      descargarCsv(nombreArchivo, columnas, datos);
+      notificaciones.notificarExito(`Reporte ${nombreArchivo}.csv descargado correctamente.`);
+    } catch {
+      notificaciones.notificarError("No se pudo generar el archivo CSV.");
+    }
+  };
 
   return (
     <button
       type="button"
-      onClick={() => descargarCsv(nombreArchivo, columnas, datos)}
+      onClick={ejecutarDescarga}
       className="inline-flex items-center gap-1.5 rounded-lg border border-[#ccd9cf] bg-white px-3 py-2 text-xs font-semibold text-[#173b32] hover:bg-[#e6eee6]"
     >
       <svg
