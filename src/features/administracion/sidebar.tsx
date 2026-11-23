@@ -10,9 +10,40 @@ const enlacesOperacion = [
   ["/administracion/resenas", "Reseñas"],
 ];
 
-export function Sidebar({ global }: { global: boolean }) {
+export type ContadoresSidebar = {
+  accesosPendientes: number;
+  reportesPendientes: number;
+  revisionPendientes: number;
+};
+
+function BadgeSidebar({ n }: { n: number }) {
+  if (n <= 0) return null;
+  return (
+    <span
+      aria-label={`${n} pendientes`}
+      className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white tabular-nums"
+    >
+      {n > 99 ? "99+" : n}
+    </span>
+  );
+}
+
+export function Sidebar({
+  global,
+  contadores,
+}: {
+  global: boolean;
+  contadores?: ContadoresSidebar;
+}) {
   const ruta = usePathname();
-  const enlaces = global
+
+  const badgePor: Record<string, number> = {
+    "/superadmin/accesos": contadores?.accesosPendientes ?? 0,
+    "/superadmin/reportes": contadores?.reportesPendientes ?? 0,
+    "/superadmin/destinos": contadores?.revisionPendientes ?? 0,
+  };
+
+  const enlaces: [string, string][] = global
     ? [
         ["/superadmin", "Dashboard"],
         ["/superadmin/usuarios", "Usuarios"],
@@ -21,14 +52,14 @@ export function Sidebar({ global }: { global: boolean }) {
         ["/superadmin/reportes", "Reportes"],
         ["/superadmin/beneficios", "Beneficios"],
         ["/superadmin/blockchain", "Registros blockchain"],
-        ...enlacesOperacion,
+        ...(enlacesOperacion as [string, string][]),
       ]
     : [
         ["/administracion", "Dashboard"],
         ["/administracion/atractivos", "Mi atractivo"],
-        enlacesOperacion[1],
-        enlacesOperacion[0],
-        enlacesOperacion[2],
+        enlacesOperacion[1] as [string, string],
+        enlacesOperacion[0] as [string, string],
+        enlacesOperacion[2] as [string, string],
         ["/administracion/beneficios", "Beneficios"],
       ];
 
@@ -46,7 +77,7 @@ export function Sidebar({ global }: { global: boolean }) {
       </Link>
       <nav
         aria-label={global ? "Panel de SuperAdmin" : "Panel de Admin"}
-        className={`${global ? "flex" : "hidden md:flex"} flex-wrap gap-2 md:flex-col`}
+        className={`${global ? "flex" : "hidden md:flex"} flex-wrap gap-1 md:flex-col`}
       >
         {enlaces.map(([href, etiqueta]) => (
           <Link
@@ -56,16 +87,15 @@ export function Sidebar({ global }: { global: boolean }) {
               ruta === href ||
               (href === "/administracion/atractivos" &&
                 ruta.startsWith("/administracion/atractivos/")) ||
-              (["/superadmin/usuarios", "/superadmin/destinos"].includes(
-                href,
-              ) &&
+              (["/superadmin/usuarios", "/superadmin/destinos"].includes(href) &&
                 ruta.startsWith(href + "/"))
                 ? "page"
                 : undefined
             }
-            className="rounded-lg px-3 py-2 text-sm font-medium text-[#dfebe3] motion-safe:transition-colors hover:bg-white/10 aria-[current=page]:bg-[#d7eadc] aria-[current=page]:text-[#11342c]"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[#dfebe3] motion-safe:transition-colors hover:bg-white/10 aria-[current=page]:bg-[#d7eadc] aria-[current=page]:text-[#11342c]"
           >
-            {etiqueta}
+            <span className="flex-1 truncate">{etiqueta}</span>
+            {global && <BadgeSidebar n={badgePor[href] ?? 0} />}
           </Link>
         ))}
       </nav>
