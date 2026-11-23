@@ -53,7 +53,11 @@ async function Administracion({
           <h2 className="text-2xl font-bold text-teal-950">
             {seleccionado.nombre}
           </h2>
-          <PantallaQr key={seleccionado.slug} slug={seleccionado.slug} />
+          <PantallaQr
+            key={seleccionado.slug}
+            slug={seleccionado.slug}
+            nombreDestino={seleccionado.nombre}
+          />
         </section>
       ) : (
         <p role="alert">El destino no está disponible para esta cuenta.</p>
