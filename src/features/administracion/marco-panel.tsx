@@ -4,6 +4,7 @@ import { accesoPanel } from "./acceso";
 import { MenuCuenta } from "./menu-cuenta";
 import { MenuMovilEncargado } from "./menu-movil-encargado";
 import { Sidebar, type ContadoresSidebar } from "./sidebar";
+import { BuscadorGlobal } from "./buscador-global";
 import { solicitarVisitas } from "@/features/visitas/api";
 
 const marco =
@@ -112,6 +113,7 @@ async function Marco({
               : "Panel del encargado"}
           </p>
           <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
+            <BuscadorGlobal global={esSuperAdmin} />
             <Link
               href="/"
               className="inline-flex min-h-11 items-center shrink-0 rounded-lg border border-[#ccd9cf] px-3 py-2 text-xs font-semibold hover:bg-[#e6eee6]"
