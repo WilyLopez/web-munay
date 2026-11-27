@@ -42,106 +42,84 @@ export function OpinionResumen({
   href: string;
 }) {
   return (
-    <article className="group relative rounded-2xl border border-[#d5e0d6] bg-white p-5 transition-all hover:border-[#174238]/30 hover:shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <AvatarResena nombre={resena.usuario.nombreCompleto} />
-          <div className="min-w-0">
-            <p className="wrap-anywhere text-sm font-semibold text-[#14382e]">
-              {resena.usuario.nombreCompleto}
-            </p>
-            <time dateTime={resena.creadaEn} className="text-xs text-[#526a60]">
+    <article className="group flex flex-col gap-2.5 p-3.5 transition-colors hover:bg-[#f7faf7] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 sm:py-3">
+      <div className="flex min-w-0 items-center gap-3 sm:w-64 sm:shrink-0">
+        <AvatarResena nombre={resena.usuario.nombreCompleto} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-semibold text-[#14382e]">
+            {resena.usuario.nombreCompleto}
+          </p>
+          <div className="flex items-center gap-2">
+            <ValoracionResena nota={resena.calificacion} />
+            <time dateTime={resena.creadaEn} className="text-[11px] text-[#526a60]">
               {fecha.format(new Date(resena.creadaEn))}
             </time>
           </div>
         </div>
-        <div className="shrink-0">
-          <ValoracionResena nota={resena.calificacion} />
-        </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+      <div className="min-w-0 flex-1 flex items-center gap-2.5">
+        {resena.fotoUrl && (
+          <div className="size-8 shrink-0 overflow-hidden rounded-lg border border-[#dce3da]">
+            <Image
+              src={resena.fotoUrl}
+              alt=""
+              width={32}
+              height={32}
+              loading="lazy"
+              unoptimized
+              className="size-full object-cover"
+            />
+          </div>
+        )}
+        <p className="line-clamp-1 truncate text-xs text-[#3a5247]">
+          {resena.comentario}
+        </p>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2 justify-between sm:justify-end">
         {resena.verificada ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 font-medium text-emerald-900 border border-emerald-200/80">
+          <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-900 border border-emerald-200">
             <svg
               viewBox="0 0 16 16"
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
-              className="size-3"
+              className="size-2.5"
               aria-hidden="true"
             >
               <path d="m3 8 3.5 3.5 6.5-7" />
             </svg>
-            Visita verificada
+            Verificada
           </span>
         ) : (
-          <span className="rounded-full bg-[#f4f5ef] px-2.5 py-0.5 font-medium text-[#4d665b]">
-            Sin verificación de visita
+          <span className="hidden sm:inline-flex rounded-full bg-[#f4f5ef] px-2 py-0.5 text-[10px] font-medium text-[#526a60]">
+            Sin QR
           </span>
         )}
 
         {resena.respuestaOficial !== undefined && (
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-medium ${
+            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium border ${
               resena.respuestaOficial
-                ? "bg-teal-50 text-teal-900 border border-teal-200/80"
-                : "bg-amber-50 text-amber-900 border border-amber-200/80"
+                ? "bg-teal-50 text-teal-900 border-teal-200"
+                : "bg-amber-50 text-amber-900 border-amber-200"
             }`}
           >
             {!resena.respuestaOficial && (
               <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
             )}
-            {resena.respuestaOficial
-              ? "Respondida oficialmente"
-              : "Pendiente de respuesta"}
+            {resena.respuestaOficial ? "Respondida" : "Por responder"}
           </span>
         )}
-      </div>
 
-      <div className="mt-3.5 flex items-start gap-4">
-        <p className="min-w-0 flex-1 line-clamp-3 wrap-anywhere whitespace-pre-wrap text-sm leading-relaxed text-[#3a5247]">
-          {resena.comentario}
-        </p>
-        {resena.fotoUrl && (
-          <div className="size-16 shrink-0 overflow-hidden rounded-xl border border-[#dce3da]">
-            <Image
-              src={resena.fotoUrl}
-              alt="Fotografía compartida por el visitante"
-              width={72}
-              height={72}
-              loading="lazy"
-              unoptimized
-              className="size-full object-cover transition-transform group-hover:scale-105"
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[#edf3ec] pt-3">
         <Link
           href={href}
           scroll={false}
-          className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[#edf4ed] px-4 text-xs font-semibold text-[#174238] transition-colors hover:bg-[#174238] hover:text-white"
+          className="inline-flex min-h-8 items-center rounded-lg bg-[#edf4ed] px-3 text-xs font-semibold text-[#174238] transition-colors hover:bg-[#174238] hover:text-white"
         >
-          <svg
-            viewBox="0 0 20 20"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.8}
-            className="size-3.5"
-            aria-hidden="true"
-          >
-            <path d="M17 10c0 3.866-3.582 7-8 7a9.06 9.06 0 0 1-2.347-.306L3 18l1.306-3.653A6.673 6.673 0 0 1 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7Z" />
-          </svg>
-          {resena.respuestaOficial
-            ? `Ver conversación (${resena.totalRespuestas ?? 1})`
-            : "Responder al visitante"}
+          {resena.respuestaOficial ? "Ver" : "Responder"}
         </Link>
-
-        <span className="text-[11px] text-[#526a60]">
-          ID: {resena.id.slice(0, 8)}
-        </span>
       </div>
     </article>
   );
@@ -192,7 +170,7 @@ export function DetalleOpinion({
         <button
           type="button"
           onClick={cerrar}
-          className="rounded-xl border border-[#ccd9cf] px-3.5 py-1.5 text-xs font-semibold text-[#173b32] hover:bg-[#edf4ed]"
+          className="rounded-xl border border-[#ccd9cf] px-3.5 py-1.5 text-xs font-semibold text-[#174238] hover:bg-[#edf4ed]"
         >
           Cerrar
         </button>
