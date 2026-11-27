@@ -168,3 +168,13 @@ export function useNotificaciones() {
   }
   return contexto;
 }
+
+export function useToast() {
+  const notificaciones = useNotificaciones();
+  return {
+    toast: notificaciones.notificar,
+    exito: notificaciones.notificarExito,
+    error: notificaciones.notificarError,
+    info: notificaciones.notificarInfo,
+  };
+}
