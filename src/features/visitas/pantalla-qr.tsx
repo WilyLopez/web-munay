@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import { BotonCopiarEnlaceTransmision } from "./boton-copiar-transmision";
 import { consultarHistorial, sincronizarPantalla } from "./acciones";
 import { generarEnlaceQr } from "./enlace-qr";
+import { ModalAficheImprimible } from "./modal-afiche-imprimible";
 import { useActividadVisitas } from "./usar-actividad-visitas";
 import { useReintentoAlVencer } from "./usar-reintento-al-vencer";
 import {
@@ -156,7 +157,13 @@ function Historial({ slug }: { slug: string }) {
 
 type EstadoPantalla = { datos: PantallaVisitas; venceLocal: number };
 
-export function PantallaQr({ slug }: { slug: string }) {
+export function PantallaQr({
+  slug,
+  nombreDestino,
+}: {
+  slug: string;
+  nombreDestino?: string;
+}) {
   const solicitud = useRef(false);
   const consultaPendiente = useRef(false);
   const versionConexion = useRef(0);
@@ -383,6 +390,12 @@ export function PantallaQr({ slug }: { slug: string }) {
             Abrir pantalla para visitantes ↗
           </Link>
           <BotonCopiarEnlaceTransmision slug={slug} />
+          {codigo && (
+            <ModalAficheImprimible
+              nombreDestino={nombreDestino ?? slug}
+              codigoValor={codigo.valor}
+            />
+          )}
         </div>
         {requiereSesion && (
           <Link

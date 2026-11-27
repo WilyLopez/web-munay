@@ -4,6 +4,9 @@ import { accesoPanel } from "./acceso";
 import { MenuCuenta } from "./menu-cuenta";
 import { MenuMovilEncargado } from "./menu-movil-encargado";
 import { Sidebar, type ContadoresSidebar } from "./sidebar";
+import { BuscadorGlobal } from "./buscador-global";
+import { ProveedorNotificaciones } from "./contexto-notificaciones";
+import { AvisoVencimientoSesion } from "./aviso-vencimiento-sesion";
 import { solicitarVisitas } from "@/features/visitas/api";
 
 const marco =
@@ -102,37 +105,41 @@ async function Marco({
   }
 
   return (
-    <div className={marco}>
-      <Sidebar global={esSuperAdmin} contadores={contadores} />
-      <div className="min-w-0">
-        <header className={encabezado}>
-          <p className="text-sm font-semibold">
-            {esSuperAdmin
-              ? "Administración de plataforma"
-              : "Panel del encargado"}
-          </p>
-          <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
-            <Link
-              href="/"
-              className="inline-flex min-h-11 items-center shrink-0 rounded-lg border border-[#ccd9cf] px-3 py-2 text-xs font-semibold hover:bg-[#e6eee6]"
-            >
-              Ver sitio público <span aria-hidden="true">↗</span>
-            </Link>
-            <MenuCuenta nombre={perfil.nombreCompleto} global={esSuperAdmin} />
+    <ProveedorNotificaciones>
+      <div className={marco}>
+        <Sidebar global={esSuperAdmin} contadores={contadores} />
+        <div className="min-w-0">
+          <header className={encabezado}>
+            <p className="text-sm font-semibold">
+              {esSuperAdmin
+                ? "Administración de plataforma"
+                : "Panel del encargado"}
+            </p>
+            <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
+              <BuscadorGlobal global={esSuperAdmin} />
+              <Link
+                href="/"
+                className="inline-flex min-h-11 items-center shrink-0 rounded-lg border border-[#ccd9cf] px-3 py-2 text-xs font-semibold hover:bg-[#e6eee6]"
+              >
+                Ver sitio público <span aria-hidden="true">↗</span>
+              </Link>
+              <MenuCuenta nombre={perfil.nombreCompleto} global={esSuperAdmin} />
+            </div>
+          </header>
+          <div
+            className={`${contenido} ${esSuperAdmin ? "max-w-7xl" : "max-md:pb-[calc(4.5rem+env(safe-area-inset-bottom))]"}`}
+          >
+            {children}
           </div>
-        </header>
-        <div
-          className={`${contenido} ${esSuperAdmin ? "max-w-7xl" : "max-md:pb-[calc(4.5rem+env(safe-area-inset-bottom))]"}`}
-        >
-          {children}
         </div>
+        {!esSuperAdmin && (
+          <Suspense>
+            <MenuMovilEncargado />
+          </Suspense>
+        )}
+        <AvisoVencimientoSesion />
       </div>
-      {!esSuperAdmin && (
-        <Suspense>
-          <MenuMovilEncargado />
-        </Suspense>
-      )}
-    </div>
+    </ProveedorNotificaciones>
   );
 }
 

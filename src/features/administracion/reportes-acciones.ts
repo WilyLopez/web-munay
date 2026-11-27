@@ -8,9 +8,16 @@ export async function reportarResena(
   _estado: { mensaje: string; ok: boolean },
   datos: FormData,
 ) {
+  const categoria = datos.get("categoria");
+  const motivoTexto = String(datos.get("motivo") ?? "").trim();
+  const motivo =
+    categoria && categoria !== "otro"
+      ? `[${categoria}] ${motivoTexto}`
+      : motivoTexto;
+
   const respuesta = await solicitarVisitas(
     `/reportes-resenas/resena/${encodeURIComponent(id)}`,
-    { motivo: datos.get("motivo") },
+    { motivo },
     { metodo: "PUT" },
   );
   return respuesta.ok
