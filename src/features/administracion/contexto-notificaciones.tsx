@@ -170,11 +170,19 @@ export function useNotificaciones() {
 }
 
 export function useToast() {
-  const notificaciones = useNotificaciones();
+  const contexto = useContext(ContextoNotificaciones);
+  if (!contexto) {
+    return {
+      toast: () => {},
+      exito: () => {},
+      error: () => {},
+      info: () => {},
+    };
+  }
   return {
-    toast: notificaciones.notificar,
-    exito: notificaciones.notificarExito,
-    error: notificaciones.notificarError,
-    info: notificaciones.notificarInfo,
+    toast: contexto.notificar,
+    exito: contexto.notificarExito,
+    error: contexto.notificarError,
+    info: contexto.notificarInfo,
   };
 }
