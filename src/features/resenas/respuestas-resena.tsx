@@ -17,11 +17,13 @@ export function RespuestasResena({
   total = 0,
   puedeResponder = false,
   oficial = false,
+  nombreDestino,
 }: {
   resenaId: string;
   total?: number;
   puedeResponder?: boolean;
   oficial?: boolean;
+  nombreDestino?: string;
 }) {
   const router = useRouter();
   const campoRespuesta = useRef<HTMLTextAreaElement>(null);
@@ -175,7 +177,11 @@ export function RespuestasResena({
                   </p>
                 )}
                 <ContenidoResena
-                  autor={respuesta.usuario.nombreCompleto}
+                  autor={
+                    respuesta.oficial
+                      ? (nombreDestino ?? respuesta.usuario.nombreCompleto)
+                      : respuesta.usuario.nombreCompleto
+                  }
                   creadaEn={respuesta.creadaEn}
                   comentario={respuesta.comentario}
                   compacto
@@ -312,7 +318,8 @@ export function RespuestasResena({
             ¿Publicar respuesta oficial?
           </h3>
           <p className="mt-2 text-sm text-[#526a60]">
-            Los visitantes verán esta respuesta en nombre de tu atractivo.
+            Los visitantes verán esta respuesta en nombre de{" "}
+            {nombreDestino ? `"${nombreDestino}"` : "tu atractivo"}.
           </p>
           <p className="mt-4 max-h-48 overflow-y-auto whitespace-pre-wrap wrap-anywhere rounded-xl bg-[#f0f5ef] p-4 text-sm">
             {texto}

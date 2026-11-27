@@ -39,6 +39,8 @@ export function TarjetaResena({
           resenaId={resena.id}
           total={resena.totalRespuestas}
           puedeResponder={puedeResponder}
+          oficial={puedeResponder}
+          nombreDestino={resena.destino?.nombre}
         />
       </div>
       {resena.verificada && (

@@ -25,7 +25,9 @@ export type OpinionEncargado = Pick<
   | "fotoUrl"
   | "totalRespuestas"
   | "respuestaOficial"
->;
+> & {
+  destino?: Pick<Resena["destino"], "nombre" | "slug">;
+};
 
 const fecha = new Intl.DateTimeFormat("es-PE", {
   day: "numeric",
@@ -204,6 +206,7 @@ export function DetalleOpinion({
               total={resena.totalRespuestas}
               puedeResponder
               oficial
+              nombreDestino={resena.destino?.nombre}
             />
           </div>
         </section>
