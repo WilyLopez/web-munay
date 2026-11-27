@@ -14,6 +14,7 @@ import {
 } from "react";
 import { SelectorUbicacion } from "@/features/destinos/selector-ubicacion";
 import { categorias, provincias } from "@/features/destinos/catalogo";
+import { useToast } from "@/lib/use-toast";
 import {
   aceptarInvitacion,
   activarCuentaInvitada,
@@ -223,7 +224,7 @@ function DescripcionDestino() {
 function DatosNuevoDestino() {
   return (
     <div className="space-y-4 rounded-2xl border border-[#dce3da] bg-[#fbfcfb] p-4">
-      <DatosBasicosDestino />
+      <DatosBasicosDestino incluirDistrito />
       <SelectorUbicacion />
       <DescripcionDestino />
     </div>
@@ -302,28 +303,77 @@ function FormularioPorPasos({
       aria-busy={pendiente}
     >
       {nombres.length > 1 && (
-        <div className="space-y-3 border-b border-[#dce3da] pb-4">
-          <ol aria-label="Progreso de la invitación" className="flex gap-1.5">
-            {nombres.map((nombre, indice) => (
-              <li
-                key={nombre}
-                aria-current={paso === indice ? "step" : undefined}
-                className={`h-1.5 flex-1 rounded-full ${indice <= paso ? "bg-[#174238]" : "bg-[#dce3da]"}`}
-              >
-                <span className="sr-only">{nombre}</span>
-              </li>
-            ))}
-          </ol>
-          <p className="text-xs font-semibold text-[#465a50]">
-            Paso {paso + 1} de {nombres.length}
-          </p>
-          <h3
-            ref={encabezado}
-            tabIndex={-1}
-            className="scroll-mt-4 font-serif text-xl font-semibold text-[#173b32] focus-visible:outline-2 focus-visible:outline-offset-4"
+        <div className="space-y-4 border-b border-[#dce3da] pb-5">
+          <ol
+            aria-label="Progreso de la invitación"
+            className="flex items-center justify-between gap-2"
           >
-            {nombres[paso]}
-          </h3>
+            {nombres.map((nombre, indice) => {
+              const completado = indice < paso;
+              const activo = indice === paso;
+              return (
+                <li
+                  key={nombre}
+                  aria-current={activo ? "step" : undefined}
+                  className="flex flex-1 items-center gap-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold transition-all ${
+                        completado
+                          ? "bg-[#174238] text-white"
+                          : activo
+                            ? "border-2 border-[#174238] bg-[#edf4ed] text-[#174238]"
+                            : "bg-[#e5eee7] text-[#526a60]"
+                      }`}
+                    >
+                      {completado ? (
+                        <svg
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                          className="size-3.5"
+                          aria-hidden="true"
+                        >
+                          <path d="m3 8 3.5 3.5 6.5-7" />
+                        </svg>
+                      ) : (
+                        indice + 1
+                      )}
+                    </span>
+                    <span
+                      className={`hidden text-xs font-medium sm:inline ${
+                        activo ? "font-bold text-[#174238]" : "text-[#526a60]"
+                      }`}
+                    >
+                      {nombre}
+                    </span>
+                  </div>
+                  {indice < nombres.length - 1 && (
+                    <div
+                      aria-hidden="true"
+                      className={`h-0.5 flex-1 rounded-full ${
+                        completado ? "bg-[#174238]" : "bg-[#dce3da]"
+                      }`}
+                    />
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+          <div className="flex items-center justify-between">
+            <h3
+              ref={encabezado}
+              tabIndex={-1}
+              className="scroll-mt-4 font-serif text-xl font-bold text-[#173b32] focus-visible:outline-2 focus-visible:outline-offset-4"
+            >
+              {nombres[paso]}
+            </h3>
+            <span className="rounded-lg bg-[#edf4ed] px-2.5 py-1 text-xs font-semibold text-[#174238]">
+              Paso {paso + 1} de {nombres.length}
+            </span>
+          </div>
         </div>
       )}
       {cuenta && (
@@ -453,6 +503,18 @@ export function FormularioInvitacion({
   >(enviarInvitacion, inicial);
   const [copiado, cambiarCopia] = useState(false);
   const [nuevo, cambiarNuevo] = useState(destinos.length === 0);
+  const toast = useToast();
+
+  useEffect(() => {
+    if (estado.mensaje) {
+      if (estado.ok) {
+        toast.exito(estado.mensaje);
+      } else {
+        toast.error(estado.mensaje);
+      }
+    }
+  }, [estado, toast]);
+
   return (
     <form
       action={accion}
@@ -468,6 +530,7 @@ export function FormularioInvitacion({
           type="email"
           required
           maxLength={254}
+          placeholder="encargado@ejemplo.com"
           className={campo}
         />
       </Campo>
@@ -479,15 +542,16 @@ export function FormularioInvitacion({
           onChange={(evento) => cambiarNuevo(evento.target.value === "nuevo")}
         >
           <option value="existente" disabled={!destinos.length}>
-            Gestionar un destino existente
+            Gestionar un atractivo existente
           </option>
-          <option value="nuevo">Registrar un destino nuevo</option>
+          <option value="nuevo">Crear y administrar un atractivo nuevo</option>
         </select>
       </Campo>
       {nuevo ? (
-        <p className="text-sm text-[#465a50]">
-          El encargado completará los datos iniciales y recibirá el destino como
-          borrador.
+        <p className="rounded-xl bg-[#edf4ed] p-3 text-xs text-[#234c3d]">
+          El encargado completará los datos iniciales (nombre, ubicación,
+          coordenadas y descripción) y recibirá el destino como borrador para su
+          administración.
         </p>
       ) : (
         <SelectorDestino destinos={destinos} />
@@ -515,8 +579,10 @@ export function FormularioInvitacion({
               try {
                 await navigator.clipboard.writeText(estado.enlace!);
                 cambiarCopia(true);
+                toast.exito("Enlace de invitación copiado al portapapeles");
               } catch {
                 cambiarCopia(false);
+                toast.error("No se pudo copiar el enlace");
               }
             }}
           >
@@ -534,6 +600,18 @@ export function DecisionAcceso({ fila }: { fila: AccesoEncargado }) {
     resolverAcceso.bind(null, fila.id),
     inicial,
   );
+  const toast = useToast();
+
+  useEffect(() => {
+    if (estado.mensaje) {
+      if (estado.ok) {
+        toast.exito(estado.mensaje);
+      } else {
+        toast.error(estado.mensaje);
+      }
+    }
+  }, [estado, toast]);
+
   if (!decision)
     return (
       <div className="flex flex-wrap gap-2">
